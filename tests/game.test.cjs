@@ -21,3 +21,8 @@ test('secondary pointer cannot steer or release active pilot pointer',()=>{
 });
 test('restart clears transient state and duplicate kills do not award twice',()=>{const g=game();g.run('start(1,true);t=99;shk=1;fire=true;start(1,true)');assert.equal(g.run('t+shk'),0);assert.equal(g.run('fire'),false);g.run("sfx.boom=()=>{};const enemy=E.find(e=>e.k==='base');kill(enemy);kill(enemy)");assert.equal(g.run('bd'),1);assert.equal(g.run('P.sc'),100)});
 test('missile key repeat does not request another missile',()=>{const g=game();g.run('start(1,true)');g.listeners.keydown({key:'m',repeat:true,preventDefault(){}});assert.equal(g.run('mAsk'),false)});
+test('screen-relative movement follows all four directions and holds position on release',()=>{
+ for(const [key,axis,sign] of [['d',0,1],['a',0,-1],['w',1,-1],['s',1,1]]){const g=game();g.run('start(1,true);HY=H*.52');const before=g.run('P3(P.x,P.y,P.z)');g.run(`keys.${key}=1;upd(.05)`);const after=g.run('P3(P.x,P.y,P.z)');assert.ok((after[axis]-before[axis])*sign>0,key);g.run('clearInput()');const x=g.run('P.x'),z=g.run('P.z');g.run('upd(.05)');assert.equal(g.run('P.x'),x);assert.equal(g.run('P.z'),z)}
+});
+test('camera stays fixed in heading and projectiles follow the chosen heading',()=>{const g=game();g.run('start(1,true);keys.d=1;upd(.05);fire=true;upd(.05)');assert.equal(g.run('cam.yaw'),Math.PI/5);assert.ok(g.run('BL.length')>0);assert.ok(g.run('BL[0].vx*Math.sin(P.yaw)+BL[0].vz*Math.cos(P.yaw)')>129)});
+test('orthographic scale stays constant across depth and viewport sizes',()=>{const g=game();for(const [w,h] of [[390,844],[844,390]]){g.run(`W=${w};H=${h};F=Math.min(W/SCALE_WIDTH,H/120)`);assert.equal(g.run('P3(0,0,0)[2]'),g.run('P3(0,0,80)[2]'));assert.ok(g.run('F*11/W')<.12)}});

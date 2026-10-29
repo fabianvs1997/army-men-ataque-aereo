@@ -16,8 +16,8 @@ Visita http://localhost:8000. GitHub Pages puede servir estos mismos archivos de
 
 | Acción | Teclado | Pantalla táctil |
 | --- | --- | --- |
-| Girar | A/D o flechas izquierda/derecha | Arrastrar horizontalmente |
-| Acelerar/frenar | W/S o flechas arriba/abajo | Arrastrar verticalmente |
+| Desplazarse izquierda/derecha | A/D o flechas izquierda/derecha | Arrastrar horizontalmente |
+| Desplazarse arriba/abajo | W/S o flechas arriba/abajo | Arrastrar verticalmente |
 | Disparar | Mantener Espacio | Mantener Fuego |
 | Misil | M o Mayús | Pulsar Misil |
 | Pausar/continuar | P | Pausa / Continuar |
@@ -42,3 +42,7 @@ Las pruebas cubren pausa, pérdida de foco, multitáctil, reinicio, puntuación 
 - `tests/game.test.cjs`: regresiones sin paquetes externos.
 
 El progreso vive en memoria y se pierde al recargar la página. El audio depende de la compatibilidad del navegador y comienza tras una interacción.
+
+## Etapa 1: cámara y escala
+
+Cámara ortográfica elevada 60 grados con orientación diagonal fija y seguimiento suave. Los controles desplazan el helicóptero respecto a la pantalla; al soltar se mantiene en posición. El morro apunta al último desplazamiento y los disparos siguen esa dirección. Se conserva Canvas 2D; modelos 3D y relieve quedan para la etapa siguiente. La escala se adapta a pantallas verticales y horizontales. Pendiente validar comodidad y rendimiento en un iPhone real.
