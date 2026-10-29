@@ -1,5 +1,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+require('../toy-world.js');
 require('../toy-renderer.js');
 const Renderer=globalThis.ToyRenderer;
 function fixture(options={}){
