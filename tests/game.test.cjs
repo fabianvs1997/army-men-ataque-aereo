@@ -7,7 +7,7 @@ function game(){
  const elements=new Map(),listeners={};
  const element=id=>{if(!elements.has(id))elements.set(id,{style:{},getContext:()=>({setTransform(){}}),getBoundingClientRect:()=>({width:360,height:640}),addEventListener(name,fn){this[name]=fn},setPointerCapture(){},setAttribute(){}});return elements.get(id)};
  const sandbox={document:{getElementById:element,addEventListener(name,fn){listeners[name]=fn}},navigator:{},devicePixelRatio:1,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(name,fn){listeners[name]=fn},Math,setTimeout};
- vm.createContext(sandbox);vm.runInContext(source,sandbox);
+ vm.createContext(sandbox);vm.runInContext(fs.readFileSync('toy-world.js','utf8'),sandbox);vm.runInContext(source,sandbox);
  return {run:s=>vm.runInContext(s,sandbox),listeners,element};
 }
 test('pause freezes state and clears held inputs; resume preserves mission',()=>{
@@ -26,3 +26,5 @@ test('screen-relative movement follows all four directions and holds position on
 });
 test('camera stays fixed in heading and projectiles follow the chosen heading',()=>{const g=game();g.run('start(1,true);keys.d=1;upd(.05);fire=true;upd(.05)');assert.equal(g.run('cam.yaw'),Math.PI/5);assert.ok(g.run('BL.length')>0);assert.ok(g.run('BL[0].vx*Math.sin(P.yaw)+BL[0].vz*Math.cos(P.yaw)')>129)});
 test('orthographic scale stays constant across depth and viewport sizes',()=>{const g=game();for(const [w,h] of [[390,844],[844,390]]){g.run(`W=${w};H=${h};F=Math.min(W/SCALE_WIDTH,H/120)`);assert.equal(g.run('P3(0,0,0)[2]'),g.run('P3(0,0,80)[2]'));assert.ok(g.run('F*11/W')<.12)}});
+
+test('ground enemies match terrain elevation and start clear of large props',()=>{const g=game();g.run('start(1,true)');assert.equal(g.run('E.every(e=>ToyWorld.clearOfLandmarks(e.x,e.z,10))'),true);assert.equal(g.run('E.every(e=>e.y===ToyWorld.height(e.x,e.z))'),true);g.run('upd(.05)');assert.equal(g.run("E.filter(e=>e.k!=='heli').every(e=>e.y===ToyWorld.height(e.x,e.z))"),true)});

@@ -76,3 +76,13 @@ El HUD organiza vida y modo gráfico, misión y botones en filas separadas. La e
 Compatibilidad: los shaders declaran explícitamente la misma precisión en sus variables compartidas; se elimina la preferencia de GPU de bajo consumo y se intenta el alias `experimental-webgl` si el contexto estándar no está disponible. El archivo del renderizador lleva versión en la URL para evitar reutilizar su copia anterior en caché. Estos cambios no garantizan que un dispositivo sin contexto WebGL pueda activarlo.
 
 Diagnóstico: la página publicada de la etapa 2 se comprobó en el navegador remoto y registró `WebGL no disponible`, activando el respaldo 2D. Esto no identifica por sí solo la causa en el iPhone del usuario. Pendiente comprobar allí el indicador de modo y el renderizado. Validación de etapa 3: 15 pruebas automatizadas y shaders/escena en OpenGL ES/Mesa sin errores.
+
+## Etapa 4: terreno y ambientación
+
+`toy-world.js` define un terreno determinista compartido por ambos modos. La malla usa celdas de 4 unidades y 60 000 vértices; se crea al iniciar/restaurar el renderizador, no en cada fotograma. La consulta de altura interpola los mismos triángulos que se dibujan. Las elevaciones permanecen por debajo de 5 unidades y el vuelo sigue a unas 8 unidades; caminos y helipuerto tienen áreas despejadas.
+
+Se añaden caminos curvos, variaciones de color procedurales para hierba/tierra, rocas y arbustos. Un lápiz, un carrete de hilo y una ficha de dominó grandes funcionan como referencias de escala. Los enemigos aparecen fuera del espacio reservado a estos objetos; las unidades terrestres se ajustan al suelo. La búsqueda de posiciones tiene un máximo de intentos y una ubicación de respaldo libre de estos objetos.
+
+El modo Canvas 2D también dibuja terreno, caminos, rocas y referencias de escala. Su representación del relieve es aproximada y no ofrece el búfer de profundidad del modo WebGL. Los objetos decorativos todavía no bloquean movimiento ni disparos; las sombras de contacto siguen siendo aproximadas. No se han añadido misiones nuevas.
+
+Validación: 21 pruebas aprobadas de controles, renderizador, elevaciones, normales, continuidad, posiciones iniciales y dibujo Canvas vertical/horizontal. Se compilaron shaders y se inspeccionó la escena de prueba con OpenGL ES/Mesa sin errores GL. Se corrigió la superposición de profundidad entre caminos y helipuerto. Pendiente comprobar distribución real y FPS en Safari/iPhone, tanto con indicador 3D como con respaldo 2D.
