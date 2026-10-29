@@ -42,6 +42,7 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 </head>
 <body>
 <div id="wrap">
+<canvas id="world3d" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;display:none"></canvas>
 <canvas id="c" aria-label="Juego de helicópteros de juguete en 3D"></canvas>
 <div id="ov">
 <h1 id="ti">ARMY MEN<span>Ataque aéreo 3D</span></h1>
@@ -50,6 +51,7 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 </div>
 <div id="hud"><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
 </div>
+<script src="toy-renderer.js"></script>
 <script>
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),R=(a,b)=>a+Math.random()*(b-a);
 /* audio y vibración */
@@ -79,6 +81,9 @@ const cv=$('c'),ctx=cv.getContext('2d'),cam={x:0,z:0,yaw:Math.PI/5},PITCH=Math.P
 let W=360,H=640,HY=256,F=380;
 function rs(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);cv.width=r.width*d;cv.height=r.height*d;W=r.width;H=r.height;ctx.setTransform(d,0,0,d,0,0);F=Math.min(W/SCALE_WIDTH,H/120)}
 addEventListener('resize',rs);rs();
+let renderer3d=null;
+try{if(typeof ToyRenderer!=='undefined')renderer3d=new ToyRenderer($('world3d'),()=>{pauseGame();$('world3d').style.display='none';$('c').style.opacity='1'},()=>{});}catch(error){console.warn('Modo 2D: no se pudo iniciar WebGL.',error)}
+
 // Orthographic camera: fixed diagonal heading and 60-degree downward pitch.
 function cs(x,y,z){const dx=x-cam.x,dz=z-cam.z,s=Math.sin(cam.yaw),c=Math.cos(cam.yaw),forward=dx*s+dz*c;return[-dx*c+dz*s,y*Math.cos(PITCH)+forward*Math.sin(PITCH),300+forward*Math.cos(PITCH)-y*Math.sin(PITCH)]}
 function pj(a){return[W/2+a[0]*F,HY-a[1]*F,F,a[2]]}
@@ -208,6 +213,9 @@ function sprE(e,p){const s=p[2],x=p[0],y=p[1],f=e.fl>0,col=f?'#fff':'#d5b578',dk
 }
 /* dibujo */
 function draw(){
+  HY=H*.52+(shk>0?R(-2,2):0);
+  if(renderer3d&&renderer3d.render({W,H,F,HY,cam,PITCH,P,E,DC,BL,EB,MS,FX,PK,rot,t})){$('world3d').style.display='block';$('c').style.opacity='0';return}
+
   HY=H*.52+(shk>0?R(-2,2):0);
   ctx.fillStyle='#607c49';ctx.fillRect(0,0,W,H);
   ctx.beginPath();for(let k=-10;k<=10;k++){const v=k*20;for(const q of[[v,-200,v,200],[-200,v,200,v]]){const c=clip(cs(q[0],0,q[1]),cs(q[2],0,q[3]));if(c){const a=pj(c[0]),b=pj(c[1]);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1])}}}
