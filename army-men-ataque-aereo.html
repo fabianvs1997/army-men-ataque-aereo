@@ -38,6 +38,14 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 .b{border:2px solid #ffffff45;box-shadow:0 5px 0 #14231c,0 8px 24px #0005}
 #fu{background:radial-gradient(circle at 35% 25%,#f47550,#a6302e)}
 #pause,#sound{top:62px;background:#152a2cdd;color:#e9e7cc;border:1px solid #ffffff30;box-shadow:none}
+
+/* Separate mobile HUD rows: health/mode, mission, then actions. */
+#arm{top:12px;left:12px;width:108px;height:12px}
+#inf{top:36px;left:12px;right:12px;text-align:center;font-size:12px;padding:7px 8px}
+#pause,#sound{position:absolute;top:76px;min-height:38px;font-size:13px;padding:0 12px}
+#pause{left:12px;right:auto}#sound{right:12px;left:auto}
+#cmp{top:79px;font-size:25px}
+#renderMode{position:absolute;right:12px;top:12px;font-size:11px;color:#fff6cf;background:#14261dcc;border-radius:5px;padding:2px 6px;max-width:calc(100% - 150px);text-align:right}
 </style>
 </head>
 <body>
@@ -49,9 +57,9 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 <p id="tx">Arrastra para desplazarte en la dirección de la pantalla. Al soltar, el helicóptero se mantiene en posición. Mantén Fuego para disparar y lanza misiles al objetivo. Destruye las bases beige. En teclado: WASD o flechas, Espacio para disparar, M para misil y P para pausar.</p>
 <button id="go">Despegar</button>
 </div>
-<div id="hud"><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
+<div id="hud"><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
 </div>
-<script src="toy-renderer.js"></script>
+<script src="toy-renderer.js?v=stage3-1"></script>
 <script>
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),R=(a,b)=>a+Math.random()*(b-a);
 /* audio y vibración */
@@ -82,7 +90,10 @@ let W=360,H=640,HY=256,F=380;
 function rs(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);cv.width=r.width*d;cv.height=r.height*d;W=r.width;H=r.height;ctx.setTransform(d,0,0,d,0,0);F=Math.min(W/SCALE_WIDTH,H/120)}
 addEventListener('resize',rs);rs();
 let renderer3d=null;
-try{if(typeof ToyRenderer!=='undefined')renderer3d=new ToyRenderer($('world3d'),()=>{pauseGame();$('world3d').style.display='none';$('c').style.opacity='1'},()=>{});}catch(error){console.warn('Modo 2D: no se pudo iniciar WebGL.',error)}
+function renderStatus(active){$('renderMode').textContent=active?'3D · Plástico':'2D · 3D no disponible';}
+renderStatus(false);
+try{if(typeof ToyRenderer!=='undefined')renderer3d=new ToyRenderer($('world3d'),()=>{pauseGame();$('world3d').style.display='none';$('c').style.opacity='1';renderStatus(false)},()=>{renderStatus(true)});}catch(error){console.warn('Modo 2D: no se pudo iniciar WebGL.',error)}
+if(renderer3d)renderStatus(true);
 
 // Orthographic camera: fixed diagonal heading and 60-degree downward pitch.
 function cs(x,y,z){const dx=x-cam.x,dz=z-cam.z,s=Math.sin(cam.yaw),c=Math.cos(cam.yaw),forward=dx*s+dz*c;return[-dx*c+dz*s,y*Math.cos(PITCH)+forward*Math.sin(PITCH),300+forward*Math.cos(PITCH)-y*Math.sin(PITCH)]}

@@ -53,7 +53,7 @@ Cámara ortográfica elevada 60 grados con orientación diagonal fija y seguimie
 
 El escenario incluye una explanada con caminos y helipuerto. El suelo sigue siendo plano y los obstáculos decorativos no tienen colisiones; relieve y ambientación detallada quedan fuera de esta etapa. Las sombras de helicópteros son elipses de contacto aproximadas, no sombras dinámicas calculadas por luz.
 
-Se reutilizan dos mallas y se descartan entidades alejadas del encuadre; la resolución interna está limitada a 1.75 veces el tamaño CSS. Esto limita trabajo gráfico, pero no equivale a un rendimiento medido en iPhone.
+Se reutilizan tres mallas y se descartan entidades alejadas del encuadre; la resolución interna está limitada a 1.75 veces el tamaño CSS. Esto limita trabajo gráfico, pero no equivale a un rendimiento medido en iPhone.
 
 Si WebGL no inicia, se mantiene la vista Canvas 2D. Si se pierde el contexto durante la partida, se pausa y muestra la vista 2D; al restaurarse se reconstruye el renderizador. El jugador debe continuar la partida explícitamente.
 
@@ -66,3 +66,13 @@ Comprobación manual pendiente en Safari/iPhone:
 3. Disparar, lanzar misiles, recoger suministros y completar/reintentar una misión.
 4. Girar el teléfono, pausar, cambiar de aplicación y volver.
 5. Confirmar que el modo 2D permite jugar cuando WebGL no está disponible.
+
+## Etapa 3: plástico moldeado y estado gráfico
+
+Los modelos incorporan una tercera malla de caja con bordes redondeados, brillo especular más definido, junta central y tornillos en el helicóptero, rejillas de motor, bandas de oruga y peanas para figuras terrestres. Conservan el verde y el beige de los equipos. La lectura del detalle depende de la escala en pantalla; no se ha cambiado el zoom de la etapa 1.
+
+El HUD organiza vida y modo gráfico, misión y botones en filas separadas. La esquina superior indica `3D · Plástico` cuando está activo WebGL o `2D · 3D no disponible` cuando se usa el respaldo. En caso de pérdida de contexto, la etiqueta cambia junto con la vista.
+
+Compatibilidad: los shaders declaran explícitamente la misma precisión en sus variables compartidas; se elimina la preferencia de GPU de bajo consumo y se intenta el alias `experimental-webgl` si el contexto estándar no está disponible. El archivo del renderizador lleva versión en la URL para evitar reutilizar su copia anterior en caché. Estos cambios no garantizan que un dispositivo sin contexto WebGL pueda activarlo.
+
+Diagnóstico: la página publicada de la etapa 2 se comprobó en el navegador remoto y registró `WebGL no disponible`, activando el respaldo 2D. Esto no identifica por sí solo la causa en el iPhone del usuario. Pendiente comprobar allí el indicador de modo y el renderizado. Validación de etapa 3: 15 pruebas automatizadas y shaders/escena en OpenGL ES/Mesa sin errores.
