@@ -1,6 +1,6 @@
 # Army Men: Ataque aéreo
 
-Juego arcade de helicópteros de juguete con proyección 3D en Canvas 2D. Sin dependencias, instalación ni compilación.
+Juego arcade de helicópteros de juguete con WebGL 3D y respaldo Canvas 2D. Sin dependencias, instalación ni compilación.
 
 ## Jugar
 
@@ -103,3 +103,22 @@ La ametralladora ajusta su ángulo vertical hacia un enemigo situado delante; el
 Los soldados, marcadores y helipuerto funcionan en WebGL y en el respaldo Canvas 2D. El HUD muestra nombre de misión, instrucciones, progreso de recogida y conteos. Se elimina decoración pegada a los soldados para mantenerlos visibles.
 
 Validación de esta etapa: 32 pruebas automatizadas de controles, renderizadores y campaña, incluidos recorridos completos de victoria, derrota/reintento, pausa, final de campaña, reinicio de recogida y primer impacto de proyectiles. La validación de dibujo usa Canvas/WebGL simulados; queda pendiente una partida manual y la comprobación visual/rendimiento en Safari/iPhone para esta versión.
+
+
+## Etapa 6: controles y ahorro en móvil
+
+Un joystick flotante aparece al arrastrar el escenario, con recorrido visual limitado. Se puede mantener Fuego con otro dedo: solo el dedo que lo activó puede soltarlo. Cancelar el gesto, perder la captura, pausar o girar la pantalla limpia las entradas. El cambio de orientación detiene el movimiento hasta un nuevo gesto.
+
+El botón **Gráficos: detalle / ahorro** cambia la resolución interna: detalle limita la densidad a 1.75 y ahorro a 1, en ambos renderizadores. Ahorro limita el dibujo a aproximadamente 30 cuadros por segundo, conservando la frecuencia de actualización de lógica y controles del navegador. No garantiza alcanzar 30 FPS. No se redibuja continuamente durante pausa, derrota o victoria, ni al ocultar la pestaña; los cambios de tamaño/contexto invalidan la imagen. El HUD actualiza los textos solo cuando cambian.
+
+El diseño usa altura dinámica y zonas seguras, con distribución compacta en horizontal y menú desplazable. Sonido y calidad se guardan localmente cuando el navegador lo permite; el juego sigue funcionando si bloquea ese almacenamiento. Esto no guarda el progreso de campaña. El audio reutiliza el elemento auxiliar silencioso, desconecta nodos terminados y detiene ese elemento en las pantallas de pausa y resultado.
+
+Validación: 39 pruebas automatizadas. Incluyen propiedad del dedo de disparo, cancelación del joystick, pausa/visibilidad, cadencia de dibujo separada de simulación, resolución de ambos modos, preferencias y limpieza del audio. DOM, Canvas, WebGL y audio se simulan: no son una medición de FPS ni una validación visual/sonora en Safari.
+
+Comprobación manual pendiente en iPhone:
+
+1. Mover, mantener Fuego con otro dedo y lanzar un misil; soltar cada dedo por separado.
+2. Girar a horizontal y volver; comprobar que los controles quedan dentro de pantalla y no sigue moviéndose solo.
+3. Alternar detalle/ahorro, silenciar y recargar para comprobar las preferencias.
+4. Cambiar de aplicación, regresar y pulsar Continuar; comprobar pausa y audio.
+5. Completar un rescate en ambos modos gráficos y comparar fluidez sin cambiar la velocidad de juego.

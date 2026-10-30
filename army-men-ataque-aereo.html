@@ -47,6 +47,15 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 #cmp{top:79px;font-size:25px}
 #renderMode{position:absolute;right:12px;top:12px;font-size:11px;color:#fff6cf;background:#14261dcc;border-radius:5px;padding:2px 6px;max-width:calc(100% - 150px);text-align:right}
 #objective{position:absolute;top:122px;left:12px;right:12px;margin:auto;max-width:440px;padding:7px 10px;background:#132a20d9;border-radius:8px;font-size:12px;line-height:1.35;text-align:center;box-sizing:border-box}
+/* Dynamic viewport and safe areas keep controls clear of browser chrome. */
+:root{padding:0}#wrap{height:100%;height:100dvh}
+#hud{inset:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#quality{position:absolute;left:12px;bottom:34px;pointer-events:auto;min-height:44px;padding:0 12px;font-size:12px;background:#152a2cdd;color:#fff;box-shadow:none}
+#pause,#sound{min-height:44px}
+#stick{position:absolute;display:none;width:112px;height:112px;margin:-56px;border:2px solid #eef5ce88;border-radius:50%;background:#18332544;pointer-events:none;box-sizing:border-box}
+#knob{position:absolute;left:34px;top:34px;width:40px;height:40px;border-radius:50%;background:#e6edbb88;border:1px solid #fff9}
+#ov{box-sizing:border-box;overflow:auto;padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
+@media(max-height:500px){#ov{justify-content:flex-start;gap:8px}h1{font-size:32px}#tx{font-size:13px;max-width:65ch}#inf{left:140px;right:140px;top:10px}#objective{top:46px;left:145px;right:145px;font-size:11px}#pause,#sound{top:44px}#cmp{top:92px}#fu{width:76px;height:76px;bottom:18px}#mi{right:104px;bottom:12px;width:60px;height:60px}}
 </style>
 </head>
 <body>
@@ -58,15 +67,19 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 <p id="tx">Arrastra para desplazarte en la dirección de la pantalla. Al soltar, el helicóptero se mantiene en posición. Mantén Fuego para disparar y lanza misiles al objetivo. Libera a los soldados destruyendo las bases beige. Quédate quieto junto a ellos 1.5 s para rescatarlos y vuelve al helipuerto. En teclado: WASD o flechas, Espacio para disparar, M para misil y P para pausar.</p>
 <button id="go">Despegar</button>
 </div>
-<div id="hud"><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
+<div id="stick" aria-hidden="true"><i id="knob"></i></div>
+<div id="hud"><button id="quality" aria-pressed="false">Gráficos: detalle</button><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
 </div>
-<script src="toy-missions.js?v=stage5-1"></script>
-<script src="toy-world.js?v=stage5-1"></script>
-<script src="toy-renderer.js?v=stage5-1"></script>
+<script src="toy-missions.js?v=stage6-1"></script>
+<script src="toy-world.js?v=stage6-1"></script>
+<script src="toy-renderer.js?v=stage6-1"></script>
 <script>
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),R=(a,b)=>a+Math.random()*(b-a);
 /* audio y vibración */
-let AC=null,hum=null,sil=null,muted=false;
+function preference(key,fallback){try{return localStorage.getItem('toy-'+key)||fallback}catch(e){return fallback}}
+function savePreference(key,value){try{localStorage.setItem('toy-'+key,value)}catch(e){}}
+let lowQuality=preference('quality','detail')==='low',needsDraw=true;
+let AC=null,hum=null,sil=null,muted=preference('muted','false')==='true';
 function silentSrc(){const n=4000,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,s)=>{for(let i=0;i<s.length;i++)b[o+i]=s.charCodeAt(i)};w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);b.fill(128,44);let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return 'data:audio/wav;base64,'+btoa(s)}
 function audio(){
   if(muted)return;
@@ -76,13 +89,13 @@ function audio(){
   if(sil&&sil.paused)sil.play().catch(()=>{});
   if(!sil){try{sil=new Audio(silentSrc());sil.loop=true;const p=sil.play();if(p)p.catch(()=>{})}catch(e){}}
 }
-function tone(f,f2,d,type,v){if(!AC||muted)return;const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;o.type=type;o.frequency.setValueAtTime(f,n);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),n+d);g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(AC.destination);o.start(n);o.stop(n+d)}
-function noise(d,v,fc){if(!AC||muted)return;const n=AC.currentTime,len=Math.floor(AC.sampleRate*d),buf=AC.createBuffer(1,len,AC.sampleRate),a=buf.getChannelData(0);for(let i=0;i<len;i++)a[i]=Math.random()*2-1;const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=buf;fl.type='lowpass';fl.frequency.value=fc;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);s.connect(fl);fl.connect(g);g.connect(AC.destination);s.start(n)}
+function tone(f,f2,d,type,v){if(!AC||muted||document.hidden||st!=='play')return;const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;o.type=type;o.frequency.setValueAtTime(f,n);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),n+d);g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(AC.destination);o.onended=()=>{o.disconnect();g.disconnect()};o.start(n);o.stop(n+d)}
+function noise(d,v,fc){if(!AC||muted||document.hidden||st!=='play')return;const n=AC.currentTime,len=Math.floor(AC.sampleRate*d),buf=AC.createBuffer(1,len,AC.sampleRate),a=buf.getChannelData(0);for(let i=0;i<len;i++)a[i]=Math.random()*2-1;const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=buf;fl.type='lowpass';fl.frequency.value=fc;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);s.connect(fl);fl.connect(g);g.connect(AC.destination);s.onended=()=>{s.disconnect();fl.disconnect();g.disconnect()};s.start(n)}
 function buzz(p){if(navigator.vibrate){try{navigator.vibrate(p)}catch(e){}}}
 const sfx={shot(){tone(900,500,.07,'square',.06)},boom(){noise(.45,.7,1500);tone(180,50,.35,'sawtooth',.25)},hurt(){tone(300,90,.3,'square',.25);noise(.25,.5,1500)},pick(){tone(520,520,.08,'triangle',.25);setTimeout(()=>tone(780,780,.12,'triangle',.25),80)},miss(){noise(.5,.4,2500);tone(200,700,.4,'sawtooth',.15)},over(){tone(400,80,.9,'sawtooth',.25)}};
-function humOn(){if(!AC||hum||muted)return;const o=AC.createOscillator(),l=AC.createOscillator(),lg=AC.createGain(),g=AC.createGain(),f=AC.createBiquadFilter();o.type='sawtooth';o.frequency.value=110;f.type='lowpass';f.frequency.value=700;g.gain.value=.08;l.frequency.value=13;lg.gain.value=.06;l.connect(lg);lg.connect(g.gain);o.connect(f);f.connect(g);g.connect(AC.destination);o.start();l.start();hum={o,l}}
-function humOff(){if(!hum)return;try{hum.o.stop();hum.l.stop()}catch(e){}hum=null}
-function clearInput(){for(const key in keys)delete keys[key];fire=false;mAsk=false;drag=null}
+function humOn(){if(!AC||hum||muted)return;const o=AC.createOscillator(),l=AC.createOscillator(),lg=AC.createGain(),g=AC.createGain(),f=AC.createBiquadFilter();o.type='sawtooth';o.frequency.value=110;f.type='lowpass';f.frequency.value=700;g.gain.value=.08;l.frequency.value=13;lg.gain.value=.06;l.connect(lg);lg.connect(g.gain);o.connect(f);f.connect(g);g.connect(AC.destination);o.start();l.start();hum={o,l,lg,g,f}}
+function humOff(){if(!hum)return;try{hum.o.stop();hum.l.stop()}catch(e){}for(const node of Object.values(hum))node.disconnect();hum=null}
+function clearInput(){for(const key in keys)delete keys[key];fire=false;mAsk=false;drag=null;firePointer=null;$('stick').style.display='none'}
 function pauseGame(){if(st!=='play')return;clearInput();st='paused';humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{});show('Partida en pausa','Tu misión continuará desde el mismo punto.','Continuar')}
 function resumeGame(){clearInput();st='play';audio();humOn();$('ov').style.display='none';$('hud').style.display='block'}
 addEventListener('blur',pauseGame);
@@ -90,10 +103,10 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame()
 /* cámara y proyección 3D (canvas 2D, sin WebGL) */
 const cv=$('c'),ctx=cv.getContext('2d'),cam={x:0,z:0,yaw:Math.PI/5},PITCH=Math.PI/3,SCALE_WIDTH=105;
 let W=360,H=640,HY=256,F=380;
-function rs(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);cv.width=r.width*d;cv.height=r.height*d;W=r.width;H=r.height;ctx.setTransform(d,0,0,d,0,0);F=Math.min(W/SCALE_WIDTH,H/120)}
+function rs(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,lowQuality?1:1.75);cv.width=r.width*d;cv.height=r.height*d;W=r.width;H=r.height;ctx.setTransform(d,0,0,d,0,0);F=Math.min(W/SCALE_WIDTH,H/120);needsDraw=true}
 addEventListener('resize',rs);rs();
 let renderer3d=null;
-function renderStatus(active){$('renderMode').textContent=active?'3D · Plástico':'2D · 3D no disponible';}
+function renderStatus(active){needsDraw=true;$('renderMode').textContent=active?'3D · Plástico':'2D · 3D no disponible';}
 renderStatus(false);
 try{if(typeof ToyRenderer!=='undefined')renderer3d=new ToyRenderer($('world3d'),()=>{pauseGame();$('world3d').style.display='none';$('c').style.opacity='1';renderStatus(false)},()=>{renderStatus(true)});}catch(error){console.warn('Modo 2D: no se pudo iniciar WebGL.',error)}
 if(renderer3d)renderStatus(true);
@@ -109,7 +122,7 @@ const rc=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
 const tri=(a,b,c,d,e,f,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.lineTo(e,f);ctx.fill()};
 /* estado */
 let mission=null,checkpoint=0,airLeft=0;
-let st='menu',P,E=[],BL=[],EB=[],MS=[],FX=[],PK=[],DC=[],mis=1,t=0,rot=0,fire=false,mAsk=false,shk=0,bd=0,tb=0,hs=3,drag=null;
+let st='menu',P,E=[],BL=[],EB=[],MS=[],FX=[],PK=[],DC=[],mis=1,t=0,rot=0,fire=false,mAsk=false,shk=0,bd=0,tb=0,hs=3,drag=null,firePointer=null;
 const keys={};
 const groundAt=(x,z)=>typeof ToyWorld==='undefined'?0:ToyWorld.height(x,z);
 for(let i=0;i<70;i++){const x=R(-185,185),z=R(-185,185);if(Math.hypot(x,z)<20)continue;DC.push(i%2?{t:'t',x,z}:{t:'b',x,z,s:R(3,7),c:['#d9473f','#3f7fd9','#e8c547'][i%3]})}
@@ -129,21 +142,29 @@ function start(n,full){
 function hit(e,d){e.hp-=d;e.fl=.08;if(e.hp<=0)kill(e)}
 function kill(e){if(e.dead)return;e.dead=1;boom(e.x,e.y+1,e.z,e.k==='base'?9:e.k==='heli'?5:4);sfx.boom();buzz(30);P.sc+=e.p;if(e.k==='base'){bd++;mission.release(e.camp)}
   if(e.k!=='base'&&Math.random()<.25)PK.push({x:e.x,z:e.z,ty:Math.random()<.5?'a':'m'})}
-function show(ti,tx,bt){$('ti').innerHTML=ti;$('tx').textContent=tx;$('go').textContent=bt;$('ov').style.display='flex';$('hud').style.display='none'}
+function show(ti,tx,bt){needsDraw=true;if(sil)sil.pause();$('ti').innerHTML=ti;$('tx').textContent=tx;$('go').textContent=bt;$('ov').style.display='flex';$('hud').style.display='none'}
 function hurt(){if(st!=='play'||P.inv>0)return;P.arm--;P.inv=.3;shk=.3;sfx.hurt();buzz(60);if(P.arm<=0){st='over';humOff();sfx.over();buzz(300);clearInput();show('Misión fallida','Reintenta '+mission.config.name+'. Los rescates de esta misión se reinician.','Reintentar misión')}}
 /* entrada */
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if([' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k))e.preventDefault();if(k==='p'&&!e.repeat){if(st==='play')pauseGame();else if(st==='paused')resumeGame();return}if(st!=='play')return;keys[k]=1;if((k==='m'||k==='shift')&&!e.repeat)mAsk=true});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0});
 addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('pointerdown',e=>{audio();if(st!=='play'||drag)return;humOn();drag={id:e.pointerId,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
-cv.addEventListener('pointermove',e=>{if(drag&&drag.id===e.pointerId){drag.x=e.clientX;drag.y=e.clientY}});
-for(const event of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(event,e=>{if(drag&&drag.id===e.pointerId)drag=null});
+cv.addEventListener('pointerdown',e=>{audio();if(st!=='play'||drag)return;humOn();drag={id:e.pointerId,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);updateStick()});
+cv.addEventListener('pointermove',e=>{if(drag&&drag.id===e.pointerId){drag.x=e.clientX;drag.y=e.clientY;updateStick()}});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(event,e=>{if(drag&&drag.id===e.pointerId){drag=null;$('stick').style.display='none'}});
+function updateStick(){if(!drag)return;const r=cv.getBoundingClientRect(),dx=drag.x-drag.sx,dy=drag.y-drag.sy,k=40/Math.max(70,Math.hypot(dx,dy));$('stick').style.display='block';$('stick').style.left=(drag.sx-(r.left||0))+'px';$('stick').style.top=(drag.sy-(r.top||0))+'px';$('knob').style.transform='translate('+dx*k+'px,'+dy*k+'px)'}
+addEventListener('resize',()=>{clearInput();needsDraw=true});
 const fu=$('fu'),mi=$('mi');
-fu.addEventListener('pointerdown',e=>{if(st!=='play')return;audio();fire=true;fu.setPointerCapture(e.pointerId)});
-for(const ev of['pointerup','pointercancel','pointerleave'])fu.addEventListener(ev,()=>{fire=false});
+fu.addEventListener('pointerdown',e=>{if(st!=='play'||firePointer!==null)return;audio();firePointer=e.pointerId;fire=true;fu.setPointerCapture(e.pointerId)});
+for(const ev of['pointerup','pointercancel','lostpointercapture'])fu.addEventListener(ev,e=>{if(e.pointerId===firePointer){fire=false;firePointer=null}});
 mi.addEventListener('pointerdown',()=>{if(st!=='play')return;audio();mAsk=true});
 $('pause').onclick=pauseGame;
-$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'Activar sonido':'Silenciar';$('sound').setAttribute('aria-pressed',String(muted));if(muted){humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{})}else{if(sil)sil=null;audio();if(st==='play')humOn()}};
+function soundLabel(){$('sound').textContent=muted?'Activar sonido':'Silenciar';$('sound').setAttribute('aria-pressed',String(muted))}
+soundLabel();
+$('sound').onclick=()=>{muted=!muted;savePreference('muted',String(muted));soundLabel();if(muted){humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{})}else{audio();if(st==='play')humOn()}};
+function qualityLabel(){$('quality').textContent=lowQuality?'Gráficos: ahorro':'Gráficos: detalle';$('quality').setAttribute('aria-pressed',String(lowQuality))}
+qualityLabel();
+$('quality').onclick=()=>{lowQuality=!lowQuality;savePreference('quality',lowQuality?'low':'detail');qualityLabel();rs()};
+function setText(id,value){if($(id).textContent!==value)$(id).textContent=value}
 $('go').onclick=()=>{if(st==='paused'){resumeGame();return}audio();humOn();buzz(20);tone(300,700,.25,'triangle',.25);const nx=st==='win',retry=st==='over';if(nx)checkpoint=P.sc;else if(!retry)checkpoint=0;start(nx?mis+1:retry?mis:1,!nx);$('ov').style.display='none';$('hud').style.display='block'};
 /* actualización */
 function upd(dt){
@@ -188,11 +209,11 @@ function upd(dt){
   const event=mission.update(dt,P,{moving:magnitude>.08,firing:!!(fire||keys[' ']||usedMissile),damaged:P.inv>0});
   if(event==='rescued'){P.sc+=50;sfx.pick();buzz(20)}
   if(event==='complete'){P.sc+=250;st=mis===ToyMissions.configs.length?'campaign':'win';clearInput();humOff();show(st==='campaign'?'Campaña completada':'Misión '+mis+' cumplida','Rescatados: '+mission.rescued+'. Puntos: '+P.sc+'.',st==='campaign'?'Jugar de nuevo':'Siguiente misión')}
-  $('ai').style.width=P.arm*10+'%';$('inf').textContent='Misión '+mis+'/3 · Bases '+bd+'/'+tb+' · Rescate '+mission.rescued+'/'+mission.allies.length;mi.textContent='Misil '+P.mi;
-  $('objective').textContent=mission.config.name+' · '+mission.message;
+  $('ai').style.width=P.arm*10+'%';setText('inf','Misión '+mis+'/3 · Bases '+bd+'/'+tb+' · Rescate '+mission.rescued+'/'+mission.allies.length);setText('mi','Misil '+P.mi);
+  setText('objective',mission.config.name+' · '+mission.message);
   const target=mission.target(P),point=P3(target.x,groundAt(target.x,target.z),target.z),player=P3(P.x,groundAt(P.x,P.z),P.z);
   $('cmp').style.transform='rotate('+Math.atan2(point[0]-player[0],player[1]-point[1])*180/Math.PI+'deg)';
-  $('dg').textContent='Puntos: '+P.sc;
+  setText('dg','Puntos: '+P.sc);
 
 }
 /* sprites */
@@ -247,7 +268,7 @@ function sprE(e,p){if(e.k==='inf'){soldier2d(p,false);return}const s=p[2],x=p[0]
 /* dibujo */
 function draw(){
   HY=H*.52+(shk>0?R(-2,2):0);
-  if(renderer3d&&renderer3d.render({W,H,F,HY,cam,PITCH,P,E,DC,BL,EB,MS,FX,PK,rot,t,allies:mission?mission.allies:[]})){$('world3d').style.display='block';$('c').style.opacity='0';return}
+  if(renderer3d&&renderer3d.render({pixelRatio:lowQuality?1:1.75,W,H,F,HY,cam,PITCH,P,E,DC,BL,EB,MS,FX,PK,rot,t,allies:mission?mission.allies:[]})){$('world3d').style.display='block';$('c').style.opacity='0';return}
 
   HY=H*.52+(shk>0?R(-2,2):0);
   ctx.fillStyle='#607c49';ctx.fillRect(0,0,W,H);
@@ -273,15 +294,18 @@ function draw(){
   if(P&&!(P.inv>0&&Math.floor(t*20)%2))add(P.x,P.y,P.z,p=>heli(p,'#50a43b','#245c26',false,true,headingAngle(P.yaw)));
   L.sort((a,b)=>b[0]-a[0]);for(const q of L)q[2](q[1]);
 }
-let last=performance.now();
+let last=performance.now(),lastDraw=-Infinity;
 function loop(n){
-  const dt=Math.min(.05,(n-last)/1e3);last=n;rot+=dt*30;
-  if(st==='play')upd(dt);else if(st!=='paused'){cam.x=Math.sin(n/12000)*20;cam.z=Math.cos(n/12000)*20}
-  draw();requestAnimationFrame(loop);
+  const dt=Math.max(0,Math.min(.05,(n-last)/1e3));last=n;
+  if(!document.hidden){
+    if(st==='play'){rot+=dt*30;upd(dt)}
+    else if(st==='menu'){rot+=dt*30;cam.x=Math.sin(n/12000)*20;cam.z=Math.cos(n/12000)*20}
+    // Throttle drawing only: simulation/input keep the browser's frame cadence.
+    if(needsDraw||((st==='play'||st==='menu')&&(!lowQuality||n-lastDraw>=1000/30-1))){draw();lastDraw=n;needsDraw=false}
+  }
+  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-
-
