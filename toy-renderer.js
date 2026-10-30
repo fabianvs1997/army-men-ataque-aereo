@@ -30,7 +30,7 @@ void main(){
  float shine=(pow(highlight,56.0)*0.75+pow(highlight,14.0)*0.12)*max(gloss,0.0);
  float rim=pow(1.0-max(dot(n,eyeDirection),0.0),3.0)*0.045*gloss;
  vec3 base=color;
- if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.23)*cos(worldPosition.z*.18);base*=.91+grain*.14+patch*.12;}
+ if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);base*=.86+grain*.20+patch*.24;}
  gl_FragColor=vec4(base*(0.48+0.52*diffuse)+vec3(shine+rim),1.0);
 }`;
 function geometry(kind) {
@@ -137,18 +137,18 @@ class ToyRenderer {
   this.part('box',0,.22,0,7,.05,7,[.34,.39,.29],0,.04);
   for(const side of [-1,1])this.part('box',side*2,.32,0,.35,.04,3,[.84,.80,.58],0,0);
   this.part('box',0,.32,0,2,.04,.35,[.84,.80,.58],0,0);
-  for(const side of [-1,1]){this.part('box',side*200,2.5,0,.6,2.5,200,[.43,.34,.19]);this.part('box',0,2.5,side*200,200,2.5,.6,[.43,.34,.19])}
+  
   const radius=Math.hypot(W,H)/(2*F)+24,visible=o=>Math.hypot(o.x-cam.x,o.z-cam.z)<radius;
   if(world){
    for(const r of world.rocks)if(visible(r)&&!E.some(e=>Math.hypot(e.x-r.x,e.z-r.z)<e.r+5)){
     const y=world.height(r.x,r.z);this.part('sphere',r.x,y+r.s*.45,r.z,r.s,r.s*.65,r.s*.85,[.38,.40,.32],r.x,0);
     this.part('sphere',r.x+2,y+.45,r.z+1,1.3,.6,1,[.28,.42,.17],0,0);
    }
-   for(const prop of world.landmarks)if(visible(prop))this.landmark(prop,world.height(prop.x,prop.z));
+   for(const p of world.yard||[])if(Math.hypot(p.x-cam.x,p.z-cam.z)<radius+Math.max(p.sx,p.sz))this.part(p.kind,p.x,p.y,p.z,p.sx,p.sy,p.sz,p.color,p.yaw,0);
   }
   for(const d of DC){if((scene.allies||[]).some(a=>a.state!=='rescued'&&Math.hypot(a.x-d.x,a.z-d.z)<7)||!visible(d)||(world&&!world.clearOfLandmarks(d.x,d.z,3)))continue;
    this.groundOffset=world?world.height(d.x,d.z):0;
-   if(d.t==='t'){this.part('sphere',d.x,.12,d.z,3,.12,3,[.20,.36,.12]);this.part('box',d.x,2,d.z,.5,2,.5,[.33,.28,.12]);this.part('sphere',d.x,5,d.z,2.7,3.7,2.7,[.18,.42,.12]);this.part('sphere',d.x-.4,7.5,d.z,1.9,2.8,1.9,[.26,.49,.15]);}
+   if(d.t==='shrub'){this.part('sphere',d.x,d.s*.65,d.z,d.s,d.s*.8,d.s*.85,[.24,.37,.12],0,0);this.part('sphere',d.x-d.s*.4,d.s*1.2,d.z,d.s*.65,d.s*.65,d.s*.6,[.32,.44,.15],0,0);}else if(d.t==='t'){this.part('sphere',d.x,.12,d.z,3,.12,3,[.20,.36,.12]);this.part('box',d.x,2,d.z,.5,2,.5,[.33,.28,.12]);this.part('sphere',d.x,5,d.z,2.7,3.7,2.7,[.18,.42,.12]);this.part('sphere',d.x-.4,7.5,d.z,1.9,2.8,1.9,[.26,.49,.15]);}
    else{const color=d.c==='#d9473f'?[.73,.24,.16]:d.c==='#3f7fd9'?[.20,.40,.65]:[.78,.62,.20];this.part('rounded',d.x,d.s/2,d.z,d.s/2,d.s/2,d.s/2,color);for(const side of [-1,1])this.part('sphere',d.x+side*d.s*.22,d.s,d.z,d.s*.16,.3,d.s*.16,color)}
   }
   this.groundOffset=0;
