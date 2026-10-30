@@ -40,3 +40,13 @@ La rotura de juguetes queda pendiente para una entrega funcional posterior.
 - Chromium headless real: entrada file://, inicio/disparo, pausa, ayuda, ajustes,
   continuación, vertical/horizontal y salida/cancelación; sin errores JavaScript.
 - Los cinco pasos manuales completos en iPhone siguen pendientes.
+
+## Evidencia fase 1
+
+- 49 pruebas Node aprobadas; smoke Chromium file:// aprobado.
+- Comparados todos los estilos calculados de menú, ayuda, ajustes y pausa,
+  en 390×844 y 844×390: idénticos antes/después (excepto transformaciones animadas,
+  excluidas del comparador). Sin cambios de JavaScript.
+- GitHub Actions no inició los jobs de la fase 0: cuenta bloqueada por facturación.
+  La etiqueta local v-pre-refactor existe; su publicación por el workflow queda
+  pendiente de desbloquear Actions. No se ha confundido ese fallo con pruebas rojas.
