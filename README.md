@@ -98,7 +98,7 @@ Tres misiones: **Primer rescate** (un campamento, dos soldados), **Dos campament
 
 Los soldados aliados no reciben daño ni participan en el combate. Se otorgan 50 puntos por rescate y 250 por extracción. Tras una derrota, **Reintentar misión** reinicia la misión actual, sus rescates y recursos, conservando solamente la puntuación de las misiones anteriores; no obliga a regresar a la misión 1. Tras la tercera extracción aparece el final de campaña y **Jugar de nuevo** comienza desde cero. El progreso no se guarda al recargar.
 
-La ametralladora ajusta su ángulo vertical hacia un enemigo situado delante; el rumbo horizontal sigue siendo el del helicóptero. Las balas y los misiles comprueban el recorrido entre fotogramas contra volúmenes de enemigos para evitar saltarse objetivos pequeños; una bala golpea al primer enemigo intersectado. Los impactos muestran un destello y las explosiones de misil afectan a enemigos cercanos en 3D. Los objetos decorativos siguen sin bloquear proyectiles o movimiento.
+La ametralladora ajusta su dirección hacia enemigos dentro de un pequeño cono frontal (ver asistencia de apuntado al final). Las balas y los misiles comprueban el recorrido entre fotogramas contra volúmenes de enemigos para evitar saltarse objetivos pequeños; una bala golpea al primer enemigo intersectado. Los impactos muestran un destello y las explosiones de misil afectan a enemigos cercanos en 3D. Los objetos decorativos siguen sin bloquear proyectiles o movimiento.
 
 Los soldados, marcadores y helipuerto funcionan en WebGL y en el respaldo Canvas 2D. El HUD muestra nombre de misión, instrucciones, progreso de recogida y conteos. Se elimina decoración pegada a los soldados para mantenerlos visibles.
 
@@ -132,3 +132,12 @@ El escenario compartido por las tres misiones ahora representa un jardín domés
 Se reserva espacio alrededor de los objetos grandes y delante de la terraza para la aparición inicial de enemigos. Los campamentos y rescates existentes mantienen sus coordenadas. Es una ambientación estilizada, no fotorrealista: no incorpora colisiones con mobiliario, sombras solares calculadas ni un patio diferente por misión. La ordenación de caras del respaldo 2D es aproximada.
 
 Validación: 41 pruebas de lógica, geometría, posiciones y renderizadores simulados. Además, se generaron e inspeccionaron vistas del centro del jardín y de la fachada con el renderizador Canvas real de `@napi-rs/canvas` (solo herramienta de revisión, sin dependencia nueva del juego). Pendiente comprobar el resultado WebGL y el rendimiento en Safari/iPhone.
+
+
+## Asistencia de apuntado de ametralladora
+
+Al mantener Fuego, cada bala busca al enemigo vivo más cercano dentro de **12 grados a cada lado del morro**, entre 4 y 130 unidades de distancia horizontal. Corrige dirección horizontal y altura desde la boca del cañón hacia el centro del enemigo. El helicóptero conserva su orientación; fuera del cono se mantiene el disparo frontal normal.
+
+La asistencia se calcula al disparar: las balas no persiguen objetivos ni anticipan su movimiento, por lo que un enemigo móvil puede esquivarlas. No activa Fuego automáticamente ni cambia los misiles. Funciona igual con teclado, pantalla táctil, WebGL y Canvas.
+
+Validación: 44 pruebas aprobadas, incluidos ambos lados del cono, exclusión por ángulo/distancia, selección del enemigo vivo más cercano, convergencia desde ambos cañones e impacto real de la simulación sobre infantería desplazada lateralmente. Pendiente ajustar la sensación jugando en iPhone.

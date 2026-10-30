@@ -64,7 +64,7 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 <canvas id="c" aria-label="Juego de helicópteros de juguete en 3D"></canvas>
 <div id="ov">
 <h1 id="ti">ARMY MEN<span>Ataque aéreo 3D</span></h1>
-<p id="tx">Arrastra para desplazarte en la dirección de la pantalla. Al soltar, el helicóptero se mantiene en posición. Mantén Fuego para disparar y lanza misiles al objetivo. Libera a los soldados destruyendo las bases beige. Quédate quieto junto a ellos 1.5 s para rescatarlos y vuelve al helipuerto. En teclado: WASD o flechas, Espacio para disparar, M para misil y P para pausar.</p>
+<p id="tx">Arrastra para desplazarte en la dirección de la pantalla. Al soltar, el helicóptero se mantiene en posición. Mantén Fuego: la ametralladora ayuda a apuntar a enemigos ligeramente a los lados del morro. Lanza misiles al objetivo. Libera a los soldados destruyendo las bases beige. Quédate quieto junto a ellos 1.5 s para rescatarlos y vuelve al helipuerto. En teclado: WASD o flechas, Espacio para disparar, M para misil y P para pausar.</p>
 <button id="go">Despegar</button>
 </div>
 <div id="stick" aria-hidden="true"><i id="knob"></i></div>
@@ -166,6 +166,20 @@ qualityLabel();
 $('quality').onclick=()=>{lowQuality=!lowQuality;savePreference('quality',lowQuality?'low':'detail');qualityLabel();rs()};
 function setText(id,value){if($(id).textContent!==value)$(id).textContent=value}
 $('go').onclick=()=>{if(st==='paused'){resumeGame();return}audio();humOn();buzz(20);tone(300,700,.25,'triangle',.25);const nx=st==='win',retry=st==='over';if(nx)checkpoint=P.sc;else if(!retry)checkpoint=0;start(nx?mis+1:retry?mis:1,!nx);$('ov').style.display='none';$('hud').style.display='block'};
+// Aim assist is chosen at trigger time; bullets never steer after launch.
+const GUN_ASSIST_ANGLE=12*Math.PI/180,GUN_ASSIST_RANGE=130;
+function gunVelocity(player,muzzle,enemies){
+ const fx=Math.sin(player.yaw),fz=Math.cos(player.yaw);let target=null,nearest=GUN_ASSIST_RANGE;
+ for(const e of enemies){
+  const dx=e.x-player.x,dz=e.z-player.z,d=Math.hypot(dx,dz);
+  if(e.dead||e.hp<=0||d<4||d>nearest)continue;
+  if((dx*fx+dz*fz)/d>=Math.cos(GUN_ASSIST_ANGLE)){target=e;nearest=d}
+ }
+ if(!target)return {vx:fx*130,vy:-16,vz:fz*130};
+ const dx=target.x-muzzle.x,dz=target.z-muzzle.z,d=Math.hypot(dx,dz);
+ const targetY=target.y+(target.k==='heli'?0:target.k==='base'?3:1.5);
+ return {vx:dx/d*130,vy:(targetY-muzzle.y)/Math.max(.01,d/130),vz:dz/d*130};
+}
 /* actualización */
 function upd(dt){
   if(st!=='play')return;
@@ -178,9 +192,12 @@ function upd(dt){
   if(magnitude>.08){const length=Math.hypot(sx,sy),right=sx/length,up=sy/length;const vx=-right*Math.cos(cam.yaw)+up*Math.sin(cam.yaw),vz=right*Math.sin(cam.yaw)+up*Math.cos(cam.yaw);P.yaw=Math.atan2(vx,vz);P.x=clamp(P.x+vx*28*magnitude*dt,-190,190);P.z=clamp(P.z+vz*28*magnitude*dt,-190,190)}
   const fx=Math.sin(P.yaw),fz=Math.cos(P.yaw);P.y=8+Math.sin(t*3)*.3;P.bank=0;
   const follow=1-Math.exp(-6*dt);cam.x+=(P.x-cam.x)*follow;cam.z+=(P.z-cam.z)*follow;
-  if((fire||keys[' '])&&P.cd<=0){P.cd=.09;const s=(P.gs=!P.gs)?1.2:-1.2;let aim=null,range=130;for(const e of E){const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz);if(!e.dead&&d<range&&d>0&&(dx*fx+dz*fz)/d>.97){aim=e;range=d}}
-    const vy=aim?((aim.y+(aim.k==='heli'?0:1.8))-(P.y-.3))/Math.max(.1,range/130):-16;
-    mk(BL,P.x-fz*s+fx*2,P.y-.3,P.z+fx*s+fz*2,fx*130,vy,fz*130,1.1);sfx.shot()}
+  if((fire||keys[' '])&&P.cd<=0){
+    P.cd=.09;const side=(P.gs=!P.gs)?1.2:-1.2;
+    const muzzle={x:P.x-fz*side+fx*2,y:P.y-.3,z:P.z+fx*side+fz*2};
+    const velocity=gunVelocity(P,muzzle,E);
+    mk(BL,muzzle.x,muzzle.y,muzzle.z,velocity.vx,velocity.vy,velocity.vz,1.1);sfx.shot();
+  }
   if(mAsk){mAsk=false;if(P.mi>0){P.mi--;let tg=null,dm=130;for(const e of E){if(e.dead)continue;const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz);if(d<dm&&(dx*fx+dz*fz)>.5*d){dm=d;tg=e}}
     const o=mk(MS,P.x+fx*2,P.y-1,P.z+fz*2,fx*75,0,fz*75,3);o.tg=tg;sfx.miss()}}
   hs-=dt;if(hs<=0&&airLeft>0&&bd<tb){hs=25;airLeft--;if(E.filter(e=>e.k==='heli'&&!e.dead).length<Math.min(1+mis,4)){const a=R(0,6.28);spawnE('heli',clamp(P.x+Math.sin(a)*110,-185,185),clamp(P.z+Math.cos(a)*110,-185,185))}}
