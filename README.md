@@ -141,3 +141,14 @@ Al mantener Fuego, cada bala busca al enemigo vivo más cercano dentro de **12 g
 La asistencia se calcula al disparar: las balas no persiguen objetivos ni anticipan su movimiento, por lo que un enemigo móvil puede esquivarlas. No activa Fuego automáticamente ni cambia los misiles. Funciona igual con teclado, pantalla táctil, WebGL y Canvas.
 
 Validación: 44 pruebas aprobadas, incluidos ambos lados del cono, exclusión por ángulo/distancia, selección del enemigo vivo más cercano, convergencia desde ambos cañones e impacto real de la simulación sobre infantería desplazada lateralmente. Pendiente ajustar la sensación jugando en iPhone.
+
+
+## Menú principal
+
+La entrada muestra un panel de estilo militar con **Iniciar campaña**, **Cómo jugar**, **Ajustes** y **Acerca del juego**. La guía explica movimiento, asistencia de apuntado, rescates, extracción y teclado. Ajustes permite cambiar sonido y detalle/ahorro antes de despegar; se sincroniza con los botones de la partida y conserva las preferencias existentes.
+
+En pausa y resultados se puede consultar la guía o ajustar opciones sin perder el estado. **Continuar**, **Reintentar misión** y **Siguiente misión** mantienen su comportamiento. Volver al menú durante una campaña solicita confirmar la pérdida de progreso; cancelar conserva la partida. Salir después del final de campaña vuelve directamente al menú.
+
+Esc pausa durante el juego, regresa desde un panel secundario o continúa desde la pantalla de pausa. P no reanuda accidentalmente mientras se consulta un panel. Los botones admiten navegación con teclado y los paneles largos permiten desplazamiento táctil. No se añade guardado de campaña ni selector de niveles.
+
+Validación: 49 pruebas automatizadas aprobadas, incluyendo navegación, inicio, ajustes sincronizados, conservación de misión pausada, cancelación/confirmación de salida, resultados y teclado. No se realizó comprobación visual en navegador; pendiente revisar distribución y desplazamiento en Safari/iPhone, especialmente en horizontal.
