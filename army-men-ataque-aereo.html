@@ -9,7 +9,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2b17;--panel:rgba(14,22,10,.88)}}
 :root[data-theme="dark"]{--bg:#1d2b17;--panel:rgba(14,22,10,.88)}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;overflow:hidden;touch-action:auto;-webkit-user-select:none;user-select:none}
 #wrap{position:relative;width:100%;height:100%}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 #ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:var(--panel)}
@@ -56,16 +56,59 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 #knob{position:absolute;left:34px;top:34px;width:40px;height:40px;border-radius:50%;background:#e6edbb88;border:1px solid #fff9}
 #ov{box-sizing:border-box;overflow:auto;padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
 @media(max-height:500px){#ov{justify-content:flex-start;gap:8px}h1{font-size:32px}#tx{font-size:13px;max-width:65ch}#inf{left:140px;right:140px;top:10px}#objective{top:46px;left:145px;right:145px;font-size:11px}#pause,#sound{top:44px}#cmp{top:92px}#fu{width:76px;height:76px;bottom:18px}#mi{right:104px;bottom:12px;width:60px;height:60px}}
+/* Field-case menu; all artwork uses native CSS. */
+#ov{justify-content:flex-start;background:radial-gradient(ellipse at 15% 15%,#57713a66,transparent 55%),linear-gradient(145deg,#0c1c18ee,#17291ae8);touch-action:pan-y}
+.menu-card{width:min(100%,480px);margin:auto;flex-shrink:0;box-sizing:border-box;padding:26px 22px 20px;border:1px solid #b6c38b55;border-radius:20px;background:linear-gradient(135deg,#263c2cf2,#14291ff5);box-shadow:0 20px 70px #0008,inset 0 1px #e1edbd33;text-align:left}
+.menu-kicker{color:#bdcba5;font-size:10px;letter-spacing:3px;font-weight:700;margin-bottom:16px;text-transform:uppercase}
+.menu-card h1{font-size:clamp(35px,10vw,54px);letter-spacing:1px;line-height:1}.menu-card h1 span{margin-top:8px}
+#tx{max-width:none;font-size:14px;color:#d3dcc3;margin:18px 0;line-height:1.6}
+.menu-card button{width:100%;min-height:48px;font-size:15px;text-align:left;padding:12px 16px;line-height:1.3}
+#go{margin:2px 0 12px;background:linear-gradient(115deg,#f4d56a,#d5af3e);box-shadow:0 4px #8b712a;color:#202d1b;font-size:17px}
+.menu-nav{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.menu-card .secondary{background:#0f221b99;border:1px solid #aec18b44;color:#e1e8d3;box-shadow:none}
+.menu-card .secondary:hover{background:#34503a}#menuExit,#back{margin-top:12px}#menuExit{color:#d6c7a8}
+.menu-footer{margin-top:20px;padding-top:13px;border-top:1px solid #9caf7f33;color:#9bad88;font-size:11px;line-height:1.5}
+.menu-pane{display:none}.menu-pane h2{font-size:15px;color:#e6cf76;margin:16px 0 6px}.menu-pane p{font-size:13px;color:#ced8bf;max-width:none;line-height:1.65}
+.menu-pane .setting{margin-bottom:10px}.briefing{display:grid;grid-template-columns:24px 1fr;gap:8px;margin:12px 0}.briefing b{color:#e6cf76}.briefing p{margin:0}
+#confirmExit{background:#b24e36;color:#fff;margin-top:16px;box-shadow:0 3px #6b3025}
+@media(max-height:500px){.menu-card{width:min(100%,600px);padding:18px}.menu-card h1{font-size:32px}.menu-kicker{margin-bottom:10px}#tx{margin:12px 0}.menu-footer{margin-top:12px}}
 </style>
 </head>
 <body>
 <div id="wrap">
 <canvas id="world3d" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;display:none"></canvas>
 <canvas id="c" aria-label="Juego de helicópteros de juguete en 3D"></canvas>
-<div id="ov">
-<h1 id="ti">ARMY MEN<span>Ataque aéreo 3D</span></h1>
-<p id="tx">Arrastra para desplazarte en la dirección de la pantalla. Al soltar, el helicóptero se mantiene en posición. Mantén Fuego: la ametralladora ayuda a apuntar a enemigos ligeramente a los lados del morro. Lanza misiles al objetivo. Libera a los soldados destruyendo las bases beige. Quédate quieto junto a ellos 1.5 s para rescatarlos y vuelve al helipuerto. En teclado: WASD o flechas, Espacio para disparar, M para misil y P para pausar.</p>
-<button id="go">Despegar</button>
+<div id="ov" role="region" aria-labelledby="ti">
+<section class="menu-card">
+<div class="menu-kicker">Operación patio trasero</div>
+<h1 id="ti" tabindex="-1">ARMY MEN<span>Ataque aéreo</span></h1>
+<p id="tx">Un pequeño helicóptero. Un gran rescate. Libera a tu escuadrón en una campaña de tres misiones.</p>
+<button id="go">Iniciar campaña →</button>
+<nav id="menuNav" class="menu-nav" aria-label="Menú del juego">
+<button id="menuHelp" class="secondary">Cómo jugar</button>
+<button id="menuSettings" class="secondary">Ajustes</button>
+<button id="menuCredits" class="secondary">Acerca del juego</button>
+</nav>
+<div id="helpPane" class="menu-pane">
+<div class="briefing"><b>01</b><p><strong>Despega.</strong> Arrastra el escenario para moverte. Suelta el joystick para mantener la posición.</p></div>
+<div class="briefing"><b>02</b><p><strong>Libera.</strong> Destruye las bases beige. Mantén Fuego; la ametralladora ayuda a apuntar dentro de 12° a cada lado del morro. Usa Misil contra objetivos resistentes.</p></div>
+<div class="briefing"><b>03</b><p><strong>Rescata.</strong> Sigue la flecha. Quédate junto a cada soldado verde 1.5 s sin moverte, disparar ni recibir daño.</p></div>
+<div class="briefing"><b>04</b><p><strong>Regresa.</strong> Con todos a bordo, mantente 2 s en el helipuerto H para completar la misión.</p></div>
+<h2>Controles de teclado</h2><p>WASD / flechas: movimiento · Espacio: fuego · M / Mayús: misil · P / Esc: pausa.</p>
+<h2>Tu campaña</h2><p>Tres misiones con 2, 4 y 6 rescates. Reintentar conserva los puntos de las misiones anteriores. El progreso se pierde al recargar o abandonar la campaña.</p>
+</div>
+<div id="settingsPane" class="menu-pane">
+<button id="menuSound" class="secondary setting" aria-pressed="false">Silenciar</button>
+<button id="menuQuality" class="secondary setting" aria-pressed="false">Gráficos: detalle</button>
+<p>Detalle ofrece mayor resolución. Ahorro reduce la resolución y limita el dibujo a unos 30 cuadros por segundo para aligerar la carga.</p>
+<h2>Preferencias</h2><p>Sonido y gráficos se recuerdan en este navegador cuando permite guardarlos. Puedes cambiarlos también durante la partida.</p>
+</div>
+<div id="creditsPane" class="menu-pane"><h2>Un patio a escala de juguete</h2><p>Pilota un helicóptero de plástico entre maceteros, senderos y muebles de jardín. Combate, recoge a tus soldados y completa la extracción.</p><h2>Proyecto</h2><p>Desarrollado en el repositorio de fabianvs1997. Inspirado en los clásicos de helicópteros y soldados de juguete.</p></div>
+<div id="confirmPane" class="menu-pane"><p>Perderás el progreso de esta campaña. La próxima partida comenzará desde la misión 1. Tus preferencias de sonido y gráficos se conservarán.</p><button id="confirmExit">Abandonar campaña</button></div>
+<button id="menuExit" class="secondary" style="display:none">Volver al menú principal</button>
+<button id="back" class="secondary" style="display:none">← Volver</button>
+<div class="menu-footer">Juguetes de plástico. Misiones de rescate.<br>Campaña para un jugador · Sin guardado de progreso</div>
+</section>
 </div>
 <div id="stick" aria-hidden="true"><i id="knob"></i></div>
 <div id="hud"><button id="quality" aria-pressed="false">Gráficos: detalle</button><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
@@ -97,7 +140,7 @@ function humOn(){if(!AC||hum||muted)return;const o=AC.createOscillator(),l=AC.cr
 function humOff(){if(!hum)return;try{hum.o.stop();hum.l.stop()}catch(e){}for(const node of Object.values(hum))node.disconnect();hum=null}
 function clearInput(){for(const key in keys)delete keys[key];fire=false;mAsk=false;drag=null;firePointer=null;$('stick').style.display='none'}
 function pauseGame(){if(st!=='play')return;clearInput();st='paused';humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{});show('Partida en pausa','Tu misión continuará desde el mismo punto.','Continuar')}
-function resumeGame(){clearInput();st='play';audio();humOn();$('ov').style.display='none';$('hud').style.display='block'}
+function resumeGame(){clearInput();st='play';audio();humOn();$('ov').style.display='none';$('hud').style.display='block';cv.tabIndex=0;cv.focus?.()}
 addEventListener('blur',pauseGame);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame()});
 /* cámara y proyección 3D (canvas 2D, sin WebGL) */
@@ -121,7 +164,7 @@ const ell=(x,y,rx,ry,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(x,y,Math.m
 const rc=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
 const tri=(a,b,c,d,e,f,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.lineTo(e,f);ctx.fill()};
 /* estado */
-let mission=null,checkpoint=0,airLeft=0;
+let mission=null,checkpoint=0,airLeft=0,overlayPage='main';
 let st='menu',P,E=[],BL=[],EB=[],MS=[],FX=[],PK=[],DC=[],mis=1,t=0,rot=0,fire=false,mAsk=false,shk=0,bd=0,tb=0,hs=3,drag=null,firePointer=null;
 const keys={};
 const groundAt=(x,z)=>typeof ToyWorld==='undefined'?0:ToyWorld.height(x,z);
@@ -142,10 +185,33 @@ function start(n,full){
 function hit(e,d){e.hp-=d;e.fl=.08;if(e.hp<=0)kill(e)}
 function kill(e){if(e.dead)return;e.dead=1;boom(e.x,e.y+1,e.z,e.k==='base'?9:e.k==='heli'?5:4);sfx.boom();buzz(30);P.sc+=e.p;if(e.k==='base'){bd++;mission.release(e.camp)}
   if(e.k!=='base'&&Math.random()<.25)PK.push({x:e.x,z:e.z,ty:Math.random()<.5?'a':'m'})}
-function show(ti,tx,bt){needsDraw=true;if(sil)sil.pause();$('ti').innerHTML=ti;$('tx').textContent=tx;$('go').textContent=bt;$('ov').style.display='flex';$('hud').style.display='none'}
+function menuLayout(page){
+ overlayPage=page;$('ov').scrollTop=0;const main=page==='main'||page==='result';
+ for(const [id,name] of [['helpPane','help'],['settingsPane','settings'],['creditsPane','credits'],['confirmPane','confirm']])$(id).style.display=page===name?'block':'none';
+ $('go').style.display=main?'block':'none';$('menuNav').style.display=main?'grid':'none';$('back').style.display=main?'none':'block';$('menuExit').style.display=page==='result'?'block':'none';
+ $('ov').style.display='flex';$('hud').style.display='none';cv.tabIndex=-1;needsDraw=true;
+}
+function show(ti,tx,bt){if(sil)sil.pause();$('ti').textContent=ti;$('tx').textContent=tx;$('go').textContent=bt;menuLayout('result');$('go').focus?.()}
+function mainMenu(){
+ clearInput();humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{});
+ st='menu';P=null;mission=null;E=[];BL=[];EB=[];MS=[];FX=[];PK=[];checkpoint=0;mis=1;shk=0;
+ $('ti').innerHTML='ARMY MEN<span>Ataque aéreo</span>';$('tx').textContent='Un pequeño helicóptero. Un gran rescate. Libera a tu escuadrón en una campaña de tres misiones.';$('go').textContent='Iniciar campaña →';menuLayout('main');$('go').focus?.();
+}
+function menuPage(page){
+ const titles={help:'Cómo jugar',settings:'Ajustes',credits:'Acerca del juego',confirm:'¿Abandonar campaña?'};
+ const subtitles={help:'Tu guía de vuelo y rescate.',settings:'Prepara el juego a tu manera.',credits:'Una batalla pequeña en un mundo grande.',confirm:'Esta acción reinicia tu progreso.'};
+ $('ti').textContent=titles[page];$('tx').textContent=subtitles[page];menuLayout(page);$(page==='settings'?'menuSound':'ti').focus?.();
+}
+function menuBack(){
+ if(st==='menu'){mainMenu();return}
+ if(st==='paused')show('Partida en pausa','Tu misión continuará desde el mismo punto.','Continuar');
+ else if(st==='over')show('Misión fallida','Reintenta '+mission.config.name+'. Los rescates de esta misión se reinician.','Reintentar misión');
+ else show(st==='campaign'?'Campaña completada':'Misión '+mis+' cumplida','Rescatados: '+mission.rescued+'. Puntos: '+P.sc+'.',st==='campaign'?'Jugar de nuevo':'Siguiente misión');
+}
+
 function hurt(){if(st!=='play'||P.inv>0)return;P.arm--;P.inv=.3;shk=.3;sfx.hurt();buzz(60);if(P.arm<=0){st='over';humOff();sfx.over();buzz(300);clearInput();show('Misión fallida','Reintenta '+mission.config.name+'. Los rescates de esta misión se reinician.','Reintentar misión')}}
 /* entrada */
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if([' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k))e.preventDefault();if(k==='p'&&!e.repeat){if(st==='play')pauseGame();else if(st==='paused')resumeGame();return}if(st!=='play')return;keys[k]=1;if((k==='m'||k==='shift')&&!e.repeat)mAsk=true});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(st==='play'&&[' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k))e.preventDefault();if(k==='escape'&&!e.repeat){e.preventDefault();if(st==='play')pauseGame();else if(overlayPage!=='main'&&overlayPage!=='result')menuBack();else if(st==='paused')resumeGame();return}if(k==='p'&&!e.repeat){if(st==='play')pauseGame();else if(st==='paused'&&overlayPage==='result')resumeGame();return}if(st!=='play')return;keys[k]=1;if((k==='m'||k==='shift')&&!e.repeat)mAsk=true});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0});
 addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{audio();if(st!=='play'||drag)return;humOn();drag={id:e.pointerId,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);updateStick()});
@@ -158,14 +224,23 @@ fu.addEventListener('pointerdown',e=>{if(st!=='play'||firePointer!==null)return;
 for(const ev of['pointerup','pointercancel','lostpointercapture'])fu.addEventListener(ev,e=>{if(e.pointerId===firePointer){fire=false;firePointer=null}});
 mi.addEventListener('pointerdown',()=>{if(st!=='play')return;audio();mAsk=true});
 $('pause').onclick=pauseGame;
-function soundLabel(){$('sound').textContent=muted?'Activar sonido':'Silenciar';$('sound').setAttribute('aria-pressed',String(muted))}
+function soundLabel(){for(const id of ['sound','menuSound']){$(id).textContent=muted?'Activar sonido':'Silenciar';$(id).setAttribute('aria-pressed',String(muted))}}
 soundLabel();
-$('sound').onclick=()=>{muted=!muted;savePreference('muted',String(muted));soundLabel();if(muted){humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{})}else{audio();if(st==='play')humOn()}};
-function qualityLabel(){$('quality').textContent=lowQuality?'Gráficos: ahorro':'Gráficos: detalle';$('quality').setAttribute('aria-pressed',String(lowQuality))}
+$('sound').onclick=()=>{muted=!muted;savePreference('muted',String(muted));soundLabel();if(muted){humOff();if(sil)sil.pause();if(AC)AC.suspend().catch(()=>{})}else if(st==='play'){audio();humOn()}};
+function qualityLabel(){for(const id of ['quality','menuQuality']){$(id).textContent=lowQuality?'Gráficos: ahorro':'Gráficos: detalle';$(id).setAttribute('aria-pressed',String(lowQuality))}}
 qualityLabel();
 $('quality').onclick=()=>{lowQuality=!lowQuality;savePreference('quality',lowQuality?'low':'detail');qualityLabel();rs()};
 function setText(id,value){if($(id).textContent!==value)$(id).textContent=value}
-$('go').onclick=()=>{if(st==='paused'){resumeGame();return}audio();humOn();buzz(20);tone(300,700,.25,'triangle',.25);const nx=st==='win',retry=st==='over';if(nx)checkpoint=P.sc;else if(!retry)checkpoint=0;start(nx?mis+1:retry?mis:1,!nx);$('ov').style.display='none';$('hud').style.display='block'};
+$('go').onclick=()=>{if(overlayPage!=='main'&&overlayPage!=='result')return;if(st==='paused'){resumeGame();return}audio();humOn();buzz(20);tone(300,700,.25,'triangle',.25);const nx=st==='win',retry=st==='over';if(nx)checkpoint=P.sc;else if(!retry)checkpoint=0;start(nx?mis+1:retry?mis:1,!nx);$('ov').style.display='none';$('hud').style.display='block';cv.tabIndex=0;cv.focus?.()};
+$('menuHelp').onclick=()=>menuPage('help');
+$('menuSettings').onclick=()=>menuPage('settings');
+$('menuCredits').onclick=()=>menuPage('credits');
+$('menuSound').onclick=()=>$('sound').onclick();
+$('menuQuality').onclick=()=>$('quality').onclick();
+$('back').onclick=menuBack;
+$('menuExit').onclick=()=>st==='campaign'?mainMenu():menuPage('confirm');
+$('confirmExit').onclick=()=>{if(overlayPage==='confirm')mainMenu()};
+cv.tabIndex=-1;
 // Aim assist is chosen at trigger time; bullets never steer after launch.
 const GUN_ASSIST_ANGLE=12*Math.PI/180,GUN_ASSIST_RANGE=130;
 function gunVelocity(player,muzzle,enemies){
