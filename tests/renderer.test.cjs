@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-require('../toy-world.js');
-require('../toy-renderer.js');
+require('../src/toy-world.js');
+require('../src/toy-renderer.js');
 const Renderer=globalThis.ToyRenderer;
 function fixture(options={}){
  const listeners={},counts={draw:0,compile:0,viewport:[]};
@@ -34,7 +34,7 @@ test('lost WebGL stops drawing and restoration rebuilds buffers/program',()=>{
 test('unavailable WebGL and shader/link failures permit caller fallback',()=>{for(const option of ['noWebGL','failShader','failLink']){const f=fixture({[option]:true});assert.throws(()=>new Renderer(f.canvas,()=>{},()=>{}))}});
 test('objects outside view are culled',()=>{const f=fixture(),r=new Renderer(f.canvas,()=>{},()=>{}),s=scene();r.render(s);const near=r.drawCalls;s.DC.forEach(d=>d.x=2000);s.E.forEach(d=>d.x=2000);r.render(s);assert.ok(r.drawCalls<near)});
 
-test('both shaders declare matching varying precision for WebGL 1',()=>{const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'../toy-renderer.js'),'utf8');assert.equal((source.match(/varying mediump vec3 surfaceNormal;/g)||[]).length,2)});
+test('both shaders declare matching varying precision for WebGL 1',()=>{const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'../src/toy-renderer.js'),'utf8');assert.equal((source.match(/varying mediump vec3 surfaceNormal;/g)||[]).length,2)});
 test('legacy WebGL alias is attempted if the standard context is unavailable',()=>{const f=fixture();const names=[];f.canvas.getContext=name=>{names.push(name);return name==='experimental-webgl'?f.gl:null};const r=new Renderer(f.canvas,()=>{},()=>{});assert.deepEqual(names,['webgl','experimental-webgl']);assert.equal(r.render(scene()),true)});
 
 test('economy mode reduces pixel dimensions without changing camera scale',()=>{const old=globalThis.devicePixelRatio;try{globalThis.devicePixelRatio=3;const f=fixture(),r=new Renderer(f.canvas,()=>{},()=>{}),s=scene();r.render(s);assert.equal(f.canvas.width,Math.round(s.W*1.75));s.pixelRatio=1;r.render(s);assert.equal(f.canvas.width,s.W);assert.equal(f.canvas.height,s.H)}finally{globalThis.devicePixelRatio=old}});

@@ -1,4 +1,4 @@
-const {test}=require('node:test');const assert=require('node:assert/strict');require('../toy-missions.js');require('../toy-world.js');
+const {test}=require('node:test');const assert=require('node:assert/strict');require('../src/toy-missions.js');require('../src/toy-world.js');
 const {Mission,configs,segmentHit}=globalThis.ToyMissions;
 const advance=(m,p,seconds,controls={})=>{const events=[];for(let i=0;i<seconds*20;i++){const e=m.update(.05,p,controls);if(e)events.push(e)}return events};
 test('every mission has reachable camps and rescue points clear of props',()=>{configs.forEach((c,i)=>{const m=new Mission(i+1);for(const [x,z] of c.bases)assert.ok(ToyWorld.clearOfLandmarks(x,z,10));for(const a of m.allies){assert.ok(Math.abs(a.x)<190&&Math.abs(a.z)<190);assert.ok(ToyWorld.clearOfLandmarks(a.x,a.z,3))}})});

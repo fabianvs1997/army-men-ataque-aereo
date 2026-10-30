@@ -3,26 +3,26 @@
   --fg: #f4f1dc;
   --accent: #e8c547;
   --ink: #1e2a14;
-  --panel: rgba(30,42,20,.84);
+  --panel: rgba(30, 42, 20, 0.84);
   box-sizing: border-box;
   padding: 0;
 }
 
-@media (prefers-color-scheme:dark) {
-  :root:not([data-theme="light"]) {
-  --bg: #1d2b17;
-  --panel: rgba(14,22,10,.88);
-}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #1d2b17;
+    --panel: rgba(14, 22, 10, 0.88);
+  }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   --bg: #1d2b17;
-  --panel: rgba(14,22,10,.88);
+  --panel: rgba(14, 22, 10, 0.88);
 }
 
 html {
   height: 100%;
-  scroll-padding-top: env(safe-area-inset-top,0px);
+  scroll-padding-top: env(safe-area-inset-top, 0px);
 }
 
 body {
@@ -30,7 +30,7 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font-family: "Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
   touch-action: auto;
   -webkit-user-select: none;
@@ -46,7 +46,7 @@ canvas {
 
 h1 span {
   display: block;
-  font-size: .55em;
+  font-size: 0.55em;
   color: var(--fg);
   margin-top: 6px;
 }
@@ -86,7 +86,7 @@ button:focus-visible {
   left: 12px;
   bottom: 6px;
   font-size: 12px;
-  opacity: .85;
+  opacity: 0.85;
 }
 
 #mi {
@@ -98,20 +98,22 @@ button:focus-visible {
 
 h1 {
   margin: 0;
-  font-family: Impact,"Arial Narrow Bold","Arial Black",sans-serif;
+  font-family: Impact, 'Arial Narrow Bold', 'Arial Black', sans-serif;
   font-weight: 400;
-  font-size: clamp(40px,12vw,64px);
-  line-height: .95;
+  font-size: clamp(40px, 12vw, 64px);
+  line-height: 0.95;
   color: var(--accent);
   letter-spacing: 2px;
-  text-shadow: 0 3px 0 #182519,0 10px 35px #0008;
+  text-shadow:
+    0 3px 0 #182519,
+    0 10px 35px #0008;
 }
 
 #ai {
   display: block;
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg,#d69742,#e5dc83);
+  background: linear-gradient(90deg, #d69742, #e5dc83);
 }
 
 .b {
@@ -123,7 +125,9 @@ h1 {
   font-size: 15px;
   touch-action: none;
   border: 2px solid #ffffff45;
-  box-shadow: 0 5px 0 #14231c,0 8px 24px #0005;
+  box-shadow:
+    0 5px 0 #14231c,
+    0 8px 24px #0005;
 }
 
 #fu {
@@ -132,14 +136,14 @@ h1 {
   width: 92px;
   height: 92px;
   color: #fff;
-  background: radial-gradient(circle at 35% 25%,#f47550,#a6302e);
+  background: radial-gradient(circle at 35% 25%, #f47550, #a6302e);
 }
 
 /* Separate mobile HUD rows: health/mode, mission, then actions. */
 
 #arm {
   position: absolute;
-  background: rgba(0,0,0,.45);
+  background: rgba(0, 0, 0, 0.45);
   border-radius: 7px;
   overflow: hidden;
   border: 2px solid #e7e9cc88;
@@ -157,7 +161,7 @@ h1 {
   background: #101f22bb;
   border: 1px solid #d8e4b330;
   border-radius: 10px;
-  letter-spacing: .4px;
+  letter-spacing: 0.4px;
   top: 36px;
   left: 12px;
   right: 12px;
@@ -222,7 +226,8 @@ h1 {
   pointer-events: none;
   display: none;
   text-shadow: 0 2px 0 var(--ink);
-  inset: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
 #quality {
@@ -292,42 +297,43 @@ h1 {
   border: 1px solid #fff9;
 }
 
-@media(max-height:500px) {
+@media (max-height: 500px) {
   h1 {
-  font-size: 32px;
-}
+    font-size: 32px;
+  }
   #tx {
-  font-size: 13px;
-  max-width: 65ch;
-}
+    font-size: 13px;
+    max-width: 65ch;
+  }
   #inf {
-  left: 140px;
-  right: 140px;
-  top: 10px;
-}
+    left: 140px;
+    right: 140px;
+    top: 10px;
+  }
   #objective {
-  top: 46px;
-  left: 145px;
-  right: 145px;
-  font-size: 11px;
-}
-  #pause,#sound {
-  top: 44px;
-}
+    top: 46px;
+    left: 145px;
+    right: 145px;
+    font-size: 11px;
+  }
+  #pause,
+  #sound {
+    top: 44px;
+  }
   #cmp {
-  top: 92px;
-}
+    top: 92px;
+  }
   #fu {
-  width: 76px;
-  height: 76px;
-  bottom: 18px;
-}
+    width: 76px;
+    height: 76px;
+    bottom: 18px;
+  }
   #mi {
-  right: 104px;
-  bottom: 12px;
-  width: 60px;
-  height: 60px;
-}
+    right: 104px;
+    bottom: 12px;
+    width: 60px;
+    height: 60px;
+  }
 }
 
 /* Field-case menu; all artwork uses native CSS. */
@@ -343,22 +349,27 @@ h1 {
   backdrop-filter: blur(8px);
   box-sizing: border-box;
   overflow: auto;
-  padding: max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));
+  padding: max(20px, env(safe-area-inset-top)) 20px
+    max(20px, env(safe-area-inset-bottom));
   justify-content: flex-start;
-  background: radial-gradient(ellipse at 15% 15%,#57713a66,transparent 55%),linear-gradient(145deg,#0c1c18ee,#17291ae8);
+  background:
+    radial-gradient(ellipse at 15% 15%, #57713a66, transparent 55%),
+    linear-gradient(145deg, #0c1c18ee, #17291ae8);
   touch-action: pan-y;
 }
 
 .menu-card {
-  width: min(100%,480px);
+  width: min(100%, 480px);
   margin: auto;
   flex-shrink: 0;
   box-sizing: border-box;
   padding: 26px 22px 20px;
   border: 1px solid #b6c38b55;
   border-radius: 20px;
-  background: linear-gradient(135deg,#263c2cf2,#14291ff5);
-  box-shadow: 0 20px 70px #0008,inset 0 1px #e1edbd33;
+  background: linear-gradient(135deg, #263c2cf2, #14291ff5);
+  box-shadow:
+    0 20px 70px #0008,
+    inset 0 1px #e1edbd33;
   text-align: left;
 }
 
@@ -372,7 +383,7 @@ h1 {
 }
 
 .menu-card h1 {
-  font-size: clamp(35px,10vw,54px);
+  font-size: clamp(35px, 10vw, 54px);
   letter-spacing: 1px;
   line-height: 1;
 }
@@ -400,7 +411,7 @@ h1 {
 
 #go {
   margin: 2px 0 12px;
-  background: linear-gradient(115deg,#f4d56a,#d5af3e);
+  background: linear-gradient(115deg, #f4d56a, #d5af3e);
   box-shadow: 0 4px #8b712a;
   color: #202d1b;
   font-size: 17px;
@@ -484,24 +495,24 @@ h1 {
   box-shadow: 0 3px #6b3025;
 }
 
-@media(max-height:500px) {
+@media (max-height: 500px) {
   .menu-card {
-  width: min(100%,600px);
-  padding: 18px;
-}
+    width: min(100%, 600px);
+    padding: 18px;
+  }
   .menu-card h1 {
-  font-size: 32px;
-}
+    font-size: 32px;
+  }
   .menu-kicker {
-  margin-bottom: 10px;
-}
+    margin-bottom: 10px;
+  }
   #tx {
-  margin: 12px 0;
-}
+    margin: 12px 0;
+  }
   .menu-footer {
-  margin-top: 12px;
-}
+    margin-top: 12px;
+  }
   #ov {
-  gap: 8px;
-}
+    gap: 8px;
+  }
 }

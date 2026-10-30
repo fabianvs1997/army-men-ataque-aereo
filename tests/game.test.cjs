@@ -2,12 +2,14 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const source=fs.readFileSync('army-men-ataque-aereo.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 function game(){
  const elements=new Map(),listeners={};
  const element=id=>{if(!elements.has(id))elements.set(id,{style:{},getContext:()=>new Proxy({createLinearGradient:()=>({addColorStop(){}})},{get:(o,k)=>o[k]||(()=>{})}),getBoundingClientRect:()=>({width:360,height:640}),addEventListener(name,fn){this[name]=fn},setPointerCapture(){},setAttribute(){}});return elements.get(id)};
  const sandbox={document:{getElementById:element,addEventListener(name,fn){listeners[name]=fn}},navigator:{},devicePixelRatio:1,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(name,fn){listeners[name]=fn},Math,setTimeout};
- vm.createContext(sandbox);vm.runInContext(fs.readFileSync('toy-world.js','utf8'),sandbox);vm.runInContext(fs.readFileSync('toy-missions.js','utf8'),sandbox);vm.runInContext(source,sandbox);
+ vm.createContext(sandbox);for(const file of ['toy-world','toy-missions','prefs','audio','input','combat','render2d','ui','game'])vm.runInContext(fs.readFileSync('src/'+file+'.js','utf8'),sandbox);
+ const app=sandbox.ToyGame.create(sandbox);
+ for(const [name,desc] of Object.entries(Object.getOwnPropertyDescriptors(app.view)))if(name!=='host'&&!name.startsWith('Toy'))Object.defineProperty(sandbox,name,{...desc,configurable:true});
+ for(const group of [app.combat,app.render2d,app.ui,app.input,app.audio,app])for(const [name,value] of Object.entries(group))if(typeof value==='function'&&!(name in sandbox))sandbox[name]=value;
  return {run:s=>vm.runInContext(s,sandbox),listeners,element};
 }
 test('pause freezes state and clears held inputs; resume preserves mission',()=>{

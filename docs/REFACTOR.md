@@ -50,3 +50,13 @@ La rotura de juguetes queda pendiente para una entrega funcional posterior.
 - GitHub Actions no inició los jobs de la fase 0: cuenta bloqueada por facturación.
   La etiqueta local v-pre-refactor existe; su publicación por el workflow queda
   pendiente de desbloquear Actions. No se ha confundido ese fallo con pruebas rojas.
+
+## Evidencia fase 2
+
+- Scripts clásicos en src/, con APIs CommonJS para pruebas y sin import/export ES.
+- 51 pruebas Node aprobadas; smoke Chromium real con entrada file:// aprobado.
+- Audio recibe isPlaying/isMuted y conserva desbloqueo síncrono en pointerdown;
+  se cachean buffers de ruido. Input expone read()/clear(); render2d recibe scene
+  y cachea decoración por misión/recuento de rescates.
+- No se realizó prueba física de audio en iPhone; sigue siendo una validación
+  de aceptación pendiente, no una equivalencia garantizada por Chromium.
