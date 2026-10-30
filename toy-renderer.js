@@ -124,7 +124,7 @@ class ToyRenderer {
  render(scene){
   if(this.lost)return false;
   const {W,H,F,HY,cam,PITCH,P,E,DC,BL,EB,MS,FX,PK,rot}=scene,gl=this.gl,u=this.loc;
-  const d=Math.min(root.devicePixelRatio||1,1.75),width=Math.round(W*d),height=Math.round(H*d);
+  const d=Math.min(root.devicePixelRatio||1,scene.pixelRatio===1?1:1.75),width=Math.round(W*d),height=Math.round(H*d);
   if(this.canvas.width!==width||this.canvas.height!==height){this.canvas.width=width;this.canvas.height=height}
   gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(this.program);this.drawCalls=0;
   gl.uniform2f(u.camera,cam.x,cam.z);gl.uniform2f(u.viewport,W,H);gl.uniform1f(u.cameraYaw,cam.yaw);gl.uniform1f(u.pitch,PITCH);gl.uniform1f(u.scale,F);gl.uniform1f(u.centerY,HY);gl.uniform3f(u.eyeDirection,-Math.sin(cam.yaw)*Math.cos(PITCH),Math.sin(PITCH),-Math.cos(cam.yaw)*Math.cos(PITCH));
