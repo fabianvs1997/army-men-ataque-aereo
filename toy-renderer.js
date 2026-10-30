@@ -98,6 +98,14 @@ class ToyRenderer {
   for(const side of [-1,1]){p('box',side*1.8,-1.4,0,.16,.14,2.5,dark);p('box',side*1.4,-.8,.8,.13,.7,.13,dark);p('box',side*1.4,-.8,-1.1,.13,.7,.13,dark);p('rounded',side*1.9,-.2,.8,.22,.25,1.4,dark)}
   p('box',0,2,0,.15,.6,.15,dark);p('box',0,2.6,0,5.6,.055,.17,dark,rot);p('box',0,2.6,0,.17,.055,5.6,dark,rot);
  }
+ soldier(x,y,z,friendly,yaw=0,waiting=false){
+  const col=friendly?[.24,.65,.16]:[.77,.62,.36],dark=friendly?[.10,.32,.07]:[.42,.34,.18];
+  this.part('sphere',x,y+.12,z,1.2,.13,.9,col,yaw);
+  for(const side of [-1,1])this.part('rounded',x+side*.38,y+.65,z,.23,.6,.3,col,yaw);
+  this.part('rounded',x,y+1.8,z,.65,.65,.4,col,yaw);this.part('sphere',x,y+2.8,z,.51,.5,.5,col);this.part('sphere',x,y+3.05,z,.65,.32,.6,col);
+  this.part('rounded',x+.85,y+1.9,z,.2,.6,.2,col);this.part('box',x-.8,y+1.6,z+.3,.12,.65,.12,dark);
+  if(waiting){this.part('box',x,y+4.3,z,.7,.13,.13,[.95,.89,.36],0,0);this.part('box',x,y+4.3,z,.13,.7,.13,[.95,.89,.36],0,0)}
+ }
  landmark(prop,y){
   const {x,z,yaw,kind}=prop,p=(mesh,lx,ly,lz,sx,sy,sz,color,gloss=.2)=>this.part(mesh,x+lx*Math.cos(yaw)+lz*Math.sin(yaw),y+ly,z-lx*Math.sin(yaw)+lz*Math.cos(yaw),sx,sy,sz,color,yaw,gloss);
   if(kind==='pencil'){
@@ -138,13 +146,14 @@ class ToyRenderer {
    }
    for(const prop of world.landmarks)if(visible(prop))this.landmark(prop,world.height(prop.x,prop.z));
   }
-  for(const d of DC){if(!visible(d)||(world&&!world.clearOfLandmarks(d.x,d.z,3)))continue;
+  for(const d of DC){if((scene.allies||[]).some(a=>a.state!=='rescued'&&Math.hypot(a.x-d.x,a.z-d.z)<7)||!visible(d)||(world&&!world.clearOfLandmarks(d.x,d.z,3)))continue;
    this.groundOffset=world?world.height(d.x,d.z):0;
    if(d.t==='t'){this.part('sphere',d.x,.12,d.z,3,.12,3,[.20,.36,.12]);this.part('box',d.x,2,d.z,.5,2,.5,[.33,.28,.12]);this.part('sphere',d.x,5,d.z,2.7,3.7,2.7,[.18,.42,.12]);this.part('sphere',d.x-.4,7.5,d.z,1.9,2.8,1.9,[.26,.49,.15]);}
    else{const color=d.c==='#d9473f'?[.73,.24,.16]:d.c==='#3f7fd9'?[.20,.40,.65]:[.78,.62,.20];this.part('rounded',d.x,d.s/2,d.z,d.s/2,d.s/2,d.s/2,color);for(const side of [-1,1])this.part('sphere',d.x+side*d.s*.22,d.s,d.z,d.s*.16,.3,d.s*.16,color)}
   }
   this.groundOffset=0;
   for(const e of E){if(!visible(e))continue;const col=e.fl>0?[1,1,1]:[.76,.61,.36],dark=[.39,.31,.17],yaw=P?Math.atan2(P.x-e.x,P.z-e.z):0;
+   if(e.k==='inf'){this.groundOffset=0;this.soldier(e.x,e.y,e.z,false,yaw);continue}
    if(e.k==='heli'){this.groundOffset=0;this.helicopter(e.x,e.y,e.z,yaw,rot,true,e.fl>0);continue}
    this.groundOffset=world?world.height(e.x,e.z):0;
    if(e.k!=='heli')this.part('sphere',e.x,.13,e.z,e.k==='base'?6.4:3.6,.16,e.k==='base'?5.6:4.1,col);
@@ -154,6 +163,7 @@ class ToyRenderer {
    }}
   }
   this.groundOffset=0;
+  for(const a of scene.allies||[])if(a.state!=='rescued'&&visible(a))this.soldier(a.x,world?world.height(a.x,a.z):0,a.z,true,0,a.state==='waiting');
   for(const q of PK)if(visible(q))this.part('box',q.x,(world?world.height(q.x,q.z):0)+1.2,q.z,.9,.9,.9,q.ty==='a'?[.3,.8,.3]:[.8,.25,.15],0,.4);
   for(const [list,color,size] of [[BL,[1,.82,.20],.23],[EB,[1,.3,.10],.35],[MS,[.95,.95,.75],.5]])for(const b of list)if(visible(b))this.part('sphere',b.x,b.y,b.z,size,size,size*2,color,Math.atan2(b.vx,b.vz),0);
   for(const f of FX)if(visible(f)){const age=1-f.l/.5,sz=f.s*(.2+age*.6);this.part('sphere',f.x,f.y+age*3,f.z,sz,sz,sz,age>.65?[.36,.37,.29]:[1,.45,.08],0,0);if(age<.65)this.part('sphere',f.x,f.y+sz*.4,f.z,sz*.7,sz*.7,sz*.7,[1,.84,.27],0,0)}

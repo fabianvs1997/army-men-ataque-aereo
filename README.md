@@ -23,7 +23,7 @@ Visita http://localhost:8000. GitHub Pages puede servir estos mismos archivos de
 | Pausar/continuar | P | Pausa / Continuar |
 | Sonido | Botón Silenciar | Botón Silenciar |
 
-Destruye todas las bases beige para avanzar. La flecha indica la base más cercana. Cada misión completada repara hasta tres puntos de blindaje y añade cuatro misiles. La partida se pausa al cambiar de ventana o esconder la pestaña; continuar requiere una acción del jugador.
+Para completar una misión, destruye las bases beige, recoge a todos los soldados verdes y vuelve al helipuerto. Quédate quieto y sin disparar 1.5 segundos junto a cada soldado y 2 segundos en el helipuerto. La flecha indica el siguiente objetivo de rescate, una base pendiente o el regreso al helipuerto. Cada misión completada repara hasta tres puntos de blindaje y añade cuatro misiles. La partida se pausa al cambiar de ventana o esconder la pestaña; continuar requiere una acción del jugador.
 
 ## Validación
 
@@ -86,3 +86,20 @@ Se añaden caminos curvos, variaciones de color procedurales para hierba/tierra,
 El modo Canvas 2D también dibuja terreno, caminos, rocas y referencias de escala. Su representación del relieve es aproximada y no ofrece el búfer de profundidad del modo WebGL. Los objetos decorativos todavía no bloquean movimiento ni disparos; las sombras de contacto siguen siendo aproximadas. No se han añadido misiones nuevas.
 
 Validación: 21 pruebas aprobadas de controles, renderizador, elevaciones, normales, continuidad, posiciones iniciales y dibujo Canvas vertical/horizontal. Se compilaron shaders y se inspeccionó la escena de prueba con OpenGL ES/Mesa sin errores GL. Se corrigió la superposición de profundidad entre caminos y helipuerto. Pendiente comprobar distribución real y FPS en Safari/iPhone, tanto con indicador 3D como con respaldo 2D.
+
+
+## Etapa 5: campaña de rescate
+
+Tres misiones: **Primer rescate** (un campamento, dos soldados), **Dos campamentos** (dos y cuatro) y **Última extracción** (tres y seis). Los vehículos y la nueva infantería beige defienden el mapa; los refuerzos aéreos tienen un presupuesto limitado por misión y dejan de aparecer al destruir las bases.
+
+1. Sigue la flecha y destruye las bases beige para liberar a los soldados verdes.
+2. Acércate a menos de 6 unidades y suelta movimiento y fuego durante 1.5 s. Un símbolo amarillo marca a los soldados disponibles. Moverte, disparar, recibir daño o salir del radio reinicia la recogida.
+3. Con todos a bordo, vuelve al helipuerto marcado con H y mantén la posición durante 2 s. Solo entonces se completa la misión.
+
+Los soldados aliados no reciben daño ni participan en el combate. Se otorgan 50 puntos por rescate y 250 por extracción. Tras una derrota, **Reintentar misión** reinicia la misión actual, sus rescates y recursos, conservando solamente la puntuación de las misiones anteriores; no obliga a regresar a la misión 1. Tras la tercera extracción aparece el final de campaña y **Jugar de nuevo** comienza desde cero. El progreso no se guarda al recargar.
+
+La ametralladora ajusta su ángulo vertical hacia un enemigo situado delante; el rumbo horizontal sigue siendo el del helicóptero. Las balas y los misiles comprueban el recorrido entre fotogramas contra volúmenes de enemigos para evitar saltarse objetivos pequeños; una bala golpea al primer enemigo intersectado. Los impactos muestran un destello y las explosiones de misil afectan a enemigos cercanos en 3D. Los objetos decorativos siguen sin bloquear proyectiles o movimiento.
+
+Los soldados, marcadores y helipuerto funcionan en WebGL y en el respaldo Canvas 2D. El HUD muestra nombre de misión, instrucciones, progreso de recogida y conteos. Se elimina decoración pegada a los soldados para mantenerlos visibles.
+
+Validación de esta etapa: 32 pruebas automatizadas de controles, renderizadores y campaña, incluidos recorridos completos de victoria, derrota/reintento, pausa, final de campaña, reinicio de recogida y primer impacto de proyectiles. La validación de dibujo usa Canvas/WebGL simulados; queda pendiente una partida manual y la comprobación visual/rendimiento en Safari/iPhone para esta versión.

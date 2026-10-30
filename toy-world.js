@@ -35,6 +35,11 @@ function drawGround(ctx,project,cam,W,H,F){
   const shade=Math.round(83+height(x,z)*5+6*Math.sin(x*.3+z*.2));ctx.fillStyle=`rgb(${shade},${shade+30},${shade-24})`;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();
  }
  for(const road of roads){if(Math.hypot(road.x-cam.x,road.z-cam.z)>range)continue;const c=Math.cos(road.yaw),s=Math.sin(road.yaw);const points=[[-5,-road.length],[5,-road.length],[5,road.length],[-5,road.length]].map(([x,z])=>project(road.x+x*c+z*s,.12,road.z-x*s+z*c));ctx.fillStyle='#aa9162';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
+ const pad=(corners,color,y)=>{const points=corners.map(([x,z])=>project(x,y,z));ctx.fillStyle=color;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill()};
+ pad([[-7,-7],[7,-7],[7,7],[-7,7]],'#566449',.27);
+ for(const side of [-1,1])pad([[side*2-.35,-3],[side*2+.35,-3],[side*2+.35,3],[side*2-.35,3]],'#dfd39e',.36);
+ pad([[-2,-.35],[2,-.35],[2,.35],[-2,.35]],'#dfd39e',.36);
+
 }
 root.ToyWorld={height,mesh,roads,rocks,landmarks,clearOfLandmarks,drawGround};
 })(globalThis);
