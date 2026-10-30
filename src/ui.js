@@ -32,30 +32,51 @@
       env.needsDraw = true;
     }
     function show(ti, tx, bt) {
-      if (env.sil) env.sil.pause();
       env.$('ti').textContent = ti;
       env.$('tx').textContent = tx;
       env.$('go').textContent = bt;
       menuLayout('result');
       env.$('go').focus?.();
     }
-    function mainMenu() {
-      env.clearInput();
-      env.humOff();
-      if (env.sil) env.sil.pause();
-      if (env.AC) env.AC.suspend().catch(() => {});
-      env.st = 'menu';
-      env.P = null;
-      env.mission = null;
-      env.E = [];
-      env.BL = [];
-      env.EB = [];
-      env.MS = [];
-      env.FX = [];
-      env.PK = [];
-      env.checkpoint = 0;
-      env.mis = 1;
-      env.shk = 0;
+    function presentState(next) {
+      if (next === 'play') {
+        env.$('ov').style.display = 'none';
+        env.$('hud').style.display = 'block';
+        env.cv.tabIndex = 0;
+        env.cv.focus?.();
+        return;
+      }
+      if (next === 'menu') {
+        showMain();
+        return;
+      }
+      if (next === 'paused') {
+        show(
+          'Partida en pausa',
+          'Tu misión continuará desde el mismo punto.',
+          'Continuar',
+        );
+        return;
+      }
+      if (next === 'over') {
+        show(
+          'Misión fallida',
+          'Reintenta ' +
+            env.mission.config.name +
+            '. Los rescates de esta misión se reinician.',
+          'Reintentar misión',
+        );
+        return;
+      }
+      show(
+        next === 'campaign'
+          ? 'Campaña completada'
+          : 'Misión ' + env.mis + ' cumplida',
+        'Rescatados: ' + env.mission.rescued + '. Puntos: ' + env.P.sc + '.',
+        next === 'campaign' ? 'Jugar de nuevo' : 'Siguiente misión',
+      );
+    }
+    function showMain() {
       env.$('ti').innerHTML = 'ARMY MEN<span>Ataque aéreo</span>';
       env.$('tx').textContent =
         'Un pequeño helicóptero. Un gran rescate. Libera a tu escuadrón en una campaña de tres misiones.';
@@ -82,32 +103,7 @@
       env.$(page === 'settings' ? 'menuSound' : 'ti').focus?.();
     }
     function menuBack() {
-      if (env.st === 'menu') {
-        mainMenu();
-        return;
-      }
-      if (env.st === 'paused')
-        show(
-          'Partida en pausa',
-          'Tu misión continuará desde el mismo punto.',
-          'Continuar',
-        );
-      else if (env.st === 'over')
-        show(
-          'Misión fallida',
-          'Reintenta ' +
-            env.mission.config.name +
-            '. Los rescates de esta misión se reinician.',
-          'Reintentar misión',
-        );
-      else
-        show(
-          env.st === 'campaign'
-            ? 'Campaña completada'
-            : 'Misión ' + env.mis + ' cumplida',
-          'Rescatados: ' + env.mission.rescued + '. Puntos: ' + env.P.sc + '.',
-          env.st === 'campaign' ? 'Jugar de nuevo' : 'Siguiente misión',
-        );
+      presentState(env.st);
     }
     function soundLabel() {
       for (const id of ['sound', 'menuSound']) {
@@ -165,14 +161,7 @@
         env.muted = !env.muted;
         env.savePreference('muted', String(env.muted));
         soundLabel();
-        if (env.muted) {
-          env.humOff();
-          if (env.sil) env.sil.pause();
-          if (env.AC) env.AC.suspend().catch(() => {});
-        } else if (env.st === 'play') {
-          env.audio();
-          env.humOn();
-        }
+        env.syncAudio();
       };
 
       qualityLabel();
@@ -190,7 +179,6 @@
           return;
         }
         env.audio();
-        env.humOn();
         env.buzz(20);
         env.tone(300, 700, 0.25, 'triangle', 0.25);
         const nx = env.st === 'win',
@@ -198,10 +186,6 @@
         if (nx) env.checkpoint = env.P.sc;
         else if (!retry) env.checkpoint = 0;
         env.start(nx ? env.mis + 1 : retry ? env.mis : 1, !nx);
-        env.$('ov').style.display = 'none';
-        env.$('hud').style.display = 'block';
-        env.cv.tabIndex = 0;
-        env.cv.focus?.();
       };
       env.$('menuHelp').onclick = () => menuPage('help');
       env.$('menuSettings').onclick = () => menuPage('settings');
@@ -210,9 +194,9 @@
       env.$('menuQuality').onclick = () => env.$('quality').onclick();
       env.$('back').onclick = menuBack;
       env.$('menuExit').onclick = () =>
-        env.st === 'campaign' ? mainMenu() : menuPage('confirm');
+        env.st === 'campaign' ? env.mainMenu() : menuPage('confirm');
       env.$('confirmExit').onclick = () => {
-        if (env.overlayPage === 'confirm') mainMenu();
+        if (env.overlayPage === 'confirm') env.mainMenu();
       };
       env.cv.tabIndex = -1;
     }
@@ -220,7 +204,8 @@
       renderStatus,
       menuLayout,
       show,
-      mainMenu,
+      showMain,
+      presentState,
       menuPage,
       menuBack,
       soundLabel,

@@ -60,3 +60,11 @@ La rotura de juguetes queda pendiente para una entrega funcional posterior.
   y cachea decoración por misión/recuento de rescates.
 - No se realizó prueba física de audio en iPhone; sigue siendo una validación
   de aceptación pendiente, no una equivalencia garantizada por Chromium.
+
+## Evidencia fase 3
+
+- Estado de partida único (incluye st, P, E, BL, EB, MS, FX, PK y mission).
+- setState valida la tabla y centraliza audio, limpieza de entrada y presentación.
+  La tabla incluye over→play (reintentar), win→play (siguiente) y campaign→play
+  (jugar de nuevo), necesarios para conservar las acciones existentes.
+- 53 pruebas Node aprobadas; smoke Chromium file:// aprobado.

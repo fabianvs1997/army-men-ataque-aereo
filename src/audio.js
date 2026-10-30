@@ -177,7 +177,13 @@
       for (const node of Object.values(hum)) node.disconnect();
       hum = null;
     }
+    function suspend(context = true) {
+      humOff();
+      if (sil) sil.pause();
+      if (context && AC) AC.suspend().catch(() => {});
+    }
     return {
+      suspend,
       silentSrc,
       audio,
       tone,

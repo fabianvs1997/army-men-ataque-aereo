@@ -37,8 +37,38 @@
     ToyRenderer,
   ) {
     'use strict';
+    const transitions = Object.freeze({
+      menu: Object.freeze(['play']),
+      play: Object.freeze(['paused', 'over', 'win', 'campaign']),
+      paused: Object.freeze(['play', 'menu']),
+      over: Object.freeze(['play', 'menu']),
+      win: Object.freeze(['play', 'menu']),
+      campaign: Object.freeze(['play', 'menu']),
+    });
+    function transition(state, next, onTransition = () => {}) {
+      if (next === state.st) return false;
+      if (!transitions[state.st]?.includes(next))
+        throw new Error('Invalid transition: ' + state.st + ' -> ' + next);
+      const previous = state.st;
+      state.st = next;
+      onTransition(next, previous);
+      return true;
+    }
     function create(host = globalThis) {
+      const state = {};
       const env = {
+        get state() {
+          return state;
+        },
+        get setState() {
+          return setState;
+        },
+        get syncAudio() {
+          return syncAudio;
+        },
+        get mainMenu() {
+          return mainMenu;
+        },
         host,
         get draw() {
           return draw;
@@ -52,20 +82,8 @@
         get cv() {
           return cv;
         },
-        get st() {
-          return st;
-        },
-        set st(v) {
-          st = v;
-        },
         get pauseGame() {
           return pauseGame;
-        },
-        get overlayPage() {
-          return overlayPage;
-        },
-        set overlayPage(v) {
-          overlayPage = v;
         },
         get menuBack() {
           return menuBack;
@@ -79,59 +97,11 @@
         get humOn() {
           return humOn;
         },
-        get needsDraw() {
-          return needsDraw;
-        },
-        set needsDraw(v) {
-          needsDraw = v;
-        },
-        get FX() {
-          return FX;
-        },
-        set FX(v) {
-          FX = v;
-        },
         get sfx() {
           return sfx;
         },
         get buzz() {
           return buzz;
-        },
-        get P() {
-          return P;
-        },
-        set P(v) {
-          P = v;
-        },
-        get bd() {
-          return bd;
-        },
-        set bd(v) {
-          bd = v;
-        },
-        get mission() {
-          return mission;
-        },
-        set mission(v) {
-          mission = v;
-        },
-        get PK() {
-          return PK;
-        },
-        set PK(v) {
-          PK = v;
-        },
-        get BL() {
-          return BL;
-        },
-        set BL(v) {
-          BL = v;
-        },
-        get E() {
-          return E;
-        },
-        set E(v) {
-          E = v;
         },
         get ToyMissions() {
           return ToyMissions;
@@ -139,29 +109,11 @@
         get groundAt() {
           return groundAt;
         },
-        get MS() {
-          return MS;
-        },
-        set MS(v) {
-          MS = v;
-        },
         get clamp() {
           return clamp;
         },
-        get EB() {
-          return EB;
-        },
-        set EB(v) {
-          EB = v;
-        },
         get hurt() {
           return hurt;
-        },
-        get DC() {
-          return DC;
-        },
-        set DC(v) {
-          DC = v;
         },
         get cam() {
           return cam;
@@ -169,65 +121,11 @@
         get PITCH() {
           return PITCH;
         },
-        get W() {
-          return W;
-        },
-        set W(v) {
-          W = v;
-        },
-        get F() {
-          return F;
-        },
-        set F(v) {
-          F = v;
-        },
-        get HY() {
-          return HY;
-        },
-        set HY(v) {
-          HY = v;
-        },
         get ctx() {
           return ctx;
         },
-        get rot() {
-          return rot;
-        },
-        set rot(v) {
-          rot = v;
-        },
-        get H() {
-          return H;
-        },
-        set H(v) {
-          H = v;
-        },
-        get shk() {
-          return shk;
-        },
-        set shk(v) {
-          shk = v;
-        },
         get R() {
           return R;
-        },
-        get renderer3d() {
-          return renderer3d;
-        },
-        set renderer3d(v) {
-          renderer3d = v;
-        },
-        get lowQuality() {
-          return lowQuality;
-        },
-        set lowQuality(v) {
-          lowQuality = v;
-        },
-        get t() {
-          return t;
-        },
-        set t(v) {
-          t = v;
         },
         get ToyWorld() {
           return ToyWorld;
@@ -250,30 +148,6 @@
         set AC(v) {
           audioEngine.AC = v;
         },
-        get checkpoint() {
-          return checkpoint;
-        },
-        set checkpoint(v) {
-          checkpoint = v;
-        },
-        get mis() {
-          return mis;
-        },
-        set mis(v) {
-          mis = v;
-        },
-        get muted() {
-          return muted;
-        },
-        set muted(v) {
-          muted = v;
-        },
-        get tb() {
-          return tb;
-        },
-        set tb(v) {
-          tb = v;
-        },
         get P3() {
           return P3;
         },
@@ -292,35 +166,11 @@
         get SCALE_WIDTH() {
           return SCALE_WIDTH;
         },
-        get airLeft() {
-          return airLeft;
-        },
-        set airLeft(v) {
-          airLeft = v;
-        },
-        get hs() {
-          return hs;
-        },
-        set hs(v) {
-          hs = v;
-        },
         get spawnE() {
           return spawnE;
         },
         get upd() {
           return upd;
-        },
-        get last() {
-          return last;
-        },
-        set last(v) {
-          last = v;
-        },
-        get lastDraw() {
-          return lastDraw;
-        },
-        set lastDraw(v) {
-          lastDraw = v;
         },
         get loop() {
           return loop;
@@ -362,13 +212,54 @@
           audioEngine.hum = v;
         },
       };
+      // Compatibility view: these accessors reference the sole state object, never copies.
+      for (const key of [
+        'lastDraw',
+        'last',
+        'hs',
+        'airLeft',
+        'tb',
+        'muted',
+        'mis',
+        'checkpoint',
+        't',
+        'lowQuality',
+        'renderer3d',
+        'shk',
+        'H',
+        'rot',
+        'HY',
+        'F',
+        'W',
+        'DC',
+        'EB',
+        'MS',
+        'E',
+        'BL',
+        'PK',
+        'mission',
+        'bd',
+        'P',
+        'FX',
+        'needsDraw',
+        'overlayPage',
+        'st',
+      ])
+        Object.defineProperty(env, key, {
+          enumerable: true,
+          get: () => state[key],
+          set: (value) => {
+            state[key] = value;
+          },
+        });
+
       const { preference, savePreference } = ToyPrefs.create(
         () => host.localStorage,
       );
       const audioEngine = ToyAudio.create({
         host,
-        isPlaying: () => st === 'play',
-        isMuted: () => muted,
+        isPlaying: () => state.st === 'play',
+        isMuted: () => state.muted,
       });
       const { silentSrc, audio, tone, noise, buzz, sfx, humOn, humOff } =
         audioEngine;
@@ -398,7 +289,6 @@
           renderStatus,
           menuLayout,
           show,
-          mainMenu,
           menuPage,
           menuBack,
           soundLabel,
@@ -412,32 +302,49 @@
         R = (a, b) => a + Math.random() * (b - a);
       /* audio y vibración */
 
-      let lowQuality = preference('quality', 'detail') === 'low',
-        needsDraw = true;
-      let muted = preference('muted', 'false') === 'true';
+      Object.assign(state, {
+        lowQuality: preference('quality', 'detail') === 'low',
+        needsDraw: true,
+      });
+      Object.assign(state, { muted: preference('muted', 'false') === 'true' });
 
-      function pauseGame() {
-        if (st !== 'play') return;
+      function syncAudio() {
+        if (state.st === 'play' && !state.muted) {
+          audio();
+          humOn();
+        } else
+          audioEngine.suspend(
+            state.muted || state.st === 'paused' || state.st === 'menu',
+          );
+      }
+      function applyState() {
         clearInput();
-        st = 'paused';
-        humOff();
-        if (audioEngine.sil) audioEngine.sil.pause();
-        if (audioEngine.AC) audioEngine.AC.suspend().catch(() => {});
-        show(
-          'Partida en pausa',
-          'Tu misión continuará desde el mismo punto.',
-          'Continuar',
-        );
+        syncAudio();
+        ui.presentState(state.st);
+        state.needsDraw = true;
+      }
+      function setState(next) {
+        return transition(state, next, applyState);
+      }
+      function mainMenu() {
+        state.P = null;
+        state.mission = null;
+        state.E = [];
+        state.BL = [];
+        state.EB = [];
+        state.MS = [];
+        state.FX = [];
+        state.PK = [];
+        state.checkpoint = 0;
+        state.mis = 1;
+        state.shk = 0;
+        if (!setState('menu')) applyState();
+      }
+      function pauseGame() {
+        if (state.st === 'play') setState('paused');
       }
       function resumeGame() {
-        clearInput();
-        st = 'play';
-        audio();
-        humOn();
-        $('ov').style.display = 'none';
-        $('hud').style.display = 'block';
-        cv.tabIndex = 0;
-        cv.focus?.();
+        if (state.st === 'paused') setState('play');
       }
       host.addEventListener('blur', pauseGame);
       host.document.addEventListener('visibilitychange', () => {
@@ -449,29 +356,26 @@
         cam = { x: 0, z: 0, yaw: Math.PI / 5 },
         PITCH = Math.PI / 3,
         SCALE_WIDTH = 105;
-      let W = 360,
-        H = 640,
-        HY = 256,
-        F = 380;
+      Object.assign(state, { W: 360, H: 640, HY: 256, F: 380 });
       function rs() {
         const r = cv.getBoundingClientRect(),
-          d = Math.min(host.devicePixelRatio || 1, lowQuality ? 1 : 1.75);
+          d = Math.min(host.devicePixelRatio || 1, state.lowQuality ? 1 : 1.75);
         cv.width = r.width * d;
         cv.height = r.height * d;
-        W = r.width;
-        H = r.height;
+        state.W = r.width;
+        state.H = r.height;
         ctx.setTransform(d, 0, 0, d, 0, 0);
-        F = Math.min(W / SCALE_WIDTH, H / 120);
-        needsDraw = true;
+        state.F = Math.min(state.W / SCALE_WIDTH, state.H / 120);
+        state.needsDraw = true;
       }
       host.addEventListener('resize', rs);
       rs();
-      let renderer3d = null;
+      Object.assign(state, { renderer3d: null });
 
       renderStatus(false);
       try {
         if (typeof ToyRenderer !== 'undefined')
-          renderer3d = new ToyRenderer(
+          state.renderer3d = new ToyRenderer(
             $('world3d'),
             () => {
               pauseGame();
@@ -486,38 +390,42 @@
       } catch (error) {
         console.warn('Modo 2D: no se pudo iniciar WebGL.', error);
       }
-      if (renderer3d) renderStatus(true);
+      if (state.renderer3d) renderStatus(true);
 
       // Orthographic camera: fixed diagonal heading and 60-degree downward pitch.
 
       /* estado */
-      let mission = null,
-        checkpoint = 0,
-        airLeft = 0,
-        overlayPage = 'main';
-      let st = 'menu',
-        P,
-        E = [],
-        BL = [],
-        EB = [],
-        MS = [],
-        FX = [],
-        PK = [],
-        DC = [],
-        mis = 1,
-        t = 0,
-        rot = 0,
-        shk = 0,
-        bd = 0,
-        tb = 0,
-        hs = 3;
+      Object.assign(state, {
+        mission: null,
+        checkpoint: 0,
+        airLeft: 0,
+        overlayPage: 'main',
+      });
+      Object.assign(state, {
+        st: 'menu',
+        P: undefined,
+        E: [],
+        BL: [],
+        EB: [],
+        MS: [],
+        FX: [],
+        PK: [],
+        DC: [],
+        mis: 1,
+        t: 0,
+        rot: 0,
+        shk: 0,
+        bd: 0,
+        tb: 0,
+        hs: 3,
+      });
 
       const groundAt = (x, z) =>
         typeof ToyWorld === 'undefined' ? 0 : ToyWorld.height(x, z);
-      DC = typeof ToyWorld === 'undefined' ? [] : ToyWorld.shrubs;
+      state.DC = typeof ToyWorld === 'undefined' ? [] : ToyWorld.shrubs;
 
       function spawnE(k, x, z) {
-        E.push({
+        state.E.push({
           k,
           x,
           y: k === 'heli' ? 8 : groundAt(x, z),
@@ -531,33 +439,33 @@
       }
       function start(n, full) {
         clearInput();
-        t = 0;
-        shk = 0;
-        mis = n;
-        mission = new ToyMissions.Mission(n);
-        airLeft = mission.config.air;
-        E = [];
-        BL = [];
-        EB = [];
-        MS = [];
-        FX = [];
-        PK = [];
-        if (full || !P)
-          P = { arm: 10, mi: 6, sc: 0, cd: 0, inv: 0, gs: 0, bank: 0 };
+        state.t = 0;
+        state.shk = 0;
+        state.mis = n;
+        state.mission = new ToyMissions.Mission(n);
+        state.airLeft = state.mission.config.air;
+        state.E = [];
+        state.BL = [];
+        state.EB = [];
+        state.MS = [];
+        state.FX = [];
+        state.PK = [];
+        if (full || !state.P)
+          state.P = { arm: 10, mi: 6, sc: 0, cd: 0, inv: 0, gs: 0, bank: 0 };
         else {
-          P.arm = Math.min(10, P.arm + 3);
-          P.mi += 4;
+          state.P.arm = Math.min(10, state.P.arm + 3);
+          state.P.mi += 4;
         }
-        P.cd = 0;
-        P.inv = 0;
-        P.sc = full ? checkpoint : P.sc;
-        P.x = 0;
-        P.z = 0;
-        P.y = 8;
-        P.yaw = 0;
-        bd = 0;
-        tb = mission.config.bases.length;
-        hs = 25;
+        state.P.cd = 0;
+        state.P.inv = 0;
+        state.P.sc = full ? state.checkpoint : state.P.sc;
+        state.P.x = 0;
+        state.P.z = 0;
+        state.P.y = 8;
+        state.P.yaw = 0;
+        state.bd = 0;
+        state.tb = state.mission.config.bases.length;
+        state.hs = 25;
         const ring = (k, c, a, b) => {
           for (let i = 0; i < c; i++) {
             let x = 0,
@@ -579,39 +487,30 @@
             spawnE(k, x, z);
           }
         };
-        mission.config.bases.forEach(([x, z], camp) => {
+        state.mission.config.bases.forEach(([x, z], camp) => {
           spawnE('base', x, z);
-          E[E.length - 1].camp = camp;
+          state.E[state.E.length - 1].camp = camp;
         });
-        ring('tank', mission.config.tanks, 45, 110);
-        ring('tur', mission.config.turrets, 45, 110);
-        ring('inf', mission.config.infantry, 35, 100);
+        ring('tank', state.mission.config.tanks, 45, 110);
+        ring('tur', state.mission.config.turrets, 45, 110);
+        ring('inf', state.mission.config.infantry, 35, 100);
         cam.x = 0;
         cam.z = 0;
         cam.yaw = Math.PI / 5;
-        st = 'play';
+        setState('play');
       }
 
       function hurt() {
-        if (st !== 'play' || P.inv > 0) return;
-        P.arm--;
-        P.inv = 0.3;
-        shk = 0.3;
+        if (state.st !== 'play' || state.P.inv > 0) return;
+        state.P.arm--;
+        state.P.inv = 0.3;
+        state.shk = 0.3;
         sfx.hurt();
         buzz(60);
-        if (P.arm <= 0) {
-          st = 'over';
-          humOff();
+        if (state.P.arm <= 0) {
+          setState('over');
           sfx.over();
           buzz(300);
-          clearInput();
-          show(
-            'Misión fallida',
-            'Reintenta ' +
-              mission.config.name +
-              '. Los rescates de esta misión se reinician.',
-            'Reintentar misión',
-          );
         }
       }
       /* entrada */
@@ -621,13 +520,13 @@
 
       /* actualización */
       function upd(dt) {
-        if (st !== 'play') return;
+        if (state.st !== 'play') return;
         const controls = input.read(),
           usedMissile = controls.missile;
-        t += dt;
-        shk = Math.max(0, shk - dt);
-        P.cd -= dt;
-        P.inv -= dt;
+        state.t += dt;
+        state.shk = Math.max(0, state.shk - dt);
+        state.P.cd -= dt;
+        state.P.inv -= dt;
         const { sx, sy } = controls;
         const magnitude = Math.min(1, Math.hypot(sx, sy));
         if (magnitude > 0.08) {
@@ -636,28 +535,28 @@
             up = sy / length;
           const vx = -right * Math.cos(cam.yaw) + up * Math.sin(cam.yaw),
             vz = right * Math.sin(cam.yaw) + up * Math.cos(cam.yaw);
-          P.yaw = Math.atan2(vx, vz);
-          P.x = clamp(P.x + vx * 28 * magnitude * dt, -190, 190);
-          P.z = clamp(P.z + vz * 28 * magnitude * dt, -190, 190);
+          state.P.yaw = Math.atan2(vx, vz);
+          state.P.x = clamp(state.P.x + vx * 28 * magnitude * dt, -190, 190);
+          state.P.z = clamp(state.P.z + vz * 28 * magnitude * dt, -190, 190);
         }
-        const fx = Math.sin(P.yaw),
-          fz = Math.cos(P.yaw);
-        P.y = 8 + Math.sin(t * 3) * 0.3;
-        P.bank = 0;
+        const fx = Math.sin(state.P.yaw),
+          fz = Math.cos(state.P.yaw);
+        state.P.y = 8 + Math.sin(state.t * 3) * 0.3;
+        state.P.bank = 0;
         const follow = 1 - Math.exp(-6 * dt);
-        cam.x += (P.x - cam.x) * follow;
-        cam.z += (P.z - cam.z) * follow;
-        if (controls.fire && P.cd <= 0) {
-          P.cd = 0.09;
-          const side = (P.gs = !P.gs) ? 1.2 : -1.2;
+        cam.x += (state.P.x - cam.x) * follow;
+        cam.z += (state.P.z - cam.z) * follow;
+        if (controls.fire && state.P.cd <= 0) {
+          state.P.cd = 0.09;
+          const side = (state.P.gs = !state.P.gs) ? 1.2 : -1.2;
           const muzzle = {
-            x: P.x - fz * side + fx * 2,
-            y: P.y - 0.3,
-            z: P.z + fx * side + fz * 2,
+            x: state.P.x - fz * side + fx * 2,
+            y: state.P.y - 0.3,
+            z: state.P.z + fx * side + fz * 2,
           };
-          const velocity = gunVelocity(P, muzzle, E);
+          const velocity = gunVelocity(state.P, muzzle, state.E);
           mk(
-            BL,
+            state.BL,
             muzzle.x,
             muzzle.y,
             muzzle.z,
@@ -670,14 +569,14 @@
         }
         if (controls.missile) {
           input.consumeMissile();
-          if (P.mi > 0) {
-            P.mi--;
+          if (state.P.mi > 0) {
+            state.P.mi--;
             let tg = null,
               dm = 130;
-            for (const e of E) {
+            for (const e of state.E) {
               if (e.dead) continue;
-              const dx = e.x - P.x,
-                dz = e.z - P.z,
+              const dx = e.x - state.P.x,
+                dz = e.z - state.P.z,
                 d = Math.hypot(dx, dz);
               if (d < dm && dx * fx + dz * fz > 0.5 * d) {
                 dm = d;
@@ -685,10 +584,10 @@
               }
             }
             const o = mk(
-              MS,
-              P.x + fx * 2,
-              P.y - 1,
-              P.z + fz * 2,
+              state.MS,
+              state.P.x + fx * 2,
+              state.P.y - 1,
+              state.P.z + fz * 2,
               fx * 75,
               0,
               fz * 75,
@@ -698,34 +597,34 @@
             sfx.miss();
           }
         }
-        hs -= dt;
-        if (hs <= 0 && airLeft > 0 && bd < tb) {
-          hs = 25;
-          airLeft--;
+        state.hs -= dt;
+        if (state.hs <= 0 && state.airLeft > 0 && state.bd < state.tb) {
+          state.hs = 25;
+          state.airLeft--;
           if (
-            E.filter((e) => e.k === 'heli' && !e.dead).length <
-            Math.min(1 + mis, 4)
+            state.E.filter((e) => e.k === 'heli' && !e.dead).length <
+            Math.min(1 + state.mis, 4)
           ) {
             const a = R(0, 6.28);
             spawnE(
               'heli',
-              clamp(P.x + Math.sin(a) * 110, -185, 185),
-              clamp(P.z + Math.cos(a) * 110, -185, 185),
+              clamp(state.P.x + Math.sin(a) * 110, -185, 185),
+              clamp(state.P.z + Math.cos(a) * 110, -185, 185),
             );
           }
         }
-        for (const e of E) {
+        for (const e of state.E) {
           if (e.dead) continue;
           e.fl = Math.max(0, e.fl - dt);
-          const dx = P.x - e.x,
-            dz = P.z - e.z,
+          const dx = state.P.x - e.x,
+            dz = state.P.z - e.z,
             d = Math.hypot(dx, dz),
             a = Math.atan2(dx, dz);
           if (e.k === 'heli') {
             const q = d > 32 ? 1 : 0;
             e.x += (Math.sin(a) * 18 * q + Math.cos(a) * 10 * (1 - q)) * dt;
             e.z += (Math.cos(a) * 18 * q - Math.sin(a) * 10 * (1 - q)) * dt;
-            e.y = 8 + Math.sin(t * 2 + e.cd) * 0.4;
+            e.y = 8 + Math.sin(state.t * 2 + e.cd) * 0.4;
           } else if (e.k === 'tank' && d > 25 && d < 150) {
             e.x += Math.sin(a) * 6 * dt;
             e.z += Math.cos(a) * 6 * dt;
@@ -751,7 +650,7 @@
             const s2 = 42,
               a2 = a + R(-0.06, 0.06);
             mk(
-              EB,
+              state.EB,
               e.x,
               e.y + 2,
               e.z,
@@ -763,42 +662,35 @@
           }
         }
         if (!stepProjectiles(dt)) return;
-        for (const q of PK)
-          if (Math.hypot(q.x - P.x, q.z - P.z) < 5) {
+        for (const q of state.PK)
+          if (Math.hypot(q.x - state.P.x, q.z - state.P.z) < 5) {
             q.d = 1;
-            if (q.ty === 'a') P.arm = Math.min(10, P.arm + 3);
-            else P.mi += 3;
+            if (q.ty === 'a') state.P.arm = Math.min(10, state.P.arm + 3);
+            else state.P.mi += 3;
             sfx.pick();
             buzz(20);
           }
-        for (const o of FX) o.l -= dt;
-        E = E.filter((e) => !e.dead);
-        BL = BL.filter((b) => b.l > 0);
-        MS = MS.filter((o) => o.l > 0);
-        EB = EB.filter((b) => b.l > 0);
-        PK = PK.filter((q) => !q.d);
-        FX = FX.filter((o) => o.l > 0);
-        const event = mission.update(dt, P, {
+        for (const o of state.FX) o.l -= dt;
+        state.E = state.E.filter((e) => !e.dead);
+        state.BL = state.BL.filter((b) => b.l > 0);
+        state.MS = state.MS.filter((o) => o.l > 0);
+        state.EB = state.EB.filter((b) => b.l > 0);
+        state.PK = state.PK.filter((q) => !q.d);
+        state.FX = state.FX.filter((o) => o.l > 0);
+        const event = state.mission.update(dt, state.P, {
           moving: magnitude > 0.08,
           firing: !!(controls.fire || usedMissile),
-          damaged: P.inv > 0,
+          damaged: state.P.inv > 0,
         });
         if (event === 'rescued') {
-          P.sc += 50;
+          state.P.sc += 50;
           sfx.pick();
           buzz(20);
         }
         if (event === 'complete') {
-          P.sc += 250;
-          st = mis === ToyMissions.configs.length ? 'campaign' : 'win';
-          clearInput();
-          humOff();
-          show(
-            st === 'campaign'
-              ? 'Campaña completada'
-              : 'Misión ' + mis + ' cumplida',
-            'Rescatados: ' + mission.rescued + '. Puntos: ' + P.sc + '.',
-            st === 'campaign' ? 'Jugar de nuevo' : 'Siguiente misión',
+          state.P.sc += 250;
+          setState(
+            state.mis === ToyMissions.configs.length ? 'campaign' : 'win',
           );
         }
         updateHUD();
@@ -811,29 +703,31 @@
 
       /* dibujo */
 
-      let last = host.performance.now(),
-        lastDraw = -Infinity;
+      Object.assign(state, {
+        last: host.performance.now(),
+        lastDraw: -Infinity,
+      });
       function loop(n) {
-        const dt = Math.max(0, Math.min(0.05, (n - last) / 1e3));
-        last = n;
+        const dt = Math.max(0, Math.min(0.05, (n - state.last) / 1e3));
+        state.last = n;
         if (!host.document.hidden) {
-          if (st === 'play') {
-            rot += dt * 30;
+          if (state.st === 'play') {
+            state.rot += dt * 30;
             upd(dt);
-          } else if (st === 'menu') {
-            rot += dt * 30;
+          } else if (state.st === 'menu') {
+            state.rot += dt * 30;
             cam.x = Math.sin(n / 12000) * 20;
             cam.z = Math.cos(n / 12000) * 20;
           }
           // Throttle drawing only: simulation/input keep the browser's frame cadence.
           if (
-            needsDraw ||
-            ((st === 'play' || st === 'menu') &&
-              (!lowQuality || n - lastDraw >= 1000 / 30 - 1))
+            state.needsDraw ||
+            ((state.st === 'play' || state.st === 'menu') &&
+              (!state.lowQuality || n - state.lastDraw >= 1000 / 30 - 1))
           ) {
             draw();
-            lastDraw = n;
-            needsDraw = false;
+            state.lastDraw = n;
+            state.needsDraw = false;
           }
         }
         host.requestAnimationFrame(loop);
@@ -841,6 +735,9 @@
       host.requestAnimationFrame(loop);
 
       return {
+        state,
+        setState,
+        mainMenu,
         view: env,
         input,
         audio: audioEngine,
@@ -857,6 +754,6 @@
         loop,
       };
     }
-    return { create };
+    return { create, transitions, transition };
   },
 );
