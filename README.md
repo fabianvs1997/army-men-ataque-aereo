@@ -122,3 +122,13 @@ Comprobación manual pendiente en iPhone:
 3. Alternar detalle/ahorro, silenciar y recargar para comprobar las preferencias.
 4. Cambiar de aplicación, regresar y pulsar Continuar; comprobar pausa y audio.
 5. Completar un rescate en ambos modos gráficos y comparar fluidez sin cambiar la velocidad de juego.
+
+## Patio trasero residencial
+
+El escenario compartido por las tres misiones ahora representa un jardín doméstico: cerca de tablones y travesaños, fachada con puerta y ventanas, terraza con juntas, sendero con losas, césped con variaciones de color y arbustos. Un macetero de terracota, una regadera con manguera y una banca sustituyen los objetos de escritorio. Los helicópteros y soldados conservan el acabado plástico y su escala pequeña respecto al entorno.
+
+`ToyWorld.yard` describe las piezas domésticas una sola vez para WebGL y Canvas 2D. El renderizador 3D usa materiales mates en el jardín; el respaldo proyecta caras sombreadas y césped con gradientes y pequeñas marcas. Las piezas se descartan por distancia y reutilizan las mallas existentes. La generación es determinista y no requiere imágenes ni descargas externas.
+
+Se reserva espacio alrededor de los objetos grandes y delante de la terraza para la aparición inicial de enemigos. Los campamentos y rescates existentes mantienen sus coordenadas. Es una ambientación estilizada, no fotorrealista: no incorpora colisiones con mobiliario, sombras solares calculadas ni un patio diferente por misión. La ordenación de caras del respaldo 2D es aproximada.
+
+Validación: 41 pruebas de lógica, geometría, posiciones y renderizadores simulados. Además, se generaron e inspeccionaron vistas del centro del jardín y de la fachada con el renderizador Canvas real de `@napi-rs/canvas` (solo herramienta de revisión, sin dependencia nueva del juego). Pendiente comprobar el resultado WebGL y el rendimiento en Safari/iPhone.

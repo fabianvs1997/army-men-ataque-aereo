@@ -70,9 +70,9 @@ h1{letter-spacing:2px;text-shadow:0 3px 0 #182519,0 10px 35px #0008}
 <div id="stick" aria-hidden="true"><i id="knob"></i></div>
 <div id="hud"><button id="quality" aria-pressed="false">Gráficos: detalle</button><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
 </div>
-<script src="toy-missions.js?v=stage6-1"></script>
-<script src="toy-world.js?v=stage6-1"></script>
-<script src="toy-renderer.js?v=stage6-1"></script>
+<script src="toy-missions.js?v=backyard-1"></script>
+<script src="toy-world.js?v=backyard-1"></script>
+<script src="toy-renderer.js?v=backyard-1"></script>
 <script>
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),R=(a,b)=>a+Math.random()*(b-a);
 /* audio y vibración */
@@ -125,7 +125,7 @@ let mission=null,checkpoint=0,airLeft=0;
 let st='menu',P,E=[],BL=[],EB=[],MS=[],FX=[],PK=[],DC=[],mis=1,t=0,rot=0,fire=false,mAsk=false,shk=0,bd=0,tb=0,hs=3,drag=null,firePointer=null;
 const keys={};
 const groundAt=(x,z)=>typeof ToyWorld==='undefined'?0:ToyWorld.height(x,z);
-for(let i=0;i<70;i++){const x=R(-185,185),z=R(-185,185);if(Math.hypot(x,z)<20)continue;DC.push(i%2?{t:'t',x,z}:{t:'b',x,z,s:R(3,7),c:['#d9473f','#3f7fd9','#e8c547'][i%3]})}
+DC=typeof ToyWorld==='undefined'?[]:ToyWorld.shrubs;
 function mk(arr,x,y,z,vx,vy,vz,l){const o={x,y,z,vx,vy,vz,l};arr.push(o);return o}
 function boom(x,y,z,s){FX.push({x,y,z,l:.5,s})}
 function spawnE(k,x,z){E.push({k,x,y:k==='heli'?8:groundAt(x,z),z,hp:{heli:4,tank:6,tur:5,base:10,inf:2}[k],r:{heli:3,tank:3.5,tur:2.5,base:6,inf:1.5}[k],cd:R(1,3),p:{heli:50,tank:30,tur:20,base:100,inf:10}[k],fl:0})}
@@ -265,6 +265,15 @@ function sprE(e,p){if(e.k==='inf'){soldier2d(p,false);return}const s=p[2],x=p[0]
   rc(x+4*s,y-16*s,.35*s,12*s,dk);rc(x+4.35*s,y-16*s,2.6*s,1.5*s,'#cf5540');ell(x+4.18*s,y-16*s,.3*s,.3*s,col);
  }
 }
+// Shared household geometry projected as shaded faces in the fallback.
+function yardPart(o){
+ const color=f=>'rgb('+o.color.map(v=>Math.round(v*255*f)).join(',')+')';
+ if(o.kind==='sphere'){const p=P3(o.x,o.y,o.z);ell(p[0],p[1],o.sx*F,o.sy*F,color(.9));return}
+ const c=Math.cos(o.yaw),s=Math.sin(o.yaw),points=[];
+ for(const y of [-1,1])for(const [x,z] of [[-1,-1],[1,-1],[1,1],[-1,1]])points.push([o.x+x*o.sx*c+z*o.sz*s,o.y+y*o.sy,o.z-x*o.sx*s+z*o.sz*c]);
+ const faces=[[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7]].map((ids,i)=>({ids,i,depth:ids.reduce((v,j)=>v+cs(...points[j])[2],0)/4})).sort((a,b)=>b.depth-a.depth);
+ for(const face of faces){ctx.fillStyle=color([.65,.8,.7,.85,1][face.i]);ctx.beginPath();face.ids.forEach((j,i)=>{const p=P3(...points[j]);i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])});ctx.closePath();ctx.fill()}
+}
 /* dibujo */
 function draw(){
   HY=H*.52+(shk>0?R(-2,2):0);
@@ -275,14 +284,13 @@ function draw(){
   if(typeof ToyWorld!=='undefined')ToyWorld.drawGround(ctx,P3,cam,W,H,F);
   ctx.beginPath();for(let k=-10;k<=10;k++){const v=k*20;for(const q of[[v,-200,v,200],[-200,v,200,v]]){const c=clip(cs(q[0],0,q[1]),cs(q[2],0,q[3]));if(c){const a=pj(c[0]),b=pj(c[1]);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1])}}}
   ctx.strokeStyle='rgba(205,216,148,0)';ctx.lineWidth=1;ctx.stroke();
-  for(const w of[[-200,-200,200,-200],[-200,200,200,200],[-200,-200,-200,200],[200,-200,200,200]]){const c=clip(cs(w[0],0,w[1]),cs(w[2],0,w[3]));if(c){const a=pj(c[0]),b=pj(c[1]),a2=pj(cs(w[0],5,w[1])),b2=pj(cs(w[2],5,w[3]));ctx.fillStyle='#9b6b3a';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(b2[0],b2[1]);ctx.lineTo(a2[0],a2[1]);ctx.fill()}}
   const sh=(x,z)=>{const p=P3(x,groundAt(x,z),z);if(p)ell(p[0],p[1],2.2*p[2],.7*p[2],'rgba(0,0,0,.22)')};
   for(const e of E)if(e.k==='heli')sh(e.x,e.z);if(P)sh(P.x,P.z);
   const L=[],add=(x,y,z,fn)=>{const a=cs(x,y,z);if(Math.hypot(x-cam.x,z-cam.z)>180)return;const p=pj(a);if(p[0]<-150||p[0]>W+150)return;L.push([a[2],p,fn])};
-  for(const d of DC.filter(d=>!mission||!mission.allies.some(a=>a.state!=='rescued'&&Math.hypot(a.x-d.x,a.z-d.z)<7)))add(d.x,groundAt(d.x,d.z),d.z,p=>{const s=p[2],x=p[0],y=p[1];if(d.t==='t'){ell(x,y,3.5*s,.65*s,'#25542c');ell(x,y-.15*s,3.5*s,.55*s,'#438344');rc(x-.5*s,y-4*s,s,4*s,'#7a5230');tri(x-3.6*s,y-3*s,x+3.6*s,y-3*s,x,y-9*s,'#234e38');tri(x-2.8*s,y-5*s,x+2.8*s,y-5*s,x,y-11*s,'#376b45');tri(x-.4*s,y-10*s,x+2.8*s,y-5*s,x+.3*s,y-5*s,'#6d8c50')}else{plasticPart(x-d.s*s/2,y-d.s*s,d.s*s,d.s*s,d.c,'#354c42');for(const side of [-1,1])ell(x+side*d.s*s*.23,y-d.s*s*1.04,d.s*s*.14,d.s*s*.07,d.c);rc(x-d.s*s/2,y-d.s*s*1.2,d.s*s,d.s*s*.2,'rgba(255,255,255,.35)')}});
+  for(const d of DC.filter(d=>!mission||!mission.allies.some(a=>a.state!=='rescued'&&Math.hypot(a.x-d.x,a.z-d.z)<7)))add(d.x,groundAt(d.x,d.z),d.z,p=>{const s=p[2],x=p[0],y=p[1];if(d.t==='shrub'){ell(x,y-d.s*s*.5,d.s*s,d.s*s*.7,'#435f25');ell(x-d.s*s*.3,y-d.s*s,d.s*s*.65,d.s*s*.6,'#57732e')}else if(d.t==='t'){ell(x,y,3.5*s,.65*s,'#25542c');ell(x,y-.15*s,3.5*s,.55*s,'#438344');rc(x-.5*s,y-4*s,s,4*s,'#7a5230');tri(x-3.6*s,y-3*s,x+3.6*s,y-3*s,x,y-9*s,'#234e38');tri(x-2.8*s,y-5*s,x+2.8*s,y-5*s,x,y-11*s,'#376b45');tri(x-.4*s,y-10*s,x+2.8*s,y-5*s,x+.3*s,y-5*s,'#6d8c50')}else{plasticPart(x-d.s*s/2,y-d.s*s,d.s*s,d.s*s,d.c,'#354c42');for(const side of [-1,1])ell(x+side*d.s*s*.23,y-d.s*s*1.04,d.s*s*.14,d.s*s*.07,d.c);rc(x-d.s*s/2,y-d.s*s*1.2,d.s*s,d.s*s*.2,'rgba(255,255,255,.35)')}});
   if(typeof ToyWorld!=='undefined'){
    for(const r of ToyWorld.rocks)add(r.x,groundAt(r.x,r.z),r.z,p=>ell(p[0],p[1]-r.s*p[2]*.4,r.s*p[2],r.s*p[2]*.65,'#727960'));
-   for(const o of ToyWorld.landmarks)add(o.x,groundAt(o.x,o.z)+1,o.z,p=>{const s=p[2];ctx.save();ctx.translate(p[0],p[1]);ctx.rotate(headingAngle(o.yaw));if(o.kind==='pencil'){plasticPart(-1.3*s,-15*s,2.6*s,30*s,'#d7ad38','#927322');rc(-1.3*s,-18*s,2.6*s,3*s,'#bd6d70');tri(-1.3*s,15*s,1.3*s,15*s,0,19*s,'#bba070')}else if(o.kind==='spool'){ell(0,0,7*s,3*s,'#b59a65');plasticPart(-4*s,-6*s,8*s,6*s,'#6d9caa','#456e7c');ell(0,-6*s,7*s,3*s,'#c8ad76');ell(0,-6*s,s,s*.5,'#514a37')}else{plasticPart(-4*s,-8*s,8*s,16*s,'#dfd7b9','#a19b84');rc(-3.8*s,0,7.6*s,.12*s,'#494e40');for(const [x,y] of [[-2,-5],[0,-3],[2,-1],[-2,3],[2,3],[-2,6],[2,6]])ell(x*s,y*s,.5*s,.5*s,'#353d33')}ctx.restore()});
+   for(const o of ToyWorld.yard||[])add(o.x,o.y,o.z,()=>yardPart(o));
   }
   if(mission)for(const a of mission.allies)if(a.state!=='rescued')add(a.x,groundAt(a.x,a.z),a.z,p=>soldier2d(p,true,a.state==='waiting'));
   for(const e of E)add(e.x,e.y,e.z,p=>sprE(e,p));
