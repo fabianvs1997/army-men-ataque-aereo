@@ -21,7 +21,7 @@ function fixture(options={}){
  const canvas={width:0,height:0,getContext:()=>options.noWebGL?null:gl,addEventListener:(type,fn)=>listeners[type]=fn};
  return {gl,canvas,listeners,counts};
 }
-const scene=()=>({W:390,H:844,F:390/105,HY:844*.52,cam:{x:0,z:0,yaw:Math.PI/5},PITCH:Math.PI/3,P:{x:0,y:8,z:0,yaw:0,inv:0},E:['heli','tank','tur','base'].map((k,i)=>({k,x:i*8,y:k==='heli'?8:0,z:15,fl:0})),DC:[{t:'t',x:15,z:0},{t:'b',x:-15,z:0,s:5,c:'#d9473f'}],BL:[{x:0,y:8,z:4,vx:0,vz:130}],EB:[],MS:[],FX:[{x:0,y:2,z:8,l:.3,s:4}],PK:[{x:-8,z:-8,ty:'a'}],rot:1,t:0});
+const scene=()=>({W:390,H:844,F:390/105,HY:844*.52,cam:{x:0,z:0,yaw:Math.PI/5},PITCH:Math.PI/3,P:{x:0,y:8,z:0,yaw:0,inv:0},E:['heli','tank','tur','base','inf'].map((k,i)=>({k,x:i*8,y:k==='heli'?8:0,z:15,fl:0})),DC:[{t:'t',x:15,z:0},{t:'b',x:-15,z:0,s:5,c:'#d9473f'}],BL:[{x:0,y:8,z:4,vx:0,vz:130}],EB:[],MS:[],FX:[{x:0,y:2,z:8,l:.3,s:4}],allies:[{x:-15,z:30,state:'waiting'},{x:20,z:40,state:'rescued'}],PK:[{x:-8,z:-8,ty:'a'}],rot:1,t:0});
 test('mesh positions and normals are finite, bounded and normalized',()=>{
  for(const kind of ['box','sphere','rounded']){const data=Renderer.geometry(kind);assert.equal(data.length%18,0);for(let i=0;i<data.length;i+=6){for(let j=0;j<3;j++)assert.ok(Math.abs(data[i+j])<=1.000001);assert.ok(Math.abs(Math.hypot(...data.slice(i+3,i+6))-1)<1e-6)}}
 });
