@@ -125,6 +125,10 @@
       shot() {
         tone(900, 500, 0.07, 'square', 0.06);
       },
+      snap(broken) {
+        noise(broken ? 0.14 : 0.045, broken ? 0.24 : 0.09, 3200);
+        tone(broken ? 420 : 1100, 180, broken ? 0.1 : 0.035, 'triangle', 0.07);
+      },
       boom() {
         noise(0.45, 0.7, 1500);
         tone(180, 50, 0.35, 'sawtooth', 0.25);

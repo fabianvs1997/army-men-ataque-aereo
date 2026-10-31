@@ -1,6 +1,16 @@
 # Changelog
 
-## Sin publicar — refactor de scripts clásicos
+## Sin publicar — rotura de juguetes
+
+- Los impactos desprenden astillas y dejan marcas de plástico roto.
+- Bases y helicópteros pierden cubierta/cabina tras varios impactos.
+- Las bajas se desarman en componentes propios del juguete, sin bolas de fuego.
+- Restos con gravedad, rebotes y apoyo sobre el terreno en WebGL y Canvas.
+- Hasta 320 piezas persistentes por misión; se retiran primero astillas antiguas
+  al llegar al límite y se limpian al reintentar, cambiar misión o volver al menú.
+- Sonidos cortos de rotura; azar visual separado del azar de suministros.
+
+## Refactor de scripts clásicos
 
 - Separados CSS y módulos UMD/CommonJS manteniendo apertura por file://.
 - Unificado el estado de partida y centralizados los efectos de las transiciones.
@@ -9,7 +19,7 @@
 - Unificada la entrada en index.html, con redirección desde la dirección anterior.
 - Centralizada la versión de recursos en src/bootstrap.js y dividida la documentación.
 
-No se añaden mecánicas de juego en este refactor. Los fragmentos de plástico
-persistentes quedan para una entrega posterior.
+El refactor no añadió mecánicas de juego. La rotura de plástico se implementa
+en una entrega independiente sobre esa estructura.
 
 El historial previo se conserva en [docs/HISTORY.md](docs/HISTORY.md).

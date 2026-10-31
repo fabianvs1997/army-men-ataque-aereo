@@ -64,14 +64,15 @@ test('kill awards exactly once and releases each base once', () => {
     assert.equal(id, 2);
     releases++;
   };
-  const effects = { random: () => 0, onBoom: () => booms++ };
+  const effects = { random: () => 0, onBreak: () => booms++ };
   assert.equal(Combat.kill(s, e, effects), true);
   assert.equal(Combat.kill(s, e, effects), false);
   assert.equal(s.P.sc, 100);
   assert.equal(s.bd, 1);
   assert.equal(releases, 1);
   assert.equal(booms, 1);
-  assert.equal(s.FX.length, 1);
+  assert.equal(s.FX.length, 0);
+  assert.ok(s.DB.length > 10);
   assert.equal(s.PK.length, 0);
 });
 test('hit only kills at zero HP; injected RNG controls loot', () => {
@@ -86,7 +87,9 @@ test('hit only kills at zero HP; injected RNG controls loot', () => {
   };
   assert.equal(Combat.hit(s, e, 1, effects), false);
   assert.equal(e.hp, 1);
-  assert.equal(e.fl, 0.08);
+  assert.equal(e.fl, 0);
+  assert.equal(e.chips, 1);
+  assert.equal(s.DB.length, 4);
   assert.equal(s.P.sc, 0);
   assert.equal(Combat.hit(s, e, 1, effects), true);
   assert.deepEqual(s.PK, [{ x: 0, z: 30, ty: 'a' }]);

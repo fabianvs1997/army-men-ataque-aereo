@@ -49,3 +49,12 @@ Las pruebas locales sí se ejecutaron. `v-pre-refactor` apunta localmente a
 `1c59125bb925e7727cd265c64f1d2f5a2cb62a05`; su publicación remota sigue pendiente.
 Tras desbloquear Actions, volver a ejecutar el workflow Preserve pre-refactor baseline
 y el de pruebas. El workflow se niega a mover una etiqueta existente a otro commit.
+
+## Rotura de plástico
+
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-debris.cjs` comprueba
+un impacto barrido, cinco tipos de enemigo, ausencia de bolas de fuego, reposo
+sobre el terreno y ambos renderers en file://. Captura imágenes en /tmp.
+Las pruebas Node cubren daño repetido, piezas separadas una sola vez, misiles,
+persistencia, límite de restos, pausa y limpieza de misión. Validación física de
+rendimiento en iPhone pendiente; el límite es 320 piezas, no una garantía de FPS.
