@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'camera-1';
+  const VERSION = 'follow-1';
   const scripts = Object.freeze([
     'toy-missions',
     'toy-world',

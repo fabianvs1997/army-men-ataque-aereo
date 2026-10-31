@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — cámara alineada con el helicóptero
+
+- La cámara sigue posición y rumbo del jugador: la vista permanece detrás, mirando hacia la nariz.
+- Se conserva el zoom y el encuadre bajo; desaparece el ángulo diagonal fijo al jugar.
+- Cada gesto mantiene su referencia inicial para evitar giros continuos por realimentación de la cámara. Al soltar, el siguiente gesto toma el nuevo rumbo.
+- Ayuda de controles actualizada.
+
+
 ## Sin publicar — cámara cercana y vista oblicua
 
 - Zoom aproximado de 1.7×: helicóptero y escenario más grandes en pantalla.

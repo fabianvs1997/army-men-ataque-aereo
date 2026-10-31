@@ -99,6 +99,9 @@
         get cover() {
           return cover;
         },
+        resetHeadingInput() {
+          if (state.P) state.P.controlYaw = null;
+        },
         get state() {
           return state;
         },
@@ -443,7 +446,7 @@
       }
       if (state.renderer3d) renderStatus(true);
 
-      // Orthographic camera: fixed diagonal heading and 60-degree downward pitch.
+      // Orthographic chase camera: follows the nose with the configured oblique pitch.
 
       /* estado */
       Object.assign(state, {
@@ -545,6 +548,7 @@
         state.P.z = 0;
         state.P.y = 8;
         state.P.yaw = 0;
+        state.P.controlYaw = null;
         state.P.pitch = 0;
         state.P.pitchSpeed = 0;
         state.bd = 0;
@@ -580,7 +584,7 @@
         ring('inf', state.mission.config.infantry, 35, 100);
         cam.x = 0;
         cam.z = 0;
-        cam.yaw = Math.PI / 5;
+        cam.yaw = state.P.yaw;
         setState('play');
       }
 
@@ -616,11 +620,15 @@
         const beforeX = state.P.x,
           beforeZ = state.P.z;
         if (magnitude > 0.08) {
+          // Keep this gesture's reference fixed while the camera follows the nose.
+          if (state.P.controlYaw == null) state.P.controlYaw = cam.yaw;
+          const referenceYaw = state.P.controlYaw;
           const length = Math.hypot(sx, sy),
             right = sx / length,
             up = sy / length;
-          const vx = -right * Math.cos(cam.yaw) + up * Math.sin(cam.yaw),
-            vz = right * Math.sin(cam.yaw) + up * Math.cos(cam.yaw);
+          const vx =
+              -right * Math.cos(referenceYaw) + up * Math.sin(referenceYaw),
+            vz = right * Math.sin(referenceYaw) + up * Math.cos(referenceYaw);
           state.P.yaw = Math.atan2(vx, vz);
           const next = cover.move(state.P, {
             x: clamp(state.P.x + vx * 28 * magnitude * dt, -190, 190),
@@ -629,15 +637,15 @@
           });
           state.P.x = next.x;
           state.P.z = next.z;
-        }
+        } else state.P.controlYaw = null;
         const fx = Math.sin(state.P.yaw),
           fz = Math.cos(state.P.yaw);
         state.P.y = 8 + Math.sin(state.t * 3) * 0.3;
         state.P.bank = 0;
         updatePitch(state.P, state.P.x - beforeX, state.P.z - beforeZ, dt);
-        const follow = 1 - Math.exp(-6 * dt);
-        cam.x += (state.P.x - cam.x) * follow;
-        cam.z += (state.P.z - cam.z) * follow;
+        cam.x = state.P.x;
+        cam.z = state.P.z;
+        cam.yaw = state.P.yaw;
         if (controls.fire && state.P.cd <= 0) {
           state.P.cd = 0.09;
           const side = (state.P.gs = !state.P.gs) ? 1.2 : -1.2;

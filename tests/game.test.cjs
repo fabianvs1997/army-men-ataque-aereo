@@ -52,28 +52,64 @@ test('lethal damage prevents same-frame healing; retry preserves checkpoint and 
   assert.equal(s.P.arm, 10);
   assert.equal(s.mission.rescued, 0);
 });
-test('screen-relative movement follows four directions and stays still on release', () => {
+test('chase camera stays aligned and held movement does not orbit', () => {
   for (const [k, axis, sign] of [
-    ['d', 0, 1],
-    ['a', 0, -1],
-    ['w', 1, -1],
-    ['s', 1, 1],
+    ['d', 'x', -1],
+    ['a', 'x', 1],
+    ['w', 'z', 1],
+    ['s', 'z', -1],
   ]) {
     const g = game(),
       s = g.state;
     g.app.start(1, true);
     s.E = [];
-    const before = g.app.render2d.P3(s.P.x, s.P.y, s.P.z);
+    s.airLeft = 0;
     key(g, k);
-    g.app.upd(0.05);
-    const after = g.app.render2d.P3(s.P.x, s.P.y, s.P.z);
-    assert.ok((after[axis] - before[axis]) * sign > 0);
+    let yaw;
+    for (let i = 0; i < 20; i++) {
+      g.app.upd(0.03);
+      yaw ??= s.P.yaw;
+      assert.equal(s.P.yaw, yaw);
+      assert.equal(g.app.view.cam.yaw, s.P.yaw);
+      assert.equal(g.app.view.cam.x, s.P.x);
+      assert.equal(g.app.view.cam.z, s.P.z);
+    }
+    assert.ok(s.P[axis] * sign > 0);
     g.app.input.clear();
     const pos = [s.P.x, s.P.z];
-    g.app.upd(0.05);
+    g.app.upd(0.03);
     assert.deepEqual([s.P.x, s.P.z], pos);
-    assert.equal(g.app.view.cam.yaw, Math.PI / 5);
+    assert.equal(g.app.view.cam.yaw, yaw);
   }
+});
+test('a new key or pointer gesture uses the new camera heading even without an idle frame', () => {
+  const g = game(),
+    s = g.state;
+  g.app.start(1, true);
+  s.E = [];
+  key(g, 'd');
+  g.app.upd(0.03);
+  const turned = s.P.yaw;
+  g.host.emit('keyup', { key: 'd' });
+  key(g, 'w');
+  g.app.upd(0.03);
+  assert.equal(s.P.yaw, turned);
+  g.app.input.clear();
+  const c = g.element('c');
+  c.emit('pointerdown', { pointerId: 1, clientX: 40, clientY: 200 });
+  c.emit('pointermove', { pointerId: 1, clientX: 110, clientY: 200 });
+  g.app.upd(0.03);
+  const touchYaw = s.P.yaw;
+  c.emit('pointerup', { pointerId: 1 });
+  c.emit('pointerdown', { pointerId: 2, clientX: 40, clientY: 200 });
+  c.emit('pointermove', { pointerId: 2, clientX: 40, clientY: 130 });
+  g.app.upd(0.03);
+  assert.ok(Math.abs(s.P.yaw - touchYaw) < 1e-10);
+  g.app.pauseGame();
+  g.app.resumeGame();
+  assert.equal(s.P.controlYaw, null);
+  g.app.start(1, true);
+  assert.equal(g.app.view.cam.yaw, s.P.yaw);
 });
 test('paused menus preserve mission; abandon requires confirmation; preferences synchronize', () => {
   const g = game(),
