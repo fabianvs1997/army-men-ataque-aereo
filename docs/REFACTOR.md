@@ -76,3 +76,14 @@ La rotura de juguetes queda pendiente para una entrega funcional posterior.
 - Las pruebas de juego ya no evalúan el HTML; los módulos exportan APIs CommonJS.
 - Smoke Chromium real file:// aprobado: jugar/disparar, pausar, menús, ajustes,
   continuar, girar y abandonar; sin errores JavaScript.
+
+## Evidencia fase 5
+
+- 46 pruebas Node aprobadas; smoke Chromium file:// aprobado tanto desde index.html
+  como desde la URL antigua, en vertical y horizontal, sin errores JavaScript.
+- index.html contiene el juego; la entrada antigua redirige y conserva marcadores.
+- VERSION en src/bootstrap.js centraliza CSS y scripts, cargados en orden sin ES modules.
+- README dividido, historial archivado, arquitectura, pruebas y CHANGELOG añadidos.
+- Pendientes físicos de iPhone registrados como Issues #13, #14 y #15.
+- La etiqueta remota y los jobs de Actions siguen pendientes del desbloqueo de
+  facturación; no se ha fusionado ni publicado el refactor en Master.
