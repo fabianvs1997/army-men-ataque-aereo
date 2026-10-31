@@ -1,6 +1,15 @@
 # Changelog
 
-## Sin publicar — inclinación del helicóptero
+## Sin publicar — cámara cercana y vista oblicua
+
+- Zoom aproximado de 1.7×: helicóptero y escenario más grandes en pantalla.
+- Ángulo de elevación de cámara de 60° a 40° para mostrar más los laterales.
+- Helicóptero en torno al 64 % de la altura de pantalla, dejando terreno por delante.
+- Escala adaptada a vertical/horizontal y mismo encuadre en WebGL/Canvas.
+- Ajustada la distancia de dibujo para que la vista oblicua no recorte objetos visibles.
+- Sin cambios de tamaño físico, controles, apuntado o colisiones.
+
+## Inclinación del helicóptero
 
 - El helicóptero inclina la nariz al desplazarse y cabecea hacia atrás al frenar,
   regresando suavemente a nivel al detenerse.

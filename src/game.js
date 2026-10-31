@@ -78,6 +78,15 @@
       player.pitchSpeed =
         previous + (speed - previous) * (1 - Math.exp(-5 * dt));
     }
+    function cameraFraming(width, height) {
+      const pitch = (40 * Math.PI) / 180;
+      const scale = Math.min(width / 62, height / 72);
+      return {
+        pitch,
+        scale,
+        centerY: height * 0.64 + 8 * Math.cos(pitch) * scale,
+      };
+    }
     function create(host = globalThis, options = {}) {
       const random = options.random || Math.random;
       const Renderer =
@@ -265,6 +274,7 @@
         'H',
         'rot',
         'HY',
+        'cameraCenterY',
         'F',
         'W',
         'DC',
@@ -394,8 +404,7 @@
       const cv = $('c'),
         ctx = cv.getContext('2d'),
         cam = { x: 0, z: 0, yaw: Math.PI / 5 },
-        PITCH = Math.PI / 3,
-        SCALE_WIDTH = 105;
+        PITCH = cameraFraming(360, 640).pitch;
       Object.assign(state, { W: 360, H: 640, HY: 256, F: 380 });
       function rs() {
         const r = cv.getBoundingClientRect(),
@@ -405,7 +414,9 @@
         state.W = r.width;
         state.H = r.height;
         ctx.setTransform(d, 0, 0, d, 0, 0);
-        state.F = Math.min(state.W / SCALE_WIDTH, state.H / 120);
+        const framing = cameraFraming(state.W, state.H);
+        state.F = framing.scale;
+        state.cameraCenterY = framing.centerY;
         state.needsDraw = true;
       }
       host.addEventListener('resize', rs);
@@ -849,6 +860,6 @@
         loop,
       };
     }
-    return { create, transitions, transition, updatePitch };
+    return { create, transitions, transition, updatePitch, cameraFraming };
   },
 );
