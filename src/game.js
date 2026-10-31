@@ -54,9 +54,15 @@
       onTransition(next, previous);
       return true;
     }
-    function create(host = globalThis) {
+    function create(host = globalThis, options = {}) {
+      const random = options.random || Math.random;
+      const Renderer =
+        options.Renderer === undefined ? ToyRenderer : options.Renderer;
       const state = {};
       const env = {
+        get random() {
+          return random;
+        },
         get state() {
           return state;
         },
@@ -299,7 +305,7 @@
 
       const $ = (id) => host.document.getElementById(id),
         clamp = (v, a, b) => Math.max(a, Math.min(b, v)),
-        R = (a, b) => a + Math.random() * (b - a);
+        R = (a, b) => a + random() * (b - a);
       /* audio y vibración */
 
       Object.assign(state, {
@@ -374,8 +380,8 @@
 
       renderStatus(false);
       try {
-        if (typeof ToyRenderer !== 'undefined')
-          state.renderer3d = new ToyRenderer(
+        if (typeof Renderer === 'function')
+          state.renderer3d = new Renderer(
             $('world3d'),
             () => {
               pauseGame();

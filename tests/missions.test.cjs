@@ -1,9 +1,113 @@
-const {test}=require('node:test');const assert=require('node:assert/strict');require('../src/toy-missions.js');require('../src/toy-world.js');
-const {Mission,configs,segmentHit}=globalThis.ToyMissions;
-const advance=(m,p,seconds,controls={})=>{const events=[];for(let i=0;i<seconds*20;i++){const e=m.update(.05,p,controls);if(e)events.push(e)}return events};
-test('every mission has reachable camps and rescue points clear of props',()=>{configs.forEach((c,i)=>{const m=new Mission(i+1);for(const [x,z] of c.bases)assert.ok(ToyWorld.clearOfLandmarks(x,z,10));for(const a of m.allies){assert.ok(Math.abs(a.x)<190&&Math.abs(a.z)<190);assert.ok(ToyWorld.clearOfLandmarks(a.x,a.z,3))}})});
-test('locked allies cannot board and repeated releases cannot inflate progress',()=>{const m=new Mission(1),a=m.allies[0];advance(m,a,3);assert.equal(m.rescued,0);m.release(undefined);assert.equal(m.freed.size,0);m.release(0);m.release(0);assert.equal(m.freed.size,1);assert.equal(a.state,'waiting')});
-test('movement, firing, damage and leaving the radius reset pickup progress',()=>{for(const control of ['moving','firing','damaged','outside']){const m=new Mission(1);m.release(0);const a=m.allies[0];advance(m,a,1);m.update(.05,control==='outside'?{x:0,z:0}:a,{[control]:true});assert.equal(m.hold,0);advance(m,a,1);assert.equal(m.rescued,0);advance(m,a,.5);assert.equal(m.rescued,1)}});
-test('all three missions complete only after rescue and a stationary extraction',()=>{for(let n=1;n<=3;n++){const m=new Mission(n);m.config.bases.forEach((_,i)=>m.release(i));advance(m,{x:0,z:0},3);assert.equal(m.complete,false);for(const a of m.allies){advance(m,a,1.5);assert.equal(a.state,'rescued')}assert.equal(m.rescued,m.allies.length);assert.equal(m.complete,false);advance(m,{x:0,z:0},1);m.update(.05,{x:0,z:0},{firing:true});assert.equal(m.hold,0);const events=advance(m,{x:0,z:0},3);assert.deepEqual(events,['complete']);assert.equal(m.complete,true);assert.equal(m.update(.05,{x:0,z:0}),null)}});
-test('campaign bounds prevent undefined next missions',()=>{assert.throws(()=>new Mission(4),RangeError);assert.throws(()=>new Mission(0),RangeError)});
-test('swept impact hits a small target crossed in one frame but misses other heights',()=>{assert.ok(segmentHit({x:-10,y:2,z:0},{x:10,y:2,z:0},{x:0,y:2,z:0},1)<.5);assert.equal(segmentHit({x:-10,y:8,z:0},{x:10,y:8,z:0},{x:0,y:2,z:0},1),null);assert.equal(segmentHit({x:0,y:0,z:0},{x:0,y:0,z:0},{x:0,y:0,z:0},1),0);assert.equal(segmentHit({x:3,y:0,z:0},{x:3,y:0,z:0},{x:0,y:0,z:0},1),null)});
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const ToyWorld = require('../src/toy-world.js');
+const { Mission, configs, segmentHit } = require('../src/toy-missions.js');
+const advance = (m, p, seconds, controls = {}) => {
+  const events = [];
+  for (let i = 0; i < seconds * 20; i++) {
+    const e = m.update(0.05, p, controls);
+    if (e) events.push(e);
+  }
+  return events;
+};
+test('every mission has reachable camps and rescue points clear of props', () => {
+  configs.forEach((c, i) => {
+    const m = new Mission(i + 1);
+    for (const [x, z] of c.bases)
+      assert.ok(ToyWorld.clearOfLandmarks(x, z, 10));
+    for (const a of m.allies) {
+      assert.ok(Math.abs(a.x) < 190 && Math.abs(a.z) < 190);
+      assert.ok(ToyWorld.clearOfLandmarks(a.x, a.z, 3));
+    }
+  });
+});
+test('locked allies cannot board and repeated releases cannot inflate progress', () => {
+  const m = new Mission(1),
+    a = m.allies[0];
+  advance(m, a, 3);
+  assert.equal(m.rescued, 0);
+  m.release(undefined);
+  assert.equal(m.freed.size, 0);
+  m.release(0);
+  m.release(0);
+  assert.equal(m.freed.size, 1);
+  assert.equal(a.state, 'waiting');
+});
+test('movement, firing, damage and leaving the radius reset pickup progress', () => {
+  for (const control of ['moving', 'firing', 'damaged', 'outside']) {
+    const m = new Mission(1);
+    m.release(0);
+    const a = m.allies[0];
+    advance(m, a, 1);
+    m.update(0.05, control === 'outside' ? { x: 0, z: 0 } : a, {
+      [control]: true,
+    });
+    assert.equal(m.hold, 0);
+    advance(m, a, 1);
+    assert.equal(m.rescued, 0);
+    advance(m, a, 0.5);
+    assert.equal(m.rescued, 1);
+  }
+});
+test('all three missions complete only after rescue and a stationary extraction', () => {
+  for (let n = 1; n <= 3; n++) {
+    const m = new Mission(n);
+    m.config.bases.forEach((_, i) => m.release(i));
+    advance(m, { x: 0, z: 0 }, 3);
+    assert.equal(m.complete, false);
+    for (const a of m.allies) {
+      advance(m, a, 1.5);
+      assert.equal(a.state, 'rescued');
+    }
+    assert.equal(m.rescued, m.allies.length);
+    assert.equal(m.complete, false);
+    advance(m, { x: 0, z: 0 }, 1);
+    m.update(0.05, { x: 0, z: 0 }, { firing: true });
+    assert.equal(m.hold, 0);
+    const events = advance(m, { x: 0, z: 0 }, 3);
+    assert.deepEqual(events, ['complete']);
+    assert.equal(m.complete, true);
+    assert.equal(m.update(0.05, { x: 0, z: 0 }), null);
+  }
+});
+test('campaign bounds prevent undefined next missions', () => {
+  assert.throws(() => new Mission(4), RangeError);
+  assert.throws(() => new Mission(0), RangeError);
+});
+test('swept impact hits a small target crossed in one frame but misses other heights', () => {
+  assert.ok(
+    segmentHit(
+      { x: -10, y: 2, z: 0 },
+      { x: 10, y: 2, z: 0 },
+      { x: 0, y: 2, z: 0 },
+      1,
+    ) < 0.5,
+  );
+  assert.equal(
+    segmentHit(
+      { x: -10, y: 8, z: 0 },
+      { x: 10, y: 8, z: 0 },
+      { x: 0, y: 2, z: 0 },
+      1,
+    ),
+    null,
+  );
+  assert.equal(
+    segmentHit(
+      { x: 0, y: 0, z: 0 },
+      { x: 0, y: 0, z: 0 },
+      { x: 0, y: 0, z: 0 },
+      1,
+    ),
+    0,
+  );
+  assert.equal(
+    segmentHit(
+      { x: 3, y: 0, z: 0 },
+      { x: 3, y: 0, z: 0 },
+      { x: 0, y: 0, z: 0 },
+      1,
+    ),
+    null,
+  );
+});

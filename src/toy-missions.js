@@ -165,7 +165,7 @@
     const t = (-B - Math.sqrt(D)) / (2 * A);
     return t >= 0 && t <= 1 ? t : null;
   }
-  root.ToyMissions = { Mission, configs, segmentHit };
-  if (typeof module === 'object' && module.exports)
-    module.exports = root.ToyMissions;
+  const api = { Mission, configs, segmentHit };
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.ToyMissions = api;
 })(globalThis);

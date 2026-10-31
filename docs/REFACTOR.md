@@ -68,3 +68,11 @@ La rotura de juguetes queda pendiente para una entrega funcional posterior.
   La tabla incluye over→play (reintentar), win→play (siguiente) y campaign→play
   (jugar de nuevo), necesarios para conservar las acciones existentes.
 - 53 pruebas Node aprobadas; smoke Chromium file:// aprobado.
+
+## Evidencia fase 4
+
+- 44 pruebas Node aprobadas: combate y transiciones directos, ocho integraciones
+  con host simulado y generador aleatorio inyectado/reproducible.
+- Las pruebas de juego ya no evalúan el HTML; los módulos exportan APIs CommonJS.
+- Smoke Chromium real file:// aprobado: jugar/disparar, pausar, menús, ajustes,
+  continuar, girar y abandonar; sin errores JavaScript.

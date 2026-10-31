@@ -1,5 +1,9 @@
 /* Dependency-free WebGL 1 renderer. World units and camera match the game. */
-(function (root) {
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports)
+    module.exports = factory(require('./toy-world.js'), root);
+  else root.ToyRenderer = factory(root.ToyWorld, root);
+})(globalThis, function (ToyWorld, root) {
   'use strict';
   const VS = `
 attribute vec3 position; attribute vec3 normal;
@@ -213,8 +217,8 @@ void main(){
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
         this.meshes[kind] = { buffer, count: data.length / 6 };
       }
-      if (root.ToyWorld) {
-        const data = root.ToyWorld.mesh(),
+      if (ToyWorld) {
+        const data = ToyWorld.mesh(),
           buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
@@ -263,7 +267,7 @@ void main(){
       this.part(
         'sphere',
         x,
-        (root.ToyWorld ? root.ToyWorld.height(x, z) : 0) + 0.06,
+        (ToyWorld ? ToyWorld.height(x, z) : 0) + 0.06,
         z,
         3.4,
         0.04,
@@ -441,7 +445,7 @@ void main(){
         Math.sin(PITCH),
         -Math.cos(cam.yaw) * Math.cos(PITCH),
       );
-      const world = root.ToyWorld;
+      const world = ToyWorld;
       this.groundOffset = 0;
       if (world)
         this.part('terrain', 0, 0, 0, 1, 1, 1, [0.39, 0.5, 0.24], 0, -1);
@@ -783,7 +787,5 @@ void main(){
     }
   }
   ToyRenderer.geometry = geometry;
-  root.ToyRenderer = ToyRenderer;
-  if (typeof module === 'object' && module.exports)
-    module.exports = root.ToyRenderer;
-})(globalThis);
+  return ToyRenderer;
+});

@@ -335,7 +335,7 @@
       0.36,
     );
   }
-  root.ToyWorld = {
+  const api = {
     height,
     mesh,
     roads,
@@ -346,6 +346,6 @@
     clearOfLandmarks,
     drawGround,
   };
-  if (typeof module === 'object' && module.exports)
-    module.exports = root.ToyWorld;
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.ToyWorld = api;
 })(globalThis);
