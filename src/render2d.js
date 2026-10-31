@@ -20,11 +20,12 @@
         decorationRescued = scene.mission ? scene.mission.rescued : 0;
         decoration = scene.DC.filter(
           (d) =>
-            !scene.mission ||
-            !scene.mission.allies.some(
-              (a) =>
-                a.state !== 'rescued' && Math.hypot(a.x - d.x, a.z - d.z) < 7,
-            ),
+            (!scene.ToyWorld || scene.ToyWorld.clearOfLandmarks(d.x, d.z, 3)) &&
+            (!scene.mission ||
+              !scene.mission.allies.some(
+                (a) =>
+                  a.state !== 'rescued' && Math.hypot(a.x - d.x, a.z - d.z) < 7,
+              )),
         );
       }
       return decoration;
@@ -489,16 +490,34 @@
           }
         });
       if (typeof scene.ToyWorld !== 'undefined') {
-        for (const r of scene.ToyWorld.rocks)
-          add(r.x, scene.groundAt(r.x, r.z), r.z, (p) =>
-            ell(
-              p[0],
-              p[1] - r.s * p[2] * 0.4,
-              r.s * p[2],
-              r.s * p[2] * 0.65,
-              '#727960',
-            ),
-          );
+        for (const r of scene.ToyWorld.rocks) {
+          const h = scene.groundAt(r.x, r.z);
+          const parts = [
+            {
+              kind: 'sphere',
+              x: r.x,
+              y: h + r.s * 0.45,
+              z: r.z,
+              sx: r.s,
+              sy: r.s * 0.65,
+              sz: r.s * 0.85,
+              yaw: r.x,
+              color: [0.38, 0.4, 0.32],
+            },
+            {
+              kind: 'sphere',
+              x: r.x + 2,
+              y: h + 0.45,
+              z: r.z + 1,
+              sx: 1.3,
+              sy: 0.6,
+              sz: 1,
+              yaw: 0,
+              color: [0.28, 0.42, 0.17],
+            },
+          ];
+          for (const p of parts) add(p.x, p.y, p.z, () => yardPart(p));
+        }
         for (const o of scene.ToyWorld.yard || [])
           add(o.x, o.y, o.z, () => yardPart(o));
       }

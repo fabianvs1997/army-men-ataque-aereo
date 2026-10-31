@@ -9,6 +9,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | prefs | Lectura y escritura de preferencias con almacenamiento opcional |
 | audio | AudioContext, tonos, ruido cacheado, zumbido; callbacks isPlaying/isMuted |
 | input | Teclado y punteros; read() y clear() |
+| collision | Volúmenes del escenario, índice espacial, barrido de proyectiles y movimiento |
 | debris | Componentes de juguetes, astillas, gravedad, rebotes y límite de restos |
 | combat | Velocidad de disparo, impactos, bajas y proyectiles |
 | render2d | Sprites y dibujo a partir de scene; caché de decoración |
@@ -29,3 +30,11 @@ El generador por defecto sigue siendo Math.random; las pruebas inyectan semillas
 Los restos viven en state.DB. Combat emite fragmentos y Game los actualiza solo
 durante play. No tienen colisión jugable ni alteran daño, puntuación o suministros.
 Game.create permite visualRandom independiente de random para pruebas de efectos.
+
+Collision.create(scene, world) toma las piezas del patio directamente de ToyWorld,
+con cajas orientadas y elipsoides para vegetación/rocas. Cachea un índice espacial
+para objetos fijos; los restos usan su posición actual. La selección de vegetación
+excluye las piezas ocultas alrededor de rescates. trace devuelve el primer contacto;
+move barre ambos ejes para detener y deslizar cuerpos. Combat compara el contacto
+con el del objetivo y comprueba la visibilidad de las víctimas antes del daño de misil.
+Los obstáculos del patio son sólidos pero no destructibles en esta entrega.

@@ -495,10 +495,7 @@ void main(){
         visible = (o) => Math.hypot(o.x - cam.x, o.z - cam.z) < radius;
       if (world) {
         for (const r of world.rocks)
-          if (
-            visible(r) &&
-            !E.some((e) => Math.hypot(e.x - r.x, e.z - r.z) < e.r + 5)
-          ) {
+          if (visible(r)) {
             const y = world.height(r.x, r.z);
             this.part(
               'sphere',
