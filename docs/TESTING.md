@@ -58,3 +58,12 @@ sobre el terreno y ambos renderers en file://. Captura imágenes en /tmp.
 Las pruebas Node cubren daño repetido, piezas separadas una sola vez, misiles,
 persistencia, límite de restos, pausa y limpieza de misión. Validación física de
 rendimiento en iPhone pendiente; el límite es 320 piezas, no una garantía de FPS.
+
+## Cobertura y objetos sólidos
+
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-cover.cjs` usa la regadera
+real del mapa: detrás no se recibe daño; al salir se recibe el disparo. Comprueba
+movimiento detenido, paso por encima y renderizado WebGL/Canvas en ambas orientaciones.
+Pruebas directas: cajas giradas, elipsoides, proyectiles rápidos, primer contacto,
+misiles y cobertura frente a daño de área, deslizamiento, altura, restos, vegetación
+oculta, terreno y prevención de atravesar un objeto desde su superficie.

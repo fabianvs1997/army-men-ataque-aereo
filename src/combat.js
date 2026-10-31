@@ -119,6 +119,11 @@
             target = e;
           }
         }
+        const obstruction = env.cover?.trace(previous, b);
+        if (obstruction && obstruction.t <= nearest) {
+          b.l = 0;
+          target = null;
+        }
         if (target) {
           hitEnemy(target, 1, {
             x: previous.x + (b.x - previous.x) * nearest,
@@ -155,6 +160,8 @@
             );
             if (fraction !== null && fraction < nearest) nearest = fraction;
           }
+        const obstruction = env.cover?.trace(previous, o);
+        if (obstruction) nearest = Math.min(nearest, obstruction.t);
         if (nearest !== Infinity) {
           o.x = previous.x + (o.x - previous.x) * nearest;
           o.y = previous.y + (o.y - previous.y) * nearest;
@@ -164,13 +171,28 @@
         if (o.y < env.groundAt(o.x, o.z)) ex = true;
         if (ex) {
           o.l = 0;
-          // Missile damage is unchanged; enemy breakage supplies the visual effect.
-          for (const e of env.E)
-            if (
+          // Resolve on the incident side so splash cannot leak through a solid wall.
+          const length = Math.hypot(
+            o.x - previous.x,
+            o.y - previous.y,
+            o.z - previous.z,
+          );
+          const blast =
+            length > 0
+              ? {
+                  x: o.x - ((o.x - previous.x) / length) * 0.03,
+                  y: o.y - ((o.y - previous.y) / length) * 0.03,
+                  z: o.z - ((o.z - previous.z) / length) * 0.03,
+                }
+              : o;
+          // Snapshot visibility before this blast creates new wreckage.
+          const victims = env.E.filter(
+            (e) =>
               !e.dead &&
-              Math.hypot(e.x - o.x, center(e).y - o.y, e.z - o.z) < e.r + 8
-            )
-              hitEnemy(e, 6);
+              Math.hypot(e.x - o.x, center(e).y - o.y, e.z - o.z) < e.r + 8 &&
+              !env.cover?.trace(blast, center(e)),
+          );
+          for (const e of victims) hitEnemy(e, 6);
         }
       }
       for (const b of env.EB) {
@@ -179,7 +201,13 @@
         b.x += b.vx * dt;
         b.y += b.vy * dt;
         b.z += b.vz * dt;
-        if (env.ToyMissions.segmentHit(previous, b, env.P, 3) !== null) {
+        const playerHit = env.ToyMissions.segmentHit(previous, b, env.P, 3);
+        const obstruction = env.cover?.trace(previous, b);
+        if (obstruction && (playerHit === null || obstruction.t <= playerHit)) {
+          b.l = 0;
+          continue;
+        }
+        if (playerHit !== null) {
           env.hurt();
           b.l = 0;
           if (env.st === 'over') return false;

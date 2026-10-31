@@ -1,6 +1,18 @@
 # Changelog
 
-## Sin publicar — rotura de juguetes
+## Sin publicar — objetos sólidos y cobertura
+
+- Los elementos del patio, rocas, vegetación y restos de plástico bloquean
+  proyectiles de ambos bandos según su volumen y altura.
+- Los misiles impactan contra los obstáculos y su daño no atraviesa cobertura.
+- El helicóptero y los enemigos móviles se detienen/deslizan al tocar obstáculos;
+  los elementos bajos se pueden sobrevolar.
+- Se buscan posiciones libres al generar enemigos. Colisiones barridas evitan
+  atravesar objetos delgados entre frames; índice espacial para elementos fijos.
+- Corregida la desaparición de rocas al acercarse un enemigo para evitar cobertura
+  invisible; ambos renderers comparten la selección de vegetación visible.
+
+## Rotura de juguetes
 
 - Los impactos desprenden astillas y dejan marcas de plástico roto.
 - Bases y helicópteros pierden cubierta/cabina tras varios impactos.

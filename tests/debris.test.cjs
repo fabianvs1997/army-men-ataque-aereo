@@ -96,11 +96,15 @@ test('surviving bases shed their roof once and do not duplicate it on destructio
   assert.equal(roofs(), 1);
 });
 test('missile damage shatters nearby toys without spawning fireball FX', () => {
-  const {app,state}=game();app.start(1,true);state.E=[];
-  app.spawnE('tank',20,20);
-  const e=state.E[0];
-  state.MS=[{x:e.x,y:e.y+1,z:e.z,vx:0,vz:0,l:.01}];
-  app.combat.stepProjectiles(.02);
-  assert.equal(e.dead,1);assert.equal(state.FX.length,0);
-  assert.ok(state.DB.some(p=>p.large));assert.equal(state.P.sc,30);
+  const { app, state } = game();
+  app.start(1, true);
+  state.E = [];
+  app.spawnE('tank', 0, 0);
+  const e = state.E[0];
+  state.MS = [{ x: e.x, y: e.y + 1, z: e.z, vx: 0, vz: 0, l: 0.01 }];
+  app.combat.stepProjectiles(0.02);
+  assert.equal(e.dead, 1);
+  assert.equal(state.FX.length, 0);
+  assert.ok(state.DB.some((p) => p.large));
+  assert.equal(state.P.sc, 30);
 });

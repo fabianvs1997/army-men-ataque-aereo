@@ -1,6 +1,7 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports)
     module.exports = factory(
+      require('./collision.js'),
       require('./prefs.js'),
       require('./audio.js'),
       require('./input.js'),
@@ -13,6 +14,7 @@
     );
   else
     root.ToyGame = factory(
+      root.ToyCollision,
       root.ToyPrefs,
       root.ToyAudio,
       root.ToyInput,
@@ -26,6 +28,7 @@
 })(
   typeof globalThis !== 'undefined' ? globalThis : this,
   function (
+    ToyCollision,
     ToyPrefs,
     ToyAudio,
     ToyInput,
@@ -62,6 +65,9 @@
       const env = {
         get random() {
           return random;
+        },
+        get cover() {
+          return cover;
         },
         get state() {
           return state;
@@ -275,6 +281,7 @@
         audioEngine;
       const input = ToyInput.create(env),
         { clearInput, updateStick } = input;
+      const cover = ToyCollision.create(env, ToyWorld);
       const combat = ToyCombat.create(env),
         { mk, boom, hit, kill, gunVelocity, stepProjectiles, stepDebris } =
           combat;
@@ -438,6 +445,35 @@
       state.DC = typeof ToyWorld === 'undefined' ? [] : ToyWorld.shrubs;
 
       function spawnE(k, x, z) {
+        const radius = { base: 6, tank: 3.5, tur: 2.5, inf: 0.7, heli: 1.8 }[k];
+        const free = (nx, nz) =>
+          !cover.overlaps(
+            { x: nx, y: k === 'heli' ? 8 : groundAt(nx, nz) + 2, z: nz },
+            radius,
+            k === 'base' ? 2.5 : 1.3,
+          );
+        if (!free(x, z)) {
+          const ox = x,
+            oz = z;
+          search: for (let distance = 3; distance <= 30; distance += 3)
+            for (let i = 0; i < 16; i++) {
+              const nx = clamp(
+                  ox + Math.cos((i * Math.PI) / 8) * distance,
+                  -185,
+                  185,
+                ),
+                nz = clamp(
+                  oz + Math.sin((i * Math.PI) / 8) * distance,
+                  -185,
+                  185,
+                );
+              if (free(nx, nz)) {
+                x = nx;
+                z = nz;
+                break search;
+              }
+            }
+        }
         state.E.push({
           k,
           x,
@@ -550,8 +586,13 @@
           const vx = -right * Math.cos(cam.yaw) + up * Math.sin(cam.yaw),
             vz = right * Math.sin(cam.yaw) + up * Math.cos(cam.yaw);
           state.P.yaw = Math.atan2(vx, vz);
-          state.P.x = clamp(state.P.x + vx * 28 * magnitude * dt, -190, 190);
-          state.P.z = clamp(state.P.z + vz * 28 * magnitude * dt, -190, 190);
+          const next = cover.move(state.P, {
+            x: clamp(state.P.x + vx * 28 * magnitude * dt, -190, 190),
+            y: state.P.y,
+            z: clamp(state.P.z + vz * 28 * magnitude * dt, -190, 190),
+          });
+          state.P.x = next.x;
+          state.P.z = next.z;
         }
         const fx = Math.sin(state.P.yaw),
           fz = Math.cos(state.P.yaw);
@@ -634,6 +675,11 @@
             dz = state.P.z - e.z,
             d = Math.hypot(dx, dz),
             a = Math.atan2(dx, dz);
+          const previousPosition = {
+            x: e.x,
+            y: e.y + (e.k === 'heli' ? 0 : 1.5),
+            z: e.z,
+          };
           if (e.k === 'heli') {
             const q = d > 32 ? 1 : 0;
             e.x += (Math.sin(a) * 18 * q + Math.cos(a) * 10 * (1 - q)) * dt;
@@ -647,6 +693,14 @@
             e.x += Math.sin(a) * 3 * dt;
             e.z += Math.cos(a) * 3 * dt;
           }
+          const solidPosition = cover.move(
+            previousPosition,
+            { x: e.x, y: previousPosition.y, z: e.z },
+            e.k === 'inf' ? 0.65 : 1.8,
+            e.k === 'inf' ? 1.4 : 1.3,
+          );
+          e.x = solidPosition.x;
+          e.z = solidPosition.z;
           if (e.k !== 'heli') e.y = groundAt(e.x, e.z);
           const rg =
             e.k === 'tur'
