@@ -45,6 +45,8 @@ const path = require('node:path');
         const p = g.state.P;
         return {
           yaw,
+          x: p.x,
+          z: p.z,
           after: p.yaw,
           camera: g.view.cam.yaw,
           player: g.render2d.P3(p.x, p.y, p.z),
@@ -55,7 +57,18 @@ const path = require('node:path');
           ),
         };
       });
-      assert.equal(values.yaw, values.after);
+      if (direction === 'w' || direction === 's') {
+        assert.equal(values.after, 0);
+        assert.ok(values.z * (direction === 'w' ? 1 : -1) > 0);
+      } else {
+        assert.ok(
+          Math.abs(
+            values.after - ((direction === 'a' ? 1 : -1) * 1.8 * 31) / 60,
+          ) < 1e-8,
+        );
+        assert.equal(values.x, 0);
+        assert.equal(values.z, 0);
+      }
       assert.equal(values.after, values.camera);
       assert.ok(Math.abs(values.player[0] - values.ahead[0]) < 1e-6);
       assert.ok(values.ahead[1] < values.player[1]);
@@ -105,7 +118,7 @@ const path = require('node:path');
     await page.screenshot({ path: '/tmp/follow-canvas.png' });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS follow: four held directions without orbit, camera aligned with nose, forward projects upward, framing and controls in three viewports, WebGL/Canvas',
+      'PASS follow: forward/reverse without flips, progressive steering, camera aligned with nose, forward projects upward, framing and controls in three viewports, WebGL/Canvas',
     );
   } finally {
     await browser.close();

@@ -1,5 +1,15 @@
 # Changelog
 
+## Sin publicar — controles para cámara de seguimiento
+
+- Arriba/W avanza y abajo/S retrocede conservando el rumbo, sin giro de 180°.
+- Izquierda/A y derecha/D giran progresivamente, también combinados con avance o retroceso.
+- Eliminada la referencia fija por gesto: se puede cambiar de maniobra sin levantar el dedo.
+- Zona muerta radial del 12 %, respuesta proporcional y diagonales sin velocidad extra.
+- Teclas opuestas se cancelan; disparo y pilotaje mantienen propietarios táctiles independientes.
+- Ayuda actualizada con el esquema de conducción.
+
+
 ## Sin publicar — cámara alineada con el helicóptero
 
 - La cámara sigue posición y rumbo del jugador: la vista permanece detrás, mirando hacia la nariz.
