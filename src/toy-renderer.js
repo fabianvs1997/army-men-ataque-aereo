@@ -508,7 +508,9 @@ void main(){
         );
       this.part('box', 0, 0.32, 0, 2, 0.04, 0.35, [0.84, 0.8, 0.58], 0, 0);
 
-      const radius = Math.hypot(W, H) / (2 * F) + 24,
+      // The lower viewing angle and off-center framing expose more distant ground.
+      const radius =
+          Math.hypot(W / 2, Math.max(HY, H - HY) / Math.sin(PITCH)) / F + 48,
         visible = (o) => Math.hypot(o.x - cam.x, o.z - cam.z) < radius;
       if (world) {
         for (const r of world.rocks)

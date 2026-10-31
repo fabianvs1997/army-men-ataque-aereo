@@ -75,3 +75,9 @@ controlados con entrada de teclado real: nariz abajo durante movimiento, arriba
 al soltar y regreso a nivel. Comprueba WebGL/Canvas y ambas orientaciones, con
 capturas en /tmp. Pruebas directas cubren límites, dirección, suavizado entre tasas
 de frames, colisión, pausa/reinicio y restablecimiento de uniforms del renderer.
+
+## Cámara cercana
+
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-camera.cjs` verifica
+encuadre en vertical, horizontal y cuadrado, posición del helicóptero al 64 %,
+controles dentro del viewport y WebGL/Canvas. Guarda capturas en /tmp.

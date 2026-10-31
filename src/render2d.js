@@ -368,7 +368,10 @@
     }
     function draw(nextScene) {
       if (nextScene) scene = nextScene;
-      scene.HY = scene.H * 0.52 + (scene.shk > 0 ? scene.R(-2, 2) : 0);
+      scene.HY =
+        (scene.cameraCenterY ??
+          scene.H * 0.64 + 8 * Math.cos(scene.PITCH) * scene.F) +
+        (scene.shk > 0 ? scene.R(-2, 2) : 0);
       if (
         scene.renderer3d &&
         scene.renderer3d.render({
@@ -398,7 +401,10 @@
         return;
       }
 
-      scene.HY = scene.H * 0.52 + (scene.shk > 0 ? scene.R(-2, 2) : 0);
+      scene.HY =
+        (scene.cameraCenterY ??
+          scene.H * 0.64 + 8 * Math.cos(scene.PITCH) * scene.F) +
+        (scene.shk > 0 ? scene.R(-2, 2) : 0);
       scene.ctx.fillStyle = '#607c49';
       scene.ctx.fillRect(0, 0, scene.W, scene.H);
       if (typeof scene.ToyWorld !== 'undefined')
