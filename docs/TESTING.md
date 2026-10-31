@@ -67,3 +67,11 @@ movimiento detenido, paso por encima y renderizado WebGL/Canvas en ambas orienta
 Pruebas directas: cajas giradas, elipsoides, proyectiles rápidos, primer contacto,
 misiles y cobertura frente a daño de área, deslizamiento, altura, restos, vegetación
 oculta, terreno y prevención de atravesar un objeto desde su superficie.
+
+## Inclinación del helicóptero
+
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-pitch.cjs` avanza frames
+controlados con entrada de teclado real: nariz abajo durante movimiento, arriba
+al soltar y regreso a nivel. Comprueba WebGL/Canvas y ambas orientaciones, con
+capturas en /tmp. Pruebas directas cubren límites, dirección, suavizado entre tasas
+de frames, colisión, pausa/reinicio y restablecimiento de uniforms del renderer.

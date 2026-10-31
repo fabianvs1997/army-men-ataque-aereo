@@ -8,14 +8,22 @@
   const VS = `
 attribute vec3 position; attribute vec3 normal;
 uniform vec3 origin, size; uniform float yaw;
+uniform vec3 tiltPivot; uniform float tiltAngle, tiltYaw;
 uniform vec2 camera, viewport; uniform float cameraYaw, pitch, scale, centerY;
 varying mediump vec3 surfaceNormal;
 varying mediump vec3 worldPosition;
+vec3 tiltVector(vec3 v){
+ vec2 forward=vec2(sin(tiltYaw),cos(tiltYaw));
+ float along=dot(v.xz,forward),c=cos(tiltAngle),s=sin(tiltAngle);
+ float shifted=along*c+v.y*s;
+ return vec3(v.x+forward.x*(shifted-along),v.y*c-along*s,v.z+forward.y*(shifted-along));
+}
 void main(){
  float s=sin(yaw),c=cos(yaw); vec3 p=position*size;
  p=vec3(p.x*c+p.z*s,p.y,-p.x*s+p.z*c)+origin;
+ p=tiltPivot+tiltVector(p-tiltPivot);
  worldPosition=p;
- vec3 n=normal/size; surfaceNormal=normalize(vec3(n.x*c+n.z*s,n.y,-n.x*s+n.z*c));
+ vec3 n=normal/size; surfaceNormal=normalize(tiltVector(vec3(n.x*c+n.z*s,n.y,-n.x*s+n.z*c)));
  vec2 d=p.xz-camera;float f=d.x*sin(cameraYaw)+d.y*cos(cameraYaw);
  float r=-d.x*cos(cameraYaw)+d.y*sin(cameraYaw);
  float u=p.y*cos(pitch)+f*sin(pitch);
@@ -193,6 +201,9 @@ void main(){
       this.program = program;
       this.loc = {};
       for (const name of [
+        'tiltPivot',
+        'tiltAngle',
+        'tiltYaw',
         'origin',
         'size',
         'yaw',
@@ -254,6 +265,7 @@ void main(){
       tan = false,
       flash = false,
       detached = false,
+      pitch = 0,
     ) {
       const col = flash
           ? [1, 1, 1]
@@ -285,6 +297,10 @@ void main(){
         yaw,
         0,
       );
+      // Rotate the entire model around its center; its ground shadow stays flat.
+      this.gl.uniform3f(this.loc.tiltPivot, x, y, z);
+      this.gl.uniform1f(this.loc.tiltYaw, yaw);
+      this.gl.uniform1f(this.loc.tiltAngle, pitch);
       p('sphere', 0, 0, 0, 1.7, 1.35, 2.6);
       // Raised center seam, engine vents and recessed screw caps read as molded toys.
       p('rounded', 0, 1.32, 0.35, 0.045, 0.035, 1.4, dark);
@@ -319,6 +335,7 @@ void main(){
       p('box', 0, 2, 0, 0.15, 0.6, 0.15, dark);
       p('box', 0, 2.6, 0, 5.6, 0.055, 0.17, dark, rot);
       p('box', 0, 2.6, 0, 0.17, 0.055, 5.6, dark, rot);
+      this.gl.uniform1f(this.loc.tiltAngle, 0);
     }
     soldier(x, y, z, friendly, yaw = 0, waiting = false) {
       const col = friendly ? [0.24, 0.65, 0.16] : [0.77, 0.62, 0.36],
@@ -838,6 +855,8 @@ void main(){
           rot,
           false,
           P.inv > 0 && Math.floor(scene.t * 20) % 2 === 0,
+          false,
+          P.pitch || 0,
         );
       return true;
     }
