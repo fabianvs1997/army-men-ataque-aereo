@@ -1,2 +1,50 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Army Men: Ataque aéreo</title><meta http-equiv="refresh" content="0;url=army-men-ataque-aereo.html"></head><body><a href="army-men-ataque-aereo.html">Jugar Army Men: Ataque aéreo</a></body></html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Army Men: Ataque aéreo 3D</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="wrap">
+<canvas id="world3d" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;display:none"></canvas>
+<canvas id="c" aria-label="Juego de helicópteros de juguete en 3D"></canvas>
+<div id="ov" role="region" aria-labelledby="ti">
+<section class="menu-card">
+<div class="menu-kicker">Operación patio trasero</div>
+<h1 id="ti" tabindex="-1">ARMY MEN<span>Ataque aéreo</span></h1>
+<p id="tx">Un pequeño helicóptero. Un gran rescate. Libera a tu escuadrón en una campaña de tres misiones.</p>
+<button id="go">Iniciar campaña →</button>
+<nav id="menuNav" class="menu-nav" aria-label="Menú del juego">
+<button id="menuHelp" class="secondary">Cómo jugar</button>
+<button id="menuSettings" class="secondary">Ajustes</button>
+<button id="menuCredits" class="secondary">Acerca del juego</button>
+</nav>
+<div id="helpPane" class="menu-pane">
+<div class="briefing"><b>01</b><p><strong>Despega.</strong> Arrastra el escenario para moverte. Suelta el joystick para mantener la posición.</p></div>
+<div class="briefing"><b>02</b><p><strong>Libera.</strong> Destruye las bases beige. Mantén Fuego; la ametralladora ayuda a apuntar dentro de 12° a cada lado del morro. Usa Misil contra objetivos resistentes.</p></div>
+<div class="briefing"><b>03</b><p><strong>Rescata.</strong> Sigue la flecha. Quédate junto a cada soldado verde 1.5 s sin moverte, disparar ni recibir daño.</p></div>
+<div class="briefing"><b>04</b><p><strong>Regresa.</strong> Con todos a bordo, mantente 2 s en el helipuerto H para completar la misión.</p></div>
+<h2>Controles de teclado</h2><p>WASD / flechas: movimiento · Espacio: fuego · M / Mayús: misil · P / Esc: pausa.</p>
+<h2>Tu campaña</h2><p>Tres misiones con 2, 4 y 6 rescates. Reintentar conserva los puntos de las misiones anteriores. El progreso se pierde al recargar o abandonar la campaña.</p>
+</div>
+<div id="settingsPane" class="menu-pane">
+<button id="menuSound" class="secondary setting" aria-pressed="false">Silenciar</button>
+<button id="menuQuality" class="secondary setting" aria-pressed="false">Gráficos: detalle</button>
+<p>Detalle ofrece mayor resolución. Ahorro reduce la resolución y limita el dibujo a unos 30 cuadros por segundo para aligerar la carga.</p>
+<h2>Preferencias</h2><p>Sonido y gráficos se recuerdan en este navegador cuando permite guardarlos. Puedes cambiarlos también durante la partida.</p>
+</div>
+<div id="creditsPane" class="menu-pane"><h2>Un patio a escala de juguete</h2><p>Pilota un helicóptero de plástico entre maceteros, senderos y muebles de jardín. Combate, recoge a tus soldados y completa la extracción.</p><h2>Proyecto</h2><p>Desarrollado en el repositorio de fabianvs1997. Inspirado en los clásicos de helicópteros y soldados de juguete.</p></div>
+<div id="confirmPane" class="menu-pane"><p>Perderás el progreso de esta campaña. La próxima partida comenzará desde la misión 1. Tus preferencias de sonido y gráficos se conservarán.</p><button id="confirmExit">Abandonar campaña</button></div>
+<button id="menuExit" class="secondary" style="display:none">Volver al menú principal</button>
+<button id="back" class="secondary" style="display:none">← Volver</button>
+<div class="menu-footer">Juguetes de plástico. Misiones de rescate.<br>Campaña para un jugador · Sin guardado de progreso</div>
+</section>
+</div>
+<div id="stick" aria-hidden="true"><i id="knob"></i></div>
+<div id="hud"><button id="quality" aria-pressed="false">Gráficos: detalle</button><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
+</div>
+<script src="src/bootstrap.js"></script>
+</body>
+</html>

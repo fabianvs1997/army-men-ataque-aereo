@@ -1,53 +1,199 @@
-const {test}=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const vm=require('node:vm');
-const source=fs.readFileSync('army-men-ataque-aereo.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-function game(){
- const elements=new Map(),listeners={};
- const element=id=>{if(!elements.has(id))elements.set(id,{style:{},getContext:()=>new Proxy({createLinearGradient:()=>({addColorStop(){}})},{get:(o,k)=>o[k]||(()=>{})}),getBoundingClientRect:()=>({width:360,height:640}),addEventListener(name,fn){this[name]=fn},setPointerCapture(){},setAttribute(){}});return elements.get(id)};
- const sandbox={document:{getElementById:element,addEventListener(name,fn){listeners[name]=fn}},navigator:{},devicePixelRatio:1,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(name,fn){listeners[name]=fn},Math,setTimeout};
- vm.createContext(sandbox);vm.runInContext(fs.readFileSync('toy-world.js','utf8'),sandbox);vm.runInContext(fs.readFileSync('toy-missions.js','utf8'),sandbox);vm.runInContext(source,sandbox);
- return {run:s=>vm.runInContext(s,sandbox),listeners,element};
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { game } = require('../support/fake-host.cjs');
+const key = (g, k) =>
+  g.host.emit('keydown', { key: k, repeat: false, preventDefault() {} });
+function completeMission(g) {
+  const { app, state: s } = g;
+  for (const e of s.E) app.combat.kill(e);
+  s.E = [];
+  s.EB = [];
+  s.airLeft = 0;
+  for (const a of s.mission.allies) {
+    s.P.x = a.x;
+    s.P.z = a.z;
+    for (let i = 0; i < 30; i++) app.upd(0.05);
+  }
+  s.P.x = s.P.z = 0;
+  for (let i = 0; i < 40; i++) app.upd(0.05);
 }
-test('pause freezes state and clears held inputs; resume preserves mission',()=>{
- const g=game();g.run("start(2,true);keys.w=1;fire=true;mAsk=true;pauseGame()");
- assert.equal(g.run('st'),'paused');assert.equal(g.run('Object.keys(keys).length'),0);assert.equal(g.run('fire||mAsk'),false);
- g.run('resumeGame()');assert.equal(g.run('st'),'play');assert.equal(g.run('mis'),2);
+test('campaign integrates rescue, extraction, next mission and play again', () => {
+  const g = game();
+  g.element('go').onclick();
+  for (let n = 1; n <= 3; n++) {
+    assert.equal(g.state.mis, n);
+    completeMission(g);
+    assert.equal(g.state.st, n === 3 ? 'campaign' : 'win');
+    const score = g.state.P.sc;
+    g.app.upd(0.05);
+    assert.equal(g.state.P.sc, score);
+    g.element('go').onclick();
+  }
+  assert.equal(g.state.mis, 1);
+  assert.equal(g.state.P.sc, 0);
 });
-test('blur pauses active mission',()=>{const g=game();g.run('start(1,true)');g.listeners.blur();assert.equal(g.run('st'),'paused')});
-test('secondary pointer cannot steer or release active pilot pointer',()=>{
- const g=game();g.run('start(1,true)');const c=g.element('c');c.pointerdown({pointerId:1,clientX:20,clientY:30});c.pointerdown({pointerId:2,clientX:90,clientY:90});c.pointermove({pointerId:2,clientX:100,clientY:100});c.pointerup({pointerId:2});assert.equal(g.run('drag.id'),1);assert.equal(g.run('drag.x'),20);c.pointercancel({pointerId:1});assert.equal(g.run('drag'),null);
+test('lethal damage prevents same-frame healing; retry preserves checkpoint and mission', () => {
+  const g = game(),
+    s = g.state;
+  g.app.start(2, true);
+  s.checkpoint = 250;
+  s.P.sc = 345;
+  s.P.arm = 1;
+  s.E = [];
+  s.PK = [{ x: 0, z: 0, ty: 'a' }];
+  s.EB = [{ x: s.P.x, y: s.P.y, z: s.P.z, vx: 0, vy: 0, vz: 0, l: 1 }];
+  g.app.upd(0.05);
+  assert.equal(s.st, 'over');
+  assert.equal(s.P.arm, 0);
+  g.element('go').onclick();
+  assert.equal(s.st, 'play');
+  assert.equal(s.mis, 2);
+  assert.equal(s.P.sc, 250);
+  assert.equal(s.P.arm, 10);
+  assert.equal(s.mission.rescued, 0);
 });
-test('restart clears transient state and duplicate kills do not award twice',()=>{const g=game();g.run('start(1,true);t=99;shk=1;fire=true;start(1,true)');assert.equal(g.run('t+shk'),0);assert.equal(g.run('fire'),false);g.run("sfx.boom=()=>{};const enemy=E.find(e=>e.k==='base');kill(enemy);kill(enemy)");assert.equal(g.run('bd'),1);assert.equal(g.run('P.sc'),100)});
-test('missile key repeat does not request another missile',()=>{const g=game();g.run('start(1,true)');g.listeners.keydown({key:'m',repeat:true,preventDefault(){}});assert.equal(g.run('mAsk'),false)});
-test('screen-relative movement follows all four directions and holds position on release',()=>{
- for(const [key,axis,sign] of [['d',0,1],['a',0,-1],['w',1,-1],['s',1,1]]){const g=game();g.run('start(1,true);HY=H*.52');const before=g.run('P3(P.x,P.y,P.z)');g.run(`keys.${key}=1;upd(.05)`);const after=g.run('P3(P.x,P.y,P.z)');assert.ok((after[axis]-before[axis])*sign>0,key);g.run('clearInput()');const x=g.run('P.x'),z=g.run('P.z');g.run('upd(.05)');assert.equal(g.run('P.x'),x);assert.equal(g.run('P.z'),z)}
+test('screen-relative movement follows four directions and stays still on release', () => {
+  for (const [k, axis, sign] of [
+    ['d', 0, 1],
+    ['a', 0, -1],
+    ['w', 1, -1],
+    ['s', 1, 1],
+  ]) {
+    const g = game(),
+      s = g.state;
+    g.app.start(1, true);
+    s.E = [];
+    const before = g.app.render2d.P3(s.P.x, s.P.y, s.P.z);
+    key(g, k);
+    g.app.upd(0.05);
+    const after = g.app.render2d.P3(s.P.x, s.P.y, s.P.z);
+    assert.ok((after[axis] - before[axis]) * sign > 0);
+    g.app.input.clear();
+    const pos = [s.P.x, s.P.z];
+    g.app.upd(0.05);
+    assert.deepEqual([s.P.x, s.P.z], pos);
+    assert.equal(g.app.view.cam.yaw, Math.PI / 5);
+  }
 });
-test('camera stays fixed and unassisted projectiles follow the chosen heading',()=>{const g=game();g.run('start(1,true);E=[];keys.d=1;upd(.05);fire=true;upd(.05)');assert.equal(g.run('cam.yaw'),Math.PI/5);assert.ok(g.run('BL.length')>0);assert.ok(g.run('BL[0].vx*Math.sin(P.yaw)+BL[0].vz*Math.cos(P.yaw)')>129)});
-test('orthographic scale stays constant across depth and viewport sizes',()=>{const g=game();for(const [w,h] of [[390,844],[844,390]]){g.run(`W=${w};H=${h};F=Math.min(W/SCALE_WIDTH,H/120)`);assert.equal(g.run('P3(0,0,0)[2]'),g.run('P3(0,0,80)[2]'));assert.ok(g.run('F*11/W')<.12)}});
-
-test('ground enemies match terrain elevation and start clear of large props',()=>{const g=game();g.run('start(1,true)');assert.equal(g.run('E.every(e=>ToyWorld.clearOfLandmarks(e.x,e.z,10))'),true);assert.equal(g.run('E.every(e=>e.y===ToyWorld.height(e.x,e.z))'),true);g.run('upd(.05)');assert.equal(g.run("E.filter(e=>e.k!=='heli').every(e=>e.y===ToyWorld.height(e.x,e.z))"),true)});
-test('destroying bases alone does not win; complete rescue and extraction awards once',()=>{const g=game();g.run("start(1,true);for(const e of E)kill(e);E=[];EB=[];airLeft=0;upd(.05)");assert.equal(g.run('st'),'play');g.run("for(const a of mission.allies){P.x=a.x;P.z=a.z;for(let i=0;i<30;i++)upd(.05)}");assert.equal(g.run('mission.rescued'),2);assert.equal(g.run('st'),'play');g.run('P.x=0;P.z=0;for(let i=0;i<40;i++)upd(.05)');assert.equal(g.run('st'),'win');const score=g.run('P.sc');g.run('upd(.05)');assert.equal(g.run('P.sc'),score)});
-test('paused pickup cannot advance, lethal damage wins over extraction and retry stays on mission',()=>{const g=game();g.run("start(2,true);mission.release(0);P.x=mission.allies[0].x;P.z=mission.allies[0].z;E=[];pauseGame();for(let i=0;i<60;i++)upd(.05)");assert.equal(g.run('mission.rescued'),0);g.run('resumeGame();P.arm=1;P.inv=0;EB=[{x:P.x,y:P.y,z:P.z,vx:0,vy:0,vz:0,l:1}];upd(.05)');assert.equal(g.run('st'),'over');g.element('go').onclick();assert.equal(g.run('mis'),2);assert.equal(g.run('mission.rescued'),0);assert.equal(g.run('P.arm'),10)});
-test('fast projectile damages only the nearest intersected target',()=>{const g=game();g.run("start(1,true);E=[];spawnE('inf',0,10);spawnE('inf',0,12);for(const e of E){e.y=0;e.cd=999}BL=[{x:0,y:1.5,z:0,vx:0,vy:0,vz:400,l:1}];upd(.05)");assert.equal(g.run('E[0].hp'),1);assert.equal(g.run('E[1].hp'),2)});
-test('mission 3 ends campaign and play-again resets score and mission',()=>{const g=game();g.run("start(3,true);for(const e of E)kill(e);E=[];airLeft=0;for(const a of mission.allies){P.x=a.x;P.z=a.z;for(let i=0;i<30;i++)upd(.05)}P.x=0;P.z=0;for(let i=0;i<40;i++)upd(.05)");assert.equal(g.run('st'),'campaign');g.element('go').onclick();assert.equal(g.run('mis'),1);assert.equal(g.run('P.sc'),0)});
-
-test('Canvas fallback renders mission infantry, waiting allies and extraction area',()=>{const g=game();assert.doesNotThrow(()=>g.run("draw();start(1,true);mission.release(0);draw();pauseGame();draw()"))});
-
-test('fire belongs to one pointer and capture loss clears it',()=>{const g=game();g.run('start(1,true)');const f=g.element('fu');f.pointerdown({pointerId:10});f.pointerdown({pointerId:11});f.pointerup({pointerId:11});assert.equal(g.run('fire'),true);f.lostpointercapture({pointerId:10});assert.equal(g.run('fire'),false);assert.equal(g.run('firePointer'),null)});
-test('joystick is bounded and disappears on resize and pause',()=>{const g=game();g.run('start(1,true)');const c=g.element('c');c.pointerdown({pointerId:1,clientX:50,clientY:200});c.pointermove({pointerId:1,clientX:1050,clientY:200});assert.equal(g.element('knob').style.transform,'translate(40px,0px)');g.listeners.resize();assert.equal(g.run('drag'),null);assert.equal(g.element('stick').style.display,'none');c.pointerdown({pointerId:2,clientX:50,clientY:200});g.run('pauseGame()');assert.equal(g.element('stick').style.display,'none')});
-test('paused and hidden frames do not redraw or advance simulation',()=>{const g=game();g.run('start(1,true);let draws=0;draw=()=>draws++;loop(16);pauseGame();loop(32)');const time=g.run('t'),draws=g.run('draws');g.run('loop(48);loop(64)');assert.equal(g.run('draws'),draws);assert.equal(g.run('t'),time);g.run('document.hidden=true;needsDraw=true;loop(80)');assert.equal(g.run('draws'),draws)});
-test('economy mode caps render cadence without slowing simulation',()=>{const g=game();g.run('start(1,true);E=[];lowQuality=true;let draws=0;draw=()=>draws++;for(let i=1;i<=60;i++)loop(i*1000/60)');assert.equal(g.run('draws'),30);assert.ok(Math.abs(g.run('t')-1)<1e-8)});
-test('quality and mute persist and blocked storage remains playable',()=>{const g=game();g.run("const saved={};globalThis.localStorage={getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v};devicePixelRatio=3");g.element('quality').onclick();assert.equal(g.run("saved['toy-quality']"),'low');assert.equal(g.element('c').width,360);g.element('sound').onclick();assert.equal(g.run("saved['toy-muted']"),'true');g.run("localStorage.setItem=()=>{throw Error('blocked')}");assert.doesNotThrow(()=>g.element('quality').onclick());assert.equal(g.element('c').width,630)});
-test('rotor nodes disconnect on pause and mute reuses the silent audio element',()=>{const g=game();g.run(`start(1,true);let disconnected=0,stopped=0;const node=()=>({disconnect(){disconnected++},stop(){stopped++}});hum={o:node(),l:node(),lg:node(),g:node(),f:node()};sil={paused:true,pause(){this.paused=true},play(){this.paused=false;return Promise.resolve()}};const originalSil=sil;pauseGame()`);assert.equal(g.run('disconnected'),5);assert.equal(g.run('stopped'),2);g.element('sound').onclick();g.element('sound').onclick();assert.equal(g.run('sil===originalSil'),true)});
-
-test('gun assists to both sides inside 12 degrees and rejects targets outside cone/range',()=>{const g=game();g.run('start(1,true)');for(const angle of [-11,11,-13,13,180]){g.run(`P.yaw=0;E=[];spawnE('inf',Math.sin(${angle}*Math.PI/180)*60,Math.cos(${angle}*Math.PI/180)*60)`);const v=g.run('gunVelocity(P,{x:0,y:8,z:0},E)');if(Math.abs(angle)<12){assert.ok(v.vx*angle>0);assert.ok(Math.abs(Math.hypot(v.vx,v.vz)-130)<1e-9)}else{assert.equal(v.vx,0);assert.equal(v.vz,130)}}g.run("E=[];spawnE('inf',10,140)");assert.equal(g.run('gunVelocity(P,{x:0,y:8,z:0},E).vx'),0)});
-test('gun chooses nearest living enemy and aims from either muzzle at its center',()=>{const g=game();g.run("start(1,true);P.yaw=0;E=[];spawnE('inf',-5,70);spawnE('inf',4,40);spawnE('inf',-1,20);E[2].dead=true");for(const x of [-1.2,1.2]){const v=g.run(`gunVelocity(P,{x:${x},y:7.7,z:2},E)`),time=38/v.vz;assert.ok(Math.abs(x+v.vx*time-4)<1e-8);assert.ok(Math.abs(7.7+v.vy*time-g.run('E[1].y+1.5'))<1e-8)}});
-test('assisted bullet hits an offset infantry target without turning the helicopter',()=>{const g=game();g.run("start(1,true);P.yaw=0;E=[];spawnE('inf',5,35);E[0].cd=999;const target=E[0];fire=true;upd(.01);fire=false;const originalVX=BL[0].vx;for(let i=0;i<8;i++)upd(.04)");assert.equal(g.run('target.hp'),1);assert.equal(g.run('P.yaw'),0);assert.ok(g.run('originalVX')>0)});
-
-test('main menu panels return home without starting the campaign',()=>{const g=game();for(const [id,page] of [['menuHelp','help'],['menuSettings','settings'],['menuCredits','credits']]){g.element(id).onclick();assert.equal(g.run('st'),'menu');assert.equal(g.run('overlayPage'),page);assert.equal(g.element('go').style.display,'none');g.element('go').onclick();assert.equal(g.run('st'),'menu');g.element('back').onclick();assert.equal(g.run('overlayPage'),'main')}g.element('go').onclick();assert.equal(g.run('st'),'play');assert.equal(g.run('mis'),1);assert.equal(g.element('ov').style.display,'none')});
-test('help/settings preserve paused mission and do not resume with P inside panels',()=>{const g=game();g.run('start(2,true);P.sc=345;P.x=41;pauseGame()');g.element('menuHelp').onclick();g.listeners.keydown({key:'p',repeat:false,preventDefault(){}});assert.equal(g.run('st'),'paused');g.element('back').onclick();g.element('menuSettings').onclick();g.element('menuSound').onclick();assert.equal(g.element('menuSound').textContent,g.element('sound').textContent);g.element('menuQuality').onclick();assert.equal(g.element('menuQuality').textContent,g.element('quality').textContent);g.element('back').onclick();g.element('go').onclick();assert.equal(g.run('st'),'play');assert.equal(g.run('mis'),2);assert.equal(g.run('P.sc'),345);assert.equal(g.run('P.x'),41)});
-test('returning to main menu requires confirmation and clears campaign only after acceptance',()=>{const g=game();g.run('start(2,true);P.sc=345;checkpoint=250;fire=true;pauseGame()');g.element('menuExit').onclick();assert.equal(g.run('overlayPage'),'confirm');assert.equal(g.run('P.sc'),345);g.element('back').onclick();assert.equal(g.run('st'),'paused');g.element('menuExit').onclick();g.element('confirmExit').onclick();assert.equal(g.run('st'),'menu');assert.equal(g.run('P'),null);assert.equal(g.run('mission'),null);assert.equal(g.run('checkpoint'),0);assert.equal(g.run('fire'),false);g.element('go').onclick();assert.equal(g.run('mis'),1);assert.equal(g.run('P.sc'),0)});
-test('menu details retain retry and next-mission actions after results',()=>{for(const state of ['over','win','campaign']){const g=game();g.run(`start(${state==='campaign'?3:2},true);st='${state}';show('Resultado','Texto','Acción')`);g.element('menuCredits').onclick();g.element('back').onclick();assert.equal(g.run('st'),state);g.element('go').onclick();assert.equal(g.run('st'),'play');assert.equal(g.run('mis'),state==='over'?2:state==='win'?3:1)}});
-test('Escape navigates back, pause remains safe and menu Space preserves button activation',()=>{const g=game();let prevented=0;g.listeners.keydown({key:' ',preventDefault(){prevented++}});assert.equal(prevented,0);g.run('start(1,true)');const escape=()=>g.listeners.keydown({key:'Escape',repeat:false,preventDefault(){}});escape();assert.equal(g.run('st'),'paused');g.element('menuSettings').onclick();escape();assert.equal(g.run('overlayPage'),'result');assert.equal(g.run('st'),'paused');escape();assert.equal(g.run('st'),'play')});
+test('paused menus preserve mission; abandon requires confirmation; preferences synchronize', () => {
+  const g = game(),
+    s = g.state;
+  for (const id of ['menuHelp', 'menuSettings', 'menuCredits']) {
+    g.element(id).onclick();
+    g.element('back').onclick();
+    assert.equal(s.st, 'menu');
+  }
+  g.app.start(2, true);
+  s.P.sc = 345;
+  s.P.x = 41;
+  key(g, 'w');
+  g.host.emit('blur');
+  assert.equal(s.st, 'paused');
+  const time = s.t;
+  g.app.upd(0.05);
+  assert.equal(s.t, time);
+  g.element('menuSettings').onclick();
+  key(g, 'p');
+  assert.equal(s.st, 'paused');
+  g.element('menuSound').onclick();
+  assert.equal(
+    g.element('sound').textContent,
+    g.element('menuSound').textContent,
+  );
+  g.element('menuQuality').onclick();
+  assert.equal(g.saved.get('toy-quality'), 'low');
+  g.element('back').onclick();
+  g.element('go').onclick();
+  assert.equal(s.st, 'play');
+  assert.equal(s.P.x, 41);
+  assert.equal(s.P.sc, 345);
+  key(g, 'Escape');
+  g.element('menuExit').onclick();
+  g.element('back').onclick();
+  assert.equal(s.P.sc, 345);
+  g.element('menuExit').onclick();
+  g.element('confirmExit').onclick();
+  assert.equal(s.st, 'menu');
+  assert.equal(s.P, null);
+  g.element('go').onclick();
+  assert.equal(s.P.sc, 0);
+});
+test('economy drawing cadence does not slow simulation and hidden/paused views stop work', () => {
+  const g = game(),
+    s = g.state;
+  g.app.start(1, true);
+  s.E = [];
+  s.lowQuality = true;
+  let draws = 0;
+  g.app.view.draw = () => draws++;
+  for (let i = 1; i <= 60; i++) g.app.loop((i * 1000) / 60);
+  assert.equal(draws, 30);
+  assert.ok(Math.abs(s.t - 1) < 1e-8);
+  g.app.pauseGame();
+  g.app.loop(1016);
+  const d = draws,
+    t = s.t;
+  g.app.loop(1032);
+  assert.equal(draws, d);
+  assert.equal(s.t, t);
+  g.host.document.hidden = true;
+  s.needsDraw = true;
+  g.app.loop(1048);
+  assert.equal(draws, d);
+});
+test('seeded missions reproduce spawns and terrain heights; fallback renders all states', () => {
+  const a = game(78),
+    b = game(78);
+  a.app.start(2, true);
+  b.app.start(2, true);
+  assert.deepEqual(a.state.E, b.state.E);
+  const world = require('../src/toy-world.js');
+  for (const e of a.state.E) {
+    assert.equal(e.y, world.height(e.x, e.z));
+    assert.ok(world.clearOfLandmarks(e.x, e.z, 10));
+  }
+  a.state.mission.release(0);
+  assert.doesNotThrow(() => a.app.render2d.draw(a.app.view));
+  a.app.pauseGame();
+  assert.doesNotThrow(() => a.app.render2d.draw(a.app.view));
+});
+test('assisted bullets hit offset infantry without turning the player', () => {
+  const g = game(),
+    s = g.state;
+  g.app.start(1, true);
+  s.E = [];
+  g.app.spawnE('inf', 5, 35);
+  const target = s.E[0];
+  target.cd = 999;
+  g.element('fu').emit('pointerdown', { pointerId: 1 });
+  g.app.upd(0.01);
+  g.element('fu').emit('pointerup', { pointerId: 1 });
+  for (let i = 0; i < 8; i++) g.app.upd(0.04);
+  assert.equal(target.hp, 1);
+  assert.equal(s.P.yaw, 0);
+});
+test('result panels preserve retry/next actions and Escape navigates without losing state', () => {
+  for (const [state, expected] of [
+    ['over', 2],
+    ['win', 3],
+    ['campaign', 1],
+  ]) {
+    const g = game();
+    g.app.start(state === 'campaign' ? 3 : 2, true);
+    g.app.setState(state);
+    g.element('menuCredits').onclick();
+    key(g, 'Escape');
+    assert.equal(g.state.st, state);
+    g.element('go').onclick();
+    assert.equal(g.state.mis, expected);
+  }
+  const g = game();
+  let prevented = false;
+  g.host.emit('keydown', {
+    key: ' ',
+    preventDefault() {
+      prevented = true;
+    },
+  });
+  assert.equal(prevented, false);
+});

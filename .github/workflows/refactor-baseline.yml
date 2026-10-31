@@ -1,0 +1,23 @@
+name: Preserve pre-refactor baseline
+on:
+  push:
+    branches: [refactor/classic-scripts]
+    paths: [.github/workflows/refactor-baseline.yml]
+permissions:
+  contents: write
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create baseline tag only when absent
+        run: |
+          baseline=1c59125bb925e7727cd265c64f1d2f5a2cb62a05
+          if git rev-parse --verify refs/tags/v-pre-refactor >/dev/null 2>&1; then
+            test "$(git rev-parse 'v-pre-refactor^{commit}')" = "$baseline"
+          else
+            git tag v-pre-refactor "$baseline"
+            git push origin refs/tags/v-pre-refactor
+          fi

@@ -1,0 +1,37 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { transitions, transition } = require('../src/game.js');
+test('transition table accepts all gameplay routes and calls effects once', () => {
+  for (const [from, targets] of Object.entries(transitions))
+    for (const to of targets) {
+      const state = { st: from },
+        events = [];
+      assert.equal(
+        transition(state, to, (...args) => events.push(args)),
+        true,
+      );
+      assert.equal(state.st, to);
+      assert.deepEqual(events, [[to, from]]);
+      assert.equal(
+        transition(state, to, () => {
+          throw Error('duplicate');
+        }),
+        false,
+      );
+    }
+});
+test('illegal transitions preserve state and do not invoke effects', () => {
+  for (const [from, targets] of Object.entries(transitions))
+    for (const to of [...Object.keys(transitions), 'missing']) {
+      if (from === to || targets.includes(to)) continue;
+      const state = { st: from };
+      assert.throws(
+        () =>
+          transition(state, to, () => {
+            throw Error('effect ran');
+          }),
+        /Invalid transition/,
+      );
+      assert.equal(state.st, from);
+    }
+});
