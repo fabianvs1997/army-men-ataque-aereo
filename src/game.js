@@ -103,6 +103,9 @@
         get humOn() {
           return humOn;
         },
+        get visualRandom() {
+          return options.visualRandom || Math.random;
+        },
         get sfx() {
           return sfx;
         },
@@ -247,6 +250,7 @@
         'bd',
         'P',
         'FX',
+        'DB',
         'needsDraw',
         'overlayPage',
         'st',
@@ -272,7 +276,8 @@
       const input = ToyInput.create(env),
         { clearInput, updateStick } = input;
       const combat = ToyCombat.create(env),
-        { mk, boom, hit, kill, gunVelocity, stepProjectiles } = combat;
+        { mk, boom, hit, kill, gunVelocity, stepProjectiles, stepDebris } =
+          combat;
       const render2d = ToyRender2D.create(env);
       let {
         cs,
@@ -340,6 +345,7 @@
         state.EB = [];
         state.MS = [];
         state.FX = [];
+        state.DB = [];
         state.PK = [];
         state.checkpoint = 0;
         state.mis = 1;
@@ -415,6 +421,7 @@
         EB: [],
         MS: [],
         FX: [],
+        DB: [],
         PK: [],
         DC: [],
         mis: 1,
@@ -455,6 +462,7 @@
         state.EB = [];
         state.MS = [];
         state.FX = [];
+        state.DB = [];
         state.PK = [];
         if (full || !state.P)
           state.P = { arm: 10, mi: 6, sc: 0, cd: 0, inv: 0, gs: 0, bank: 0 };
@@ -676,6 +684,7 @@
             sfx.pick();
             buzz(20);
           }
+        stepDebris(dt);
         for (const o of state.FX) o.l -= dt;
         state.E = state.E.filter((e) => !e.dead);
         state.BL = state.BL.filter((b) => b.l > 0);

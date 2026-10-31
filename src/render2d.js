@@ -91,7 +91,7 @@
       scene.ctx.lineTo(e, f);
       scene.ctx.fill();
     };
-    function heli(p, col, dk, fl, back, bank) {
+    function heli(p, col, dk, fl, back, bank, detached = false) {
       const s = p[2];
       scene.ctx.save();
       scene.ctx.translate(p[0], p[1]);
@@ -132,7 +132,13 @@
       glass.addColorStop(0, '#c5f2ed');
       glass.addColorStop(0.45, '#4c8e9c');
       glass.addColorStop(1, '#193b4c');
-      ell(0, back ? -0.5 * s : 0.5 * s, 1.15 * s, 0.72 * s, glass);
+      ell(
+        0,
+        back ? -0.5 * s : 0.5 * s,
+        1.15 * s,
+        0.72 * s,
+        detached ? '#4b412d' : glass,
+      );
       rc(-0.08 * s, -1.2 * s, 0.16 * s, 1.8 * s, dk);
       for (const side of [-1, 1]) {
         rc(side * 1.7 * s - 0.35 * s, -0.5 * s, 0.7 * s, 1.5 * s, dk);
@@ -214,6 +220,7 @@
           f,
           false,
           headingAngle(Math.atan2(scene.P.x - e.x, scene.P.z - e.z)),
+          e.detached,
         );
         return;
       }
@@ -250,16 +257,26 @@
         plasticPart(x - 0.3 * s, y - 4.1 * s, 0.6 * s, 2 * s, col, dk);
       } else {
         plasticPart(x - 5 * s, y - 4.4 * s, 10 * s, 4.4 * s, col, dk);
-        tri(x - 5.7 * s, y - 4 * s, x + 5.7 * s, y - 4 * s, x, y - 7 * s, col);
-        tri(
-          x,
-          y - 7 * s,
-          x + 5.7 * s,
-          y - 4 * s,
-          x + 0.5 * s,
-          y - 4 * s,
-          '#edcf92',
-        );
+        if (!e.detached) {
+          tri(
+            x - 5.7 * s,
+            y - 4 * s,
+            x + 5.7 * s,
+            y - 4 * s,
+            x,
+            y - 7 * s,
+            col,
+          );
+          tri(
+            x,
+            y - 7 * s,
+            x + 5.7 * s,
+            y - 4 * s,
+            x + 0.5 * s,
+            y - 4 * s,
+            '#edcf92',
+          );
+        }
         plasticPart(x - 1.1 * s, y - 2.8 * s, 2.2 * s, 2.8 * s, dk, '#756031');
         for (const side of [-1, 1]) {
           rc(x + side * 3.2 * s - 0.7 * s, y - 3 * s, 1.4 * s, 1.2 * s, dk);
@@ -343,6 +360,7 @@
           EB: scene.EB,
           MS: scene.MS,
           FX: scene.FX,
+          DB: scene.DB,
           PK: scene.PK,
           rot: scene.rot,
           t: scene.t,
@@ -490,7 +508,34 @@
             add(a.x, scene.groundAt(a.x, a.z), a.z, (p) =>
               soldier2d(p, true, a.state === 'waiting'),
             );
-      for (const e of scene.E) add(e.x, e.y, e.z, (p) => sprE(e, p));
+      for (const d of scene.DB || []) add(d.x, d.y, d.z, () => yardPart(d));
+      for (const e of scene.E)
+        add(e.x, e.y, e.z, (p) => {
+          sprE(e, p);
+          // Pale broken edges around recessed chips remain after the impact.
+          for (let i = 0; i < (e.chips || 0); i++) {
+            const x = p[0] + ((i % 3) - 1) * p[2] * 0.55,
+              y = p[1] - (1.2 + (i % 2) * 0.6) * p[2];
+            tri(
+              x,
+              y,
+              x + 0.65 * p[2],
+              y - 0.3 * p[2],
+              x + 0.4 * p[2],
+              y + 0.45 * p[2],
+              '#edcf92',
+            );
+            tri(
+              x + 0.1 * p[2],
+              y,
+              x + 0.5 * p[2],
+              y - 0.2 * p[2],
+              x + 0.3 * p[2],
+              y + 0.3 * p[2],
+              '#65512e',
+            );
+          }
+        });
       for (const q of scene.PK)
         add(q.x, scene.groundAt(q.x, q.z) + 1.5, q.z, (p) =>
           rc(

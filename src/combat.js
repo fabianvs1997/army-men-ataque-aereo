@@ -1,8 +1,12 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(
+    typeof module === 'object' && module.exports
+      ? require('./debris.js')
+      : root.ToyDebris,
+  );
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ToyCombat = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Debris) {
   'use strict';
   const GUN_ASSIST_ANGLE = (12 * Math.PI) / 180,
     GUN_ASSIST_RANGE = 130;
@@ -41,18 +45,17 @@
   function kill(
     state,
     e,
-    { random = Math.random, onBoom = () => {}, onBuzz = () => {} } = {},
+    {
+      random = Math.random,
+      visualRandom = Math.random,
+      onBreak = () => {},
+      onBuzz = () => {},
+    } = {},
   ) {
     if (e.dead) return false;
     e.dead = 1;
-    state.FX.push({
-      x: e.x,
-      y: e.y + 1,
-      z: e.z,
-      l: 0.5,
-      s: e.k === 'base' ? 9 : e.k === 'heli' ? 5 : 4,
-    });
-    onBoom();
+    Debris.emit(state, e, true, visualRandom);
+    onBreak(true);
     onBuzz(30);
     state.P.sc += e.p;
     if (e.k === 'base') {
@@ -63,10 +66,14 @@
       state.PK.push({ x: e.x, z: e.z, ty: random() < 0.5 ? 'a' : 'm' });
     return true;
   }
-  function hit(state, e, damage, effects) {
+  function hit(state, e, damage, effects = {}, point) {
+    if (e.dead) return false;
     e.hp -= damage;
-    e.fl = 0.08;
+    e.fl = 0;
+    e.chips = Math.min(6, (e.chips || 0) + 1);
     if (e.hp <= 0) return kill(state, e, effects);
+    Debris.emit(state, e, false, effects.visualRandom, point);
+    if (effects.onBreak) effects.onBreak(false);
     return false;
   }
 
@@ -74,10 +81,11 @@
     const context = env.state || env,
       effects = {
         random: env.random || Math.random,
-        onBoom: () => env.sfx.boom(),
+        visualRandom: env.visualRandom || Math.random,
+        onBreak: (broken) => env.sfx.snap && env.sfx.snap(broken),
         onBuzz: (p) => env.buzz(p),
       };
-    const hitEnemy = (e, d) => hit(context, e, d, effects),
+    const hitEnemy = (e, d, point) => hit(context, e, d, effects, point),
       killEnemy = (e) => kill(context, e, effects);
 
     function boom(x, y, z, s) {
@@ -112,13 +120,11 @@
           }
         }
         if (target) {
-          hitEnemy(target, 1);
-          boom(
-            previous.x + (b.x - previous.x) * nearest,
-            previous.y + (b.y - previous.y) * nearest,
-            previous.z + (b.z - previous.z) * nearest,
-            0.65,
-          );
+          hitEnemy(target, 1, {
+            x: previous.x + (b.x - previous.x) * nearest,
+            y: previous.y + (b.y - previous.y) * nearest,
+            z: previous.z + (b.z - previous.z) * nearest,
+          });
           b.l = 0;
         }
         if (b.y < env.groundAt(b.x, b.z)) b.l = 0;
@@ -158,8 +164,7 @@
         if (o.y < env.groundAt(o.x, o.z)) ex = true;
         if (ex) {
           o.l = 0;
-          boom(o.x, o.y, o.z, 6);
-          env.sfx.boom();
+          // Missile damage is unchanged; enemy breakage supplies the visual effect.
           for (const e of env.E)
             if (
               !e.dead &&
@@ -191,6 +196,7 @@
       kill: killEnemy,
       gunVelocity,
       stepProjectiles,
+      stepDebris: (dt) => Debris.step(context, dt, env.groundAt),
     };
   }
   return {

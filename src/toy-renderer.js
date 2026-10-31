@@ -245,7 +245,16 @@ void main(){
       gl.drawArrays(gl.TRIANGLES, 0, m.count);
       this.drawCalls++;
     }
-    helicopter(x, y, z, yaw, rot, tan = false, flash = false) {
+    helicopter(
+      x,
+      y,
+      z,
+      yaw,
+      rot,
+      tan = false,
+      flash = false,
+      detached = false,
+    ) {
       const col = flash
           ? [1, 1, 1]
           : tan
@@ -294,7 +303,8 @@ void main(){
             dark,
           );
       }
-      p('sphere', 0, 0.25, 1.7, 1.43, 0.95, 1.15, [0.08, 0.23, 0.25]);
+      if (!detached)
+        p('sphere', 0, 0.25, 1.7, 1.43, 0.95, 1.15, [0.08, 0.23, 0.25]);
       p('box', 0, 0.5, 2.25, 0.09, 0.8, 0.2);
       p('rounded', 0, 0.15, -3.6, 0.23, 0.25, 2.2);
       p('box', 0, 0.7, -5.2, 1.25, 0.12, 0.45);
@@ -614,8 +624,57 @@ void main(){
         }
       }
       this.groundOffset = 0;
+      for (const d of scene.DB || [])
+        if (visible(d)) {
+          this.part(
+            d.kind,
+            d.x,
+            d.y,
+            d.z,
+            d.sx,
+            d.sy,
+            d.sz,
+            d.color,
+            d.yaw,
+            0.85,
+          );
+        }
       for (const e of E) {
         if (!visible(e)) continue;
+        this.groundOffset = 0;
+        for (let i = 0; i < (e.chips || 0); i++) {
+          const y =
+            e.y +
+            (e.k === 'heli'
+              ? 1.3
+              : e.k === 'base'
+                ? 5.82
+                : e.k === 'inf'
+                  ? 2.5
+                  : 3.3);
+          this.part(
+            'box',
+            e.x + ((i % 3) - 1) * 0.55,
+            y,
+            e.z + (i % 2) * 0.5,
+            0.38,
+            0.04,
+            0.24,
+            [0.91, 0.77, 0.5],
+            i * 0.9,
+          );
+          this.part(
+            'box',
+            e.x + ((i % 3) - 1) * 0.55,
+            y + 0.045,
+            e.z + (i % 2) * 0.5,
+            0.26,
+            0.025,
+            0.17,
+            [0.35, 0.27, 0.13],
+            i * 0.9,
+          );
+        }
         const col = e.fl > 0 ? [1, 1, 1] : [0.76, 0.61, 0.36],
           dark = [0.39, 0.31, 0.17],
           yaw = P ? Math.atan2(P.x - e.x, P.z - e.z) : 0;
@@ -626,7 +685,7 @@ void main(){
         }
         if (e.k === 'heli') {
           this.groundOffset = 0;
-          this.helicopter(e.x, e.y, e.z, yaw, rot, true, e.fl > 0);
+          this.helicopter(e.x, e.y, e.z, yaw, rot, true, e.fl > 0, e.detached);
           continue;
         }
         this.groundOffset = world ? world.height(e.x, e.z) : 0;
@@ -643,7 +702,7 @@ void main(){
           );
         if (e.k === 'base') {
           this.part('rounded', e.x, 2.5, e.z, 5, 2.5, 4, col);
-          this.part('box', e.x, 5.4, e.z, 5.5, 0.4, 4.5, col);
+          if (!e.detached) this.part('box', e.x, 5.4, e.z, 5.5, 0.4, 4.5, col);
           this.part('box', e.x, 1.4, e.z + 4.02, 1.1, 1.4, 0.08, dark);
           this.part('box', e.x + 4, 10, e.z, 0.13, 5, 0.13, col);
           this.part('box', e.x + 5, 14, e.z, 1, 0.65, 0.1, [0.75, 0.22, 0.12]);

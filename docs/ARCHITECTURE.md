@@ -9,6 +9,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | prefs | Lectura y escritura de preferencias con almacenamiento opcional |
 | audio | AudioContext, tonos, ruido cacheado, zumbido; callbacks isPlaying/isMuted |
 | input | Teclado y punteros; read() y clear() |
+| debris | Componentes de juguetes, astillas, gravedad, rebotes y límite de restos |
 | combat | Velocidad de disparo, impactos, bajas y proyectiles |
 | render2d | Sprites y dibujo a partir de scene; caché de decoración |
 | ui | Menús, HUD y textos |
@@ -24,3 +25,7 @@ setState valida la transición y concentra limpieza de entrada, audio y overlay.
 
 Las funciones públicas de combate y transition se prueban sin navegador ni HTML.
 El generador por defecto sigue siendo Math.random; las pruebas inyectan semillas.
+
+Los restos viven en state.DB. Combat emite fragmentos y Game los actualiza solo
+durante play. No tienen colisión jugable ni alteran daño, puntuación o suministros.
+Game.create permite visualRandom independiente de random para pruebas de efectos.
