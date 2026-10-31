@@ -81,3 +81,7 @@ de frames, colisión, pausa/reinicio y restablecimiento de uniforms del renderer
 `BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-camera.cjs` verifica
 encuadre en vertical, horizontal y cuadrado, posición del helicóptero al 64 %,
 controles dentro del viewport y WebGL/Canvas. Guarda capturas en /tmp.
+
+## Seguimiento de rumbo
+
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-follow.cjs` mantiene cada dirección con teclado real y comprueba rumbo estable, cámara alineada, proyección hacia delante, encuadre y controles en vertical/horizontal/cuadrado, con WebGL/Canvas. Las pruebas Node también cubren un gesto táctil nuevo sin frame intermedio y pausa/reinicio.

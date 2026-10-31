@@ -17,6 +17,7 @@
       drag = null;
       firePointer = null;
       env.$('stick').style.display = 'none';
+      env.resetHeadingInput?.();
     }
     function updateStick() {
       if (!drag) return;
@@ -71,6 +72,8 @@
       });
       env.host.addEventListener('keyup', (e) => {
         keys[e.key.toLowerCase()] = 0;
+        const movement = read();
+        if (!movement.sx && !movement.sy) env.resetHeadingInput?.();
       });
       env.host.addEventListener('contextmenu', (e) => e.preventDefault());
       env.cv.addEventListener('pointerdown', (e) => {
@@ -98,6 +101,7 @@
         env.cv.addEventListener(event, (e) => {
           if (drag && drag.id === e.pointerId) {
             drag = null;
+            env.resetHeadingInput?.();
             env.$('stick').style.display = 'none';
           }
         });
