@@ -78,6 +78,24 @@
       player.pitchSpeed =
         previous + (speed - previous) * (1 - Math.exp(-5 * dt));
     }
+    // Chase-camera flight: horizontal input steers; vertical input is signed throttle.
+    function pilotMotion(player, sx, sy, dt) {
+      const length = Math.hypot(sx, sy);
+      if (!(dt > 0) || length <= 0.12) return { dx: 0, dz: 0, active: false };
+      const gain = (Math.min(1, length) - 0.12) / (0.88 * length);
+      const turn = -sx * gain * 1.8 * dt,
+        distance = sy * gain * 28 * dt;
+      const middle = player.yaw + turn * 0.5;
+      player.yaw = Math.atan2(
+        Math.sin(player.yaw + turn),
+        Math.cos(player.yaw + turn),
+      );
+      return {
+        dx: Math.sin(middle) * distance,
+        dz: Math.cos(middle) * distance,
+        active: true,
+      };
+    }
     function cameraFraming(width, height) {
       const pitch = (40 * Math.PI) / 180;
       const scale = Math.min(width / 62, height / 72);
@@ -98,9 +116,6 @@
         },
         get cover() {
           return cover;
-        },
-        resetHeadingInput() {
-          if (state.P) state.P.controlYaw = null;
         },
         get state() {
           return state;
@@ -548,7 +563,6 @@
         state.P.z = 0;
         state.P.y = 8;
         state.P.yaw = 0;
-        state.P.controlYaw = null;
         state.P.pitch = 0;
         state.P.pitchSpeed = 0;
         state.bd = 0;
@@ -616,28 +630,19 @@
         state.P.cd -= dt;
         state.P.inv -= dt;
         const { sx, sy } = controls;
-        const magnitude = Math.min(1, Math.hypot(sx, sy));
         const beforeX = state.P.x,
           beforeZ = state.P.z;
-        if (magnitude > 0.08) {
-          // Keep this gesture's reference fixed while the camera follows the nose.
-          if (state.P.controlYaw == null) state.P.controlYaw = cam.yaw;
-          const referenceYaw = state.P.controlYaw;
-          const length = Math.hypot(sx, sy),
-            right = sx / length,
-            up = sy / length;
-          const vx =
-              -right * Math.cos(referenceYaw) + up * Math.sin(referenceYaw),
-            vz = right * Math.sin(referenceYaw) + up * Math.cos(referenceYaw);
-          state.P.yaw = Math.atan2(vx, vz);
+        const motion = pilotMotion(state.P, sx, sy, dt);
+        const magnitude = motion.active ? Math.min(1, Math.hypot(sx, sy)) : 0;
+        if (motion.dx || motion.dz) {
           const next = cover.move(state.P, {
-            x: clamp(state.P.x + vx * 28 * magnitude * dt, -190, 190),
+            x: clamp(state.P.x + motion.dx, -190, 190),
             y: state.P.y,
-            z: clamp(state.P.z + vz * 28 * magnitude * dt, -190, 190),
+            z: clamp(state.P.z + motion.dz, -190, 190),
           });
           state.P.x = next.x;
           state.P.z = next.z;
-        } else state.P.controlYaw = null;
+        }
         const fx = Math.sin(state.P.yaw),
           fz = Math.cos(state.P.yaw);
         state.P.y = 8 + Math.sin(state.t * 3) * 0.3;
@@ -868,6 +873,13 @@
         loop,
       };
     }
-    return { create, transitions, transition, updatePitch, cameraFraming };
+    return {
+      create,
+      transitions,
+      transition,
+      updatePitch,
+      cameraFraming,
+      pilotMotion,
+    };
   },
 );

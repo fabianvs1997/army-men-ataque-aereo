@@ -17,7 +17,6 @@
       drag = null;
       firePointer = null;
       env.$('stick').style.display = 'none';
-      env.resetHeadingInput?.();
     }
     function updateStick() {
       if (!drag) return;
@@ -38,10 +37,12 @@
         sx = env.clamp((drag.x - drag.sx) / 70, -1, 1);
         sy = env.clamp(-(drag.y - drag.sy) / 70, -1, 1);
       }
-      if (keys.arrowleft || keys.a) sx = -1;
-      if (keys.arrowright || keys.d) sx = 1;
-      if (keys.arrowup || keys.w) sy = 1;
-      if (keys.arrowdown || keys.s) sy = -1;
+      const left = !!(keys.arrowleft || keys.a),
+        right = !!(keys.arrowright || keys.d);
+      const up = !!(keys.arrowup || keys.w),
+        down = !!(keys.arrowdown || keys.s);
+      if (left || right) sx = Number(right) - Number(left);
+      if (up || down) sy = Number(up) - Number(down);
       return { sx, sy, fire: !!(fire || keys[' ']), missile: mAsk };
     }
     function bind() {
@@ -72,8 +73,6 @@
       });
       env.host.addEventListener('keyup', (e) => {
         keys[e.key.toLowerCase()] = 0;
-        const movement = read();
-        if (!movement.sx && !movement.sy) env.resetHeadingInput?.();
       });
       env.host.addEventListener('contextmenu', (e) => e.preventDefault());
       env.cv.addEventListener('pointerdown', (e) => {
@@ -101,7 +100,6 @@
         env.cv.addEventListener(event, (e) => {
           if (drag && drag.id === e.pointerId) {
             drag = null;
-            env.resetHeadingInput?.();
             env.$('stick').style.display = 'none';
           }
         });

@@ -85,3 +85,14 @@ controles dentro del viewport y WebGL/Canvas. Guarda capturas en /tmp.
 ## Seguimiento de rumbo
 
 `BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-follow.cjs` mantiene cada dirección con teclado real y comprueba rumbo estable, cámara alineada, proyección hacia delante, encuadre y controles en vertical/horizontal/cuadrado, con WebGL/Canvas. Las pruebas Node también cubren un gesto táctil nuevo sin frame intermedio y pausa/reinicio.
+
+## Controles con cámara de seguimiento
+
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-controls.cjs` comprueba
+W/S sin cambiar rumbo, A/D con giro progresivo, encuadre y controles visibles.
+Incluye eventos multitáctiles reales de Chromium vía CDP: avance, retroceso sin
+soltar, avance con giro y fuego, levantar solo el dedo de pilotaje conservando
+fuego y liberación final. Espera la entrega de cada evento antes de simular frames.
+Las pruebas Node cubren zona muerta, teclas opuestas, velocidad diagonal, consistencia
+entre 30/120 Hz, cancelación táctil y pausa. Este esquema sustituye el rumbo fijo
+por gesto de la primera cámara de seguimiento.
