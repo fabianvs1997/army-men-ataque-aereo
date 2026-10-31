@@ -1,6 +1,16 @@
 # Changelog
 
-## Sin publicar — objetos sólidos y cobertura
+## Sin publicar — inclinación del helicóptero
+
+- El helicóptero inclina la nariz al desplazarse y cabecea hacia atrás al frenar,
+  regresando suavemente a nivel al detenerse.
+- La pose depende del movimiento efectivo: no permanece inclinado si un obstáculo
+  impide avanzar. Se reinicia al comenzar/reintentar una misión.
+- Fuselaje, rotor y patines se inclinan juntos en WebGL; proyección equivalente
+  en Canvas. La sombra permanece sobre el suelo.
+- Animación visual sin cambios de velocidad, controles, apuntado o colisiones.
+
+## Objetos sólidos y cobertura
 
 - Los elementos del patio, rocas, vegetación y restos de plástico bloquean
   proyectiles de ambos bandos según su volumen y altura.

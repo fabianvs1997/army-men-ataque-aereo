@@ -202,3 +202,26 @@ test('economy mode reduces pixel dimensions without changing camera scale', () =
     globalThis.devicePixelRatio = old;
   }
 });
+test('helicopter pose tilts the full model and resets before drawing other objects', () => {
+  const f = fixture(),
+    r = new Renderer(
+      f.canvas,
+      () => {},
+      () => {},
+    ),
+    calls = [];
+  const original = f.gl.uniform1f;
+  f.gl.uniform1f = (name, value) => {
+    if (name === 'tiltAngle') calls.push(value);
+    original(name, value);
+  };
+  const s = scene();
+  s.P.pitch = 0.32;
+  r.render(s);
+  assert.ok(calls.includes(0.32));
+  assert.equal(calls.at(-1), 0);
+  s.P.pitch = -0.2;
+  r.render(s);
+  assert.ok(calls.includes(-0.2));
+  assert.equal(calls.at(-1), 0);
+});

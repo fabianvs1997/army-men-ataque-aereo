@@ -57,6 +57,27 @@
       onTransition(next, previous);
       return true;
     }
+    // Visual pose only: positive pitch lowers the nose along the current heading.
+    function updatePitch(player, dx, dz, dt) {
+      if (!(dt > 0)) return;
+      const speed = Math.max(
+        -1,
+        Math.min(
+          1,
+          (dx * Math.sin(player.yaw) + dz * Math.cos(player.yaw)) / (28 * dt),
+        ),
+      );
+      const previous = player.pitchSpeed || 0;
+      const target = Math.max(
+        -0.3,
+        Math.min(0.4, speed * 0.32 + (speed - previous) * 0.8),
+      );
+      player.pitch =
+        (player.pitch || 0) +
+        (target - (player.pitch || 0)) * (1 - Math.exp(-12 * dt));
+      player.pitchSpeed =
+        previous + (speed - previous) * (1 - Math.exp(-5 * dt));
+    }
     function create(host = globalThis, options = {}) {
       const random = options.random || Math.random;
       const Renderer =
@@ -513,6 +534,8 @@
         state.P.z = 0;
         state.P.y = 8;
         state.P.yaw = 0;
+        state.P.pitch = 0;
+        state.P.pitchSpeed = 0;
         state.bd = 0;
         state.tb = state.mission.config.bases.length;
         state.hs = 25;
@@ -579,6 +602,8 @@
         state.P.inv -= dt;
         const { sx, sy } = controls;
         const magnitude = Math.min(1, Math.hypot(sx, sy));
+        const beforeX = state.P.x,
+          beforeZ = state.P.z;
         if (magnitude > 0.08) {
           const length = Math.hypot(sx, sy),
             right = sx / length,
@@ -598,6 +623,7 @@
           fz = Math.cos(state.P.yaw);
         state.P.y = 8 + Math.sin(state.t * 3) * 0.3;
         state.P.bank = 0;
+        updatePitch(state.P, state.P.x - beforeX, state.P.z - beforeZ, dt);
         const follow = 1 - Math.exp(-6 * dt);
         cam.x += (state.P.x - cam.x) * follow;
         cam.z += (state.P.z - cam.z) * follow;
@@ -823,6 +849,6 @@
         loop,
       };
     }
-    return { create, transitions, transition };
+    return { create, transitions, transition, updatePitch };
   },
 );

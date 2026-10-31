@@ -92,11 +92,36 @@
       scene.ctx.lineTo(e, f);
       scene.ctx.fill();
     };
-    function heli(p, col, dk, fl, back, bank, detached = false) {
+    function heli(
+      p,
+      col,
+      dk,
+      fl,
+      back,
+      bank,
+      detached = false,
+      pitch = 0,
+      yaw = 0,
+    ) {
       const s = p[2];
       scene.ctx.save();
       scene.ctx.translate(p[0], p[1]);
       scene.ctx.rotate(bank || 0);
+      // Project the tilted forward axis into this sprite's local frame.
+      const length = Math.hypot(
+        Math.sin(yaw - scene.cam.yaw),
+        Math.cos(yaw - scene.cam.yaw) * Math.sin(scene.PITCH),
+      );
+      const lift =
+        (Math.sin(pitch) * Math.cos(scene.PITCH)) / Math.max(0.1, length);
+      scene.ctx.transform(
+        1,
+        0,
+        Math.sin(bank || 0) * lift,
+        Math.max(0.55, Math.cos(pitch) + Math.cos(bank || 0) * lift),
+        0,
+        0,
+      );
       // Tail, stabilizers and landing skids beneath the molded fuselage.
       rc(-0.25 * s, -4.6 * s, 0.5 * s, 4 * s, dk);
       rc(-1.5 * s, -4.2 * s, 3 * s, 0.3 * s, col);
@@ -627,7 +652,17 @@
         });
       if (scene.P && !(scene.P.inv > 0 && Math.floor(scene.t * 20) % 2))
         add(scene.P.x, scene.P.y, scene.P.z, (p) =>
-          heli(p, '#50a43b', '#245c26', false, true, headingAngle(scene.P.yaw)),
+          heli(
+            p,
+            '#50a43b',
+            '#245c26',
+            false,
+            true,
+            headingAngle(scene.P.yaw),
+            false,
+            scene.P.pitch || 0,
+            scene.P.yaw,
+          ),
         );
       L.sort((a, b) => b[0] - a[0]);
       for (const q of L) q[2](q[1]);
