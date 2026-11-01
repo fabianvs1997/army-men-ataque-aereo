@@ -1,10 +1,33 @@
 /* Three short rescue missions. No renderer or browser dependencies. */
 (function (root) {
   'use strict';
+  const layout = {
+    start: { x: 0, z: 0 },
+    finish: { x: 155, z: 125 },
+    camps: [
+      [-90, 100],
+      [0, 125],
+      [90, 110],
+    ],
+    route: [
+      [0, 0],
+      [0, 30],
+      [-35, 45],
+      [-90, 5],
+      [-145, -60],
+      [-160, 40],
+      [-130, 100],
+      [-90, 100],
+      [0, 125],
+      [90, 110],
+      [155, 125],
+    ],
+    minRescueDistance: 100,
+  };
   const configs = [
     {
       name: 'Primer rescate',
-      bases: [[-48, 52]],
+      bases: [layout.camps[2]],
       tanks: 1,
       turrets: 1,
       infantry: 3,
@@ -12,10 +35,7 @@
     },
     {
       name: 'Dos campamentos',
-      bases: [
-        [-55, 60],
-        [60, 70],
-      ],
+      bases: [layout.camps[0], layout.camps[2]],
       tanks: 2,
       turrets: 2,
       infantry: 5,
@@ -23,11 +43,7 @@
     },
     {
       name: 'Última extracción',
-      bases: [
-        [-90, -80],
-        [85, 65],
-        [-70, 110],
-      ],
+      bases: layout.camps,
       tanks: 3,
       turrets: 3,
       infantry: 7,
@@ -40,6 +56,8 @@
         throw new RangeError('Misión fuera de campaña');
       this.number = number;
       this.config = configs[number - 1];
+      this.start = layout.start;
+      this.finish = layout.finish;
       this.allies = this.config.bases.flatMap(([x, z], camp) =>
         [-1, 1].map((side) => ({
           x: x + side * 3,
@@ -86,7 +104,7 @@
             ? a
             : b,
         );
-      return { x: 0, z: 0 };
+      return this.finish;
     }
     update(
       dt,
@@ -103,8 +121,9 @@
         this.rescued === this.allies.length &&
         this.freed.size === this.config.bases.length;
       const candidate =
-        extracting && Math.hypot(player.x, player.z) <= 7
-          ? 'home'
+        extracting &&
+        Math.hypot(player.x - this.finish.x, player.z - this.finish.z) <= 7
+          ? 'finish'
           : nearby || null;
       if (!stable || !candidate) {
         this.hold = 0;
@@ -114,7 +133,7 @@
         this.active = candidate;
         this.hold += Math.max(0, Math.min(dt, 0.1));
       }
-      if (this.active === 'home') {
+      if (this.active === 'finish') {
         this.message =
           'Extrayendo: ' +
           Math.min(100, Math.round((this.hold / 2) * 100)) +
@@ -138,7 +157,7 @@
         }
       } else
         this.message = extracting
-          ? 'Regresa al helipuerto y permanece quieto 2 s.'
+          ? 'Avanza al helipuerto final verde y permanece quieto 2 s.'
           : nearby
             ? 'Suelta movimiento y fuego para rescatar (1.5 s).'
             : remaining.length
@@ -165,7 +184,7 @@
     const t = (-B - Math.sqrt(D)) / (2 * A);
     return t >= 0 && t <= 1 ? t : null;
   }
-  const api = { Mission, configs, segmentHit };
+  const api = { Mission, configs, layout, segmentHit };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ToyMissions = api;
 })(globalThis);

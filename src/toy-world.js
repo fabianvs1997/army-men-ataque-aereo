@@ -4,42 +4,21 @@
   const LIMIT = 200,
     STEP = 4,
     COUNT = 101;
-  // Connected valley floor: a winding outer trail with a rescue spur.
-  const routes = [
-    [
-      [0, 0],
-      [0, -30],
-      [40, -75],
-      [120, -120],
-      [155, -50],
-      [140, 20],
-      [110, 55],
-      [85, 65],
-      [60, 70],
-      [10, 100],
-      [-70, 110],
-      [-135, 100],
-      [-150, 20],
-      [-130, -60],
-      [-90, -80],
-      [-35, -95],
-      [0, -30],
-    ],
-    [
-      [0, 0],
-      [-20, 20],
-      [-48, 52],
-      [-55, 60],
-      [-70, 110],
-    ],
+  const missions =
+    typeof module === 'object' && module.exports
+      ? require('./toy-missions.js')
+      : root.ToyMissions;
+  const { start, finish, camps, route } = missions.layout;
+  // One open route: safe departure, distant camps, then a separate extraction pad.
+  const routes = [route];
+  const pads = [
+    { ...start, final: false },
+    { ...finish, final: true },
   ];
   const clearings = [
-    [0, 0, 23],
-    [-48, 58, 24],
-    [60, 76, 23],
-    [85, 71, 23],
-    [-90, -74, 23],
-    [-70, 116, 23],
+    [start.x, start.z, 23],
+    [finish.x, finish.z, 23],
+    ...camps.map(([x, z]) => [x, z + 5, 24]),
   ];
   function smooth(route) {
     for (let pass = 0; pass < 2; pass++) {
@@ -351,42 +330,54 @@
         '#aa9162',
       );
     }
-    const pad = (corners, color, y) =>
-      add(
-        corners.map(([x, z]) => [x, y, z]),
-        color,
-      );
-    pad(
-      [
-        [-7, -7],
-        [7, -7],
-        [7, 7],
-        [-7, 7],
-      ],
-      '#566449',
-      0.27,
-    );
-    for (const side of [-1, 1])
+    for (const site of pads) {
+      const pad = (corners, color, y) =>
+        add(
+          corners.map(([x, z]) => [x + site.x, y, z + site.z]),
+          color,
+        );
       pad(
         [
-          [side * 2 - 0.35, -3],
-          [side * 2 + 0.35, -3],
-          [side * 2 + 0.35, 3],
-          [side * 2 - 0.35, 3],
+          [-8, -8],
+          [8, -8],
+          [8, 8],
+          [-8, 8],
+        ],
+        site.final ? '#93e29b' : '#dfd39e',
+        0.24,
+      );
+      pad(
+        [
+          [-7, -7],
+          [7, -7],
+          [7, 7],
+          [-7, 7],
+        ],
+        site.final ? '#2a6547' : '#566449',
+        0.27,
+      );
+      for (const side of [-1, 1])
+        pad(
+          [
+            [side * 2 - 0.35, -3],
+            [side * 2 + 0.35, -3],
+            [side * 2 + 0.35, 3],
+            [side * 2 - 0.35, 3],
+          ],
+          '#dfd39e',
+          0.36,
+        );
+      pad(
+        [
+          [-2, -0.35],
+          [2, -0.35],
+          [2, 0.35],
+          [-2, 0.35],
         ],
         '#dfd39e',
         0.36,
       );
-    pad(
-      [
-        [-2, -0.35],
-        [2, -0.35],
-        [2, 0.35],
-        [-2, 0.35],
-      ],
-      '#dfd39e',
-      0.36,
-    );
+    }
     faces.sort((a, b) => b.depth - a.depth);
     if (ctx.save) ctx.save();
     for (const f of faces) {
@@ -407,6 +398,7 @@
   }
   const api = {
     height,
+    pads,
     routes,
     clearings,
     trailDistance,

@@ -14,7 +14,8 @@ function completeMission(g) {
     s.P.z = a.z;
     for (let i = 0; i < 30; i++) app.upd(0.05);
   }
-  s.P.x = s.P.z = 0;
+  s.P.x = s.mission.finish.x;
+  s.P.z = s.mission.finish.z;
   for (let i = 0; i < 40; i++) app.upd(0.05);
 }
 test('campaign integrates rescue, extraction, next mission and play again', () => {
