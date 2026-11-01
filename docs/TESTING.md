@@ -20,6 +20,7 @@ El smoke de desarrollo requiere Playwright y Chromium disponibles en el entorno
 ```sh
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-browser.cjs
 SMOKE_ENTRY=army-men-ataque-aereo.html BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-browser.cjs
+BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-helicopter.cjs
 ```
 
 Abre file://, inicia, dispara, pausa, navega ayuda/ajustes, silencia, continúa,

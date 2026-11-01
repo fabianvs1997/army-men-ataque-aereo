@@ -1,5 +1,12 @@
 # Changelog
 
+## Sin publicar — helicóptero de referencia
+
+- Nuevo fuselaje verde alargado, cabina negra, motores gemelos y alas con cohetes de puntas claras.
+- Rotor de dos palas con bandas blancas, extremos redondeados y luces rojas en la cola.
+- Geometría compartida entre WebGL y Canvas, con sombreado de plástico e inclinación al pilotar.
+- Se conservan los controles, la cámara y las colisiones.
+
 ## Sin publicar — controles para cámara de seguimiento
 
 - Arriba/W avanza y abajo/S retrocede conservando el rumbo, sin giro de 180°.

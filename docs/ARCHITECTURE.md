@@ -17,6 +17,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | game | Estado, transiciones, simulación y bucle |
 | toy-world | Geometría y decoración compartidas |
 | toy-missions | Reglas de rescate y campaña |
+| toy-helicopter | Modelo plástico del jugador compartido por WebGL y Canvas |
 | toy-renderer | Renderizado WebGL y detección de disponibilidad |
 
 Game.create(host, options) permite inyectar random y Renderer. El objeto state

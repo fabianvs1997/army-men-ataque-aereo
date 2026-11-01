@@ -1,9 +1,13 @@
 /* Dependency-free WebGL 1 renderer. World units and camera match the game. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports)
-    module.exports = factory(require('./toy-world.js'), root);
-  else root.ToyRenderer = factory(root.ToyWorld, root);
-})(globalThis, function (ToyWorld, root) {
+    module.exports = factory(
+      require('./toy-world.js'),
+      root,
+      require('./toy-helicopter.js'),
+    );
+  else root.ToyRenderer = factory(root.ToyWorld, root, root.ToyHelicopter);
+})(globalThis, function (ToyWorld, root, PlayerModel) {
   'use strict';
   const VS = `
 attribute vec3 position; attribute vec3 normal;
@@ -301,6 +305,12 @@ void main(){
       this.gl.uniform3f(this.loc.tiltPivot, x, y, z);
       this.gl.uniform1f(this.loc.tiltYaw, yaw);
       this.gl.uniform1f(this.loc.tiltAngle, pitch);
+      if (!tan) {
+        for (const a of PlayerModel.parts(rot, flash))
+          p(a.kind, a.x, a.y, a.z, a.sx, a.sy, a.sz, a.color, a.yaw);
+        this.gl.uniform1f(this.loc.tiltAngle, 0);
+        return;
+      }
       p('sphere', 0, 0, 0, 1.7, 1.35, 2.6);
       // Raised center seam, engine vents and recessed screw caps read as molded toys.
       p('rounded', 0, 1.32, 0.35, 0.045, 0.035, 1.4, dark);
