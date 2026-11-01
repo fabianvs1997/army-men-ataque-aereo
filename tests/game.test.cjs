@@ -197,8 +197,11 @@ test('assisted bullets hit offset infantry without turning the player', () => {
     s = g.state;
   g.app.start(1, true);
   s.E = [];
-  g.app.spawnE('inf', 5, 35);
-  const target = s.E[0];
+  const target = g.app.spawnE('inf', -90, 100);
+  // Place a close target explicitly to isolate aim assistance from spawn policy.
+  target.x = 5;
+  target.z = 35;
+  target.y = require('../src/toy-world.js').height(5, 35);
   target.cd = 999;
   g.element('fu').emit('pointerdown', { pointerId: 1 });
   g.app.upd(0.01);
