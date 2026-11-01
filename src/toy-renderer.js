@@ -46,7 +46,7 @@ void main(){
  float shine=(pow(highlight,56.0)*0.75+pow(highlight,14.0)*0.12)*max(gloss,0.0);
  float rim=pow(1.0-max(dot(n,eyeDirection),0.0),3.0)*0.045*gloss;
  vec3 base=color;
- if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);base*=.86+grain*.20+patch*.24;}
+ if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.90+grain*.12+patch*.16;}
  gl_FragColor=vec4(base*(0.48+0.52*diffuse)+vec3(shine+rim),1.0);
 }`;
   function geometry(kind) {
@@ -485,7 +485,7 @@ void main(){
       const world = ToyWorld;
       this.groundOffset = 0;
       if (world)
-        this.part('terrain', 0, 0, 0, 1, 1, 1, [0.39, 0.5, 0.24], 0, -1);
+        this.part('terrain', 0, 0, 0, 1, 1, 1, [0.39, 0.5, 0.24], 0, -2);
       else this.part('box', 0, -1, 0, 200, 1, 200, [0.39, 0.49, 0.25], 0, 0.02);
       // A compact practice clearing, roads and helipad on a cleared central area.
       if (world)

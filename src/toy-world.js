@@ -4,20 +4,86 @@
   const LIMIT = 200,
     STEP = 4,
     COUNT = 101;
-  const roadX = (z) => 16 * Math.sin(z / 55),
-    roadZ = (x) => 12 * Math.sin(x / 48);
+  // Connected valley floor: a winding outer trail with a rescue spur.
+  const routes = [
+    [
+      [0, 0],
+      [0, -30],
+      [40, -75],
+      [120, -120],
+      [155, -50],
+      [140, 20],
+      [110, 55],
+      [85, 65],
+      [60, 70],
+      [10, 100],
+      [-70, 110],
+      [-135, 100],
+      [-150, 20],
+      [-130, -60],
+      [-90, -80],
+      [-35, -95],
+      [0, -30],
+    ],
+    [
+      [0, 0],
+      [-20, 20],
+      [-48, 52],
+      [-55, 60],
+      [-70, 110],
+    ],
+  ];
+  const clearings = [
+    [0, 0, 23],
+    [-48, 58, 24],
+    [60, 76, 23],
+    [85, 71, 23],
+    [-90, -74, 23],
+    [-70, 116, 23],
+  ];
+  function smooth(route) {
+    for (let pass = 0; pass < 2; pass++) {
+      const next = [route[0]];
+      for (let i = 0; i < route.length - 1; i++) {
+        const a = route[i],
+          b = route[i + 1];
+        next.push(
+          [a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25],
+          [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75],
+        );
+      }
+      next.push(route[route.length - 1]);
+      route = next;
+    }
+    return route;
+  }
+  const trails = routes.map(smooth);
+  const segments = trails.flatMap((route) =>
+    route.slice(1).map((b, i) => [route[i], b]),
+  );
+  function trailDistance(x, z) {
+    let distance = Infinity;
+    for (const [[ax, az], [bx, bz]] of segments) {
+      const dx = bx - ax,
+        dz = bz - az;
+      const t = Math.max(
+        0,
+        Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)),
+      );
+      distance = Math.min(
+        distance,
+        Math.hypot(x - ax - t * dx, z - az - t * dz),
+      );
+    }
+    return distance;
+  }
   function rawHeight(x, z) {
-    const road = Math.min(Math.abs(x - roadX(z)), Math.abs(z - roadZ(x)));
-    const clear = Math.min(
-      1,
-      Math.max(0, (Math.hypot(x, z) - 17) / 14),
-      Math.max(0, (road - 7) / 8),
-    );
-    const edge = Math.max(0, (Math.max(Math.abs(x), Math.abs(z)) - 145) / 55);
-    return (
-      clear *
-      (0.6 + 1.1 * (1 + Math.sin(x / 24) * Math.cos(z / 29)) + edge * 1.8)
-    );
+    let distance = trailDistance(x, z) - 14;
+    for (const [cx, cz, radius] of clearings)
+      distance = Math.min(distance, Math.hypot(x - cx, z - cz) - radius);
+    const t = Math.max(0, Math.min(1, distance / 16));
+    const ridge = 22 + 4 * Math.sin(x / 31) * Math.cos(z / 37);
+    return t * t * (3 - 2 * t) * ridge;
   }
   const heights = new Float32Array(COUNT * COUNT);
   for (let z = 0; z < COUNT; z++)
@@ -64,18 +130,31 @@
     return new Float32Array(data);
   }
   const roads = [];
-  for (let q = -196; q < 200; q += 8) {
-    for (const axis of [0, 1]) {
-      const a = axis ? [q, roadZ(q)] : [roadX(q), q],
-        b = axis ? [q + 8, roadZ(q + 8)] : [roadX(q + 8), q + 8];
+  for (const [[ax, az], [bx, bz]] of segments) {
+    const length = Math.hypot(bx - ax, bz - az),
+      count = Math.ceil(length / 6);
+    for (let i = 0; i < count; i++)
       roads.push({
-        x: (a[0] + b[0]) / 2,
-        z: (a[1] + b[1]) / 2,
+        x: ax + ((bx - ax) * (i + 0.5)) / count,
+        z: az + ((bz - az) * (i + 0.5)) / count,
         y: 0.1,
-        yaw: Math.atan2(b[0] - a[0], b[1] - a[1]),
-        length: Math.hypot(b[0] - a[0], b[1] - a[1]) / 2 + 0.2,
+        yaw: Math.atan2(bx - ax, bz - az),
+        length: length / count / 2 + 0.25,
       });
-    }
+  }
+  function canTravel(x, z, radius = 0) {
+    return [
+      [0, 0],
+      [radius, 0],
+      [-radius, 0],
+      [0, radius],
+      [0, -radius],
+    ].every(
+      ([dx, dz]) =>
+        Math.abs(x + dx) < 194 &&
+        Math.abs(z + dz) < 194 &&
+        height(x + dx, z + dz) < 2,
+    );
   }
   // Household props share footprints and geometry between both renderers.
   const landmarks = [
@@ -172,11 +251,6 @@
       Math.atan2(nx - x, nz - z),
     );
   }
-  for (let z = -148; z < 160; z += 16) {
-    const x = roadX(z);
-    if (Math.hypot(x, z) < 18) continue;
-    part('box', x, 0.22, z, 4, 0.12, 5, [0.58, 0.58, 0.51], Math.sin(z) * 0.08);
-  }
   // Deterministic natural shrubs replace the scattered toy building blocks.
   const shrubs = [];
   for (let i = 0; i < 90; i++) {
@@ -185,8 +259,7 @@
     if (
       Math.hypot(x, z) < 24 ||
       !clearOfLandmarks(x, z, 7) ||
-      Math.abs(x - roadX(z)) < 10 ||
-      Math.abs(z - roadZ(x)) < 10 ||
+      trailDistance(x, z) < 18 ||
       z > 156
     )
       continue;
@@ -198,8 +271,7 @@
       z = Math.cos(i * 7.713) * 181;
     if (
       Math.hypot(x, z) < 24 ||
-      Math.abs(x - roadX(z)) < 9 ||
-      Math.abs(z - roadZ(x)) < 9 ||
+      trailDistance(x, z) < 18 ||
       landmarks.some((p) => Math.hypot(x - p.x, z - p.z) < p.radius + 5)
     )
       continue;
@@ -215,12 +287,35 @@
   function grassColor(x, z) {
     const patch =
         Math.sin(x * 0.047 + Math.sin(z * 0.031)) * Math.cos(z * 0.061),
-      shade = Math.round(71 + height(x, z) * 3 + 12 * patch);
-    return `rgb(${shade + 5},${shade + 32},${shade - 27})`;
+      h = height(x, z),
+      t = Math.min(1, h / 18),
+      shade = 8 * patch;
+    const color = `rgb(${Math.round(99 - 60 * t + shade)},${Math.round(123 - 64 * t + shade)},${Math.round(61 - 31 * t + shade)})`;
+    return color;
   }
+
   function drawGround(ctx, project, cam, W, H, F) {
-    const range = (Math.hypot(W, H) / F) * 0.65 + 18,
-      step = 8;
+    const range = (Math.hypot(W, H) / F) * 0.65 + 50,
+      faces = [],
+      step = STEP;
+    const add = (vertices, color, terrain = false) => {
+      const points = vertices.map((p) => project(...p));
+      if (points.some((p) => !p)) return;
+      const depth =
+        vertices.reduce(
+          (d, [x, y, z]) =>
+            d +
+            (x * Math.sin(cam.yaw || 0) + z * Math.cos(cam.yaw || 0)) * 0.766 -
+            y * 0.643,
+          0,
+        ) / vertices.length;
+      faces.push({
+        points,
+        color,
+        depth:
+          depth + (terrain && vertices.every((p) => p[1] < 0.2) ? 1000 : 0),
+      });
+    };
     for (
       let z = Math.max(-200, Math.floor((cam.z - range) / step) * step);
       z < Math.min(200, cam.z + range);
@@ -231,78 +326,36 @@
         x < Math.min(200, cam.x + range);
         x += step
       ) {
-        const points = [
-          [x, z],
-          [x + step, z],
-          [x + step, z + step],
-          [x, z + step],
-        ].map(([x, z]) => project(x, height(x, z), z));
-        if (points.some((p) => !p)) continue;
-        if (ctx.createLinearGradient) {
-          const g = ctx.createLinearGradient(
-            points[0][0],
-            points[0][1],
-            points[2][0],
-            points[2][1],
-          );
-          g.addColorStop(0, grassColor(x, z));
-          g.addColorStop(1, grassColor(x + step, z + step));
-          ctx.fillStyle = g;
-        } else ctx.fillStyle = grassColor(x, z);
-        ctx.beginPath();
-        points.forEach((p, i) =>
-          i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]),
-        );
-        ctx.closePath();
-        ctx.fill();
+        const a = [x, height(x, z), z],
+          b = [x + step, height(x + step, z), z],
+          c = [x + step, height(x + step, z + step), z + step],
+          d = [x, height(x, z + step), z + step];
+        add([a, c, b], grassColor(x + step * 0.66, z + step * 0.33), true);
+        add([a, d, c], grassColor(x + step * 0.33, z + step * 0.66), true);
       }
-    // Fine grass marks break up the smooth lawn without randomizing each frame.
-    for (let i = 0; i < 2200; i++) {
-      const x = Math.sin(i * 12.989) * 196,
-        z = Math.cos(i * 7.71) * 196;
-      if (Math.hypot(x - cam.x, z - cam.z) > range) continue;
-      const y = height(x, z) + 0.03,
-        a = project(x, y, z),
-        b = project(x + 0.28, y, z + 0.65),
-        c = project(x + 0.5, y, z);
-      ctx.fillStyle = i % 3 ? '#627c38' : '#8b9251';
-      ctx.beginPath();
-      ctx.moveTo(...a.slice(0, 2));
-      ctx.lineTo(...b.slice(0, 2));
-      ctx.lineTo(...c.slice(0, 2));
-      ctx.closePath();
-      ctx.fill();
-    }
     for (const road of roads) {
       if (Math.hypot(road.x - cam.x, road.z - cam.z) > range) continue;
       const c = Math.cos(road.yaw),
         s = Math.sin(road.yaw);
-      const points = [
-        [-5, -road.length],
-        [5, -road.length],
-        [5, road.length],
-        [-5, road.length],
-      ].map(([x, z]) =>
-        project(road.x + x * c + z * s, 0.12, road.z - x * s + z * c),
+      add(
+        [
+          [-5, -road.length],
+          [5, -road.length],
+          [5, road.length],
+          [-5, road.length],
+        ].map(([x, z]) => [
+          road.x + x * c + z * s,
+          0.12,
+          road.z - x * s + z * c,
+        ]),
+        '#aa9162',
       );
-      ctx.fillStyle = '#aa9162';
-      ctx.beginPath();
-      points.forEach((p, i) =>
-        i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]),
-      );
-      ctx.closePath();
-      ctx.fill();
     }
-    const pad = (corners, color, y) => {
-      const points = corners.map(([x, z]) => project(x, y, z));
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      points.forEach((p, i) =>
-        i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]),
+    const pad = (corners, color, y) =>
+      add(
+        corners.map(([x, z]) => [x, y, z]),
+        color,
       );
-      ctx.closePath();
-      ctx.fill();
-    };
     pad(
       [
         [-7, -7],
@@ -334,9 +387,30 @@
       '#dfd39e',
       0.36,
     );
+    faces.sort((a, b) => b.depth - a.depth);
+    if (ctx.save) ctx.save();
+    for (const f of faces) {
+      ctx.fillStyle = f.color;
+      ctx.beginPath();
+      f.points.forEach((p, i) =>
+        i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]),
+      );
+      ctx.closePath();
+      ctx.fill();
+      if (ctx.stroke) {
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+    if (ctx.restore) ctx.restore();
   }
   const api = {
     height,
+    routes,
+    clearings,
+    trailDistance,
+    canTravel,
     mesh,
     roads,
     rocks,

@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — veredas entre cerros
+
+- Recorrido sinuoso conectado con desvíos y claros para las bases y los rescates.
+- Cerros elevados y oscuros, con laderas rocosas, compartidos por WebGL y Canvas.
+- Las laderas limitan el movimiento; el terreno intercepta los disparos.
+- Apariciones de enemigos ajustadas al suelo transitable. Se mantienen las tres misiones.
+- Pruebas de accesibilidad de todos los rescates, colisión y apariciones deterministas.
+
 ## Sin publicar — helicóptero de referencia
 
 - Nuevo fuselaje verde alargado, cabina negra, motores gemelos y alas con cohetes de puntas claras.

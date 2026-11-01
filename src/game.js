@@ -497,6 +497,9 @@
       function spawnE(k, x, z) {
         const radius = { base: 6, tank: 3.5, tur: 2.5, inf: 0.7, heli: 1.8 }[k];
         const free = (nx, nz) =>
+          (typeof ToyWorld === 'undefined' ||
+            !ToyWorld.canTravel ||
+            ToyWorld.canTravel(nx, nz, radius)) &&
           !cover.overlaps(
             { x: nx, y: k === 'heli' ? 8 : groundAt(nx, nz) + 2, z: nz },
             radius,
@@ -523,6 +526,18 @@
                 break search;
               }
             }
+        }
+        if (!free(x, z) && typeof ToyWorld !== 'undefined' && ToyWorld.roads) {
+          const candidate = ToyWorld.roads
+            .filter((p) => free(p.x, p.z))
+            .sort(
+              (a, b) =>
+                Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z),
+            )[0];
+          if (candidate) {
+            x = candidate.x;
+            z = candidate.z;
+          }
         }
         state.E.push({
           k,

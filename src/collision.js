@@ -200,6 +200,19 @@
           }
           if (f !== null) t = Math.min(t, Math.max(0, f - 0.001));
         }
+        if (world && world.canTravel) {
+          const count = Math.max(1, Math.ceil(Math.abs(q[axis] - p[axis]) * 2));
+          for (let i = 1; i <= count; i++) {
+            const f = i / count;
+            if (f > t) break;
+            const x = p.x + (q.x - p.x) * f,
+              z = p.z + (q.z - p.z) * f;
+            if (!world.canTravel(x, z, r)) {
+              t = Math.min(t, (i - 1) / count);
+              break;
+            }
+          }
+        }
         p[axis] += (q[axis] - p[axis]) * t;
       }
       return p;

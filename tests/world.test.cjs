@@ -1,15 +1,15 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const world = require('../src/toy-world.js');
-test('terrain remains below flight altitude and the helipad is flat', () => {
+test('hills rise above flight altitude while the helipad stays flat', () => {
   let max = 0;
   for (let x = -200; x <= 200; x += 4)
     for (let z = -200; z <= 200; z += 4) {
       const y = world.height(x, z);
-      assert.ok(y >= 0 && y < 5);
+      assert.ok(y >= 0 && y < 27);
       max = Math.max(max, y);
     }
-  assert.ok(max > 3);
+  assert.ok(max > 20);
   for (let x = -7; x <= 7; x++)
     for (let z = -7; z <= 7; z++) assert.equal(world.height(x, z), 0);
 });
