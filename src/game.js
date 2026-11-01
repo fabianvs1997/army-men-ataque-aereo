@@ -496,7 +496,12 @@
 
       function spawnE(k, x, z) {
         const radius = { base: 6, tank: 3.5, tur: 2.5, inf: 0.7, heli: 1.8 }[k];
+        const start = ToyMissions.layout.start;
+        const safeDistance =
+          ToyMissions.layout.minEnemyDistance +
+          Math.max(radius, k === 'heli' ? 3 : 1.5);
         const free = (nx, nz) =>
+          Math.hypot(nx - start.x, nz - start.z) >= safeDistance &&
           (typeof ToyWorld === 'undefined' ||
             !ToyWorld.canTravel ||
             ToyWorld.canTravel(nx, nz, radius)) &&
@@ -539,7 +544,9 @@
             z = candidate.z;
           }
         }
-        state.E.push({
+        // Never fall back to the rejected position if no valid spawn exists.
+        if (!free(x, z)) return null;
+        const enemy = {
           k,
           x,
           y: k === 'heli' ? 8 : groundAt(x, z),
@@ -549,7 +556,9 @@
           cd: R(1, 3),
           p: { heli: 50, tank: 30, tur: 20, base: 100, inf: 10 }[k],
           fl: 0,
-        });
+        };
+        state.E.push(enemy);
+        return enemy;
       }
       function start(n, full) {
         clearInput();
@@ -605,12 +614,14 @@
           }
         };
         state.mission.config.bases.forEach(([x, z], camp) => {
-          spawnE('base', x, z);
-          state.E[state.E.length - 1].camp = camp;
+          const base = spawnE('base', x, z);
+          if (!base)
+            throw new Error('No hay espacio seguro para la base de misión.');
+          base.camp = camp;
         });
-        ring('tank', state.mission.config.tanks, 45, 110);
-        ring('tur', state.mission.config.turrets, 45, 110);
-        ring('inf', state.mission.config.infantry, 35, 100);
+        ring('tank', state.mission.config.tanks, 100, 150);
+        ring('tur', state.mission.config.turrets, 100, 150);
+        ring('inf', state.mission.config.infantry, 100, 150);
         cam.x = state.P.x;
         cam.z = state.P.z;
         cam.yaw = state.P.yaw;
@@ -726,11 +737,12 @@
             Math.min(1 + state.mis, 4)
           ) {
             const a = R(0, 6.28);
-            spawnE(
+            const reinforcement = spawnE(
               'heli',
               clamp(state.P.x + Math.sin(a) * 110, -185, 185),
               clamp(state.P.z + Math.cos(a) * 110, -185, 185),
             );
+            if (!reinforcement) state.airLeft++;
           }
         }
         for (const e of state.E) {

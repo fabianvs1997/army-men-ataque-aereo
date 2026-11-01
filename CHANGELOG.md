@@ -1,5 +1,12 @@
 # Changelog
 
+## Sin publicar — salida sin apariciones enemigas
+
+- Zona de exclusión de 90 unidades alrededor del inicio, más el radio del enemigo.
+- La misma validación cubre enemigos iniciales, reintentos y refuerzos aéreos.
+- Si no existe una posición válida, se cancela la aparición; los refuerzos fallidos quedan disponibles para reintentarse.
+- Pruebas con 30 semillas en las tres misiones, solicitudes junto al inicio y terreno completamente bloqueado.
+
 ## Sin publicar — recorrido con inicio y final
 
 - Una sola vereda abierta conecta la salida, los campamentos lejanos y la extracción final.

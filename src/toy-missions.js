@@ -23,6 +23,7 @@
       [155, 125],
     ],
     minRescueDistance: 100,
+    minEnemyDistance: 90,
   };
   const configs = [
     {
