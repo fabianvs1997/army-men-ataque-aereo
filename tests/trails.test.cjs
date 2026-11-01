@@ -4,10 +4,11 @@ const World = require('../src/toy-world.js');
 const Collision = require('../src/collision.js');
 const Missions = require('../src/toy-missions.js');
 const { game } = require('../support/fake-host.cjs');
-test('every campaign rescue clearing is connected to home with solid props present', () => {
+test('all distant rescues and the final pad are reachable along a long route', () => {
   const cover = Collision.create({ DC: World.shrubs, DB: [] }, World);
   const queue = [[0, 0]],
-    seen = new Set(['0,0']);
+    seen = new Set(['0,0']),
+    distances = new Map([['0,0', 0]]);
   for (let i = 0; i < queue.length; i++) {
     const [x, z] = queue[i];
     for (const [dx, dz] of [
@@ -23,9 +24,19 @@ test('every campaign rescue clearing is connected to home with solid props prese
       const p = cover.move({ x, y: 8, z }, { x: nx, y: 8, z: nz });
       if (Math.hypot(p.x - nx, p.z - nz) > 0.01) continue;
       seen.add(key);
+      distances.set(key, distances.get(x + ',' + z) + 2);
       queue.push([nx, nz]);
     }
   }
+  const finish = Missions.layout.finish;
+  const end = queue.filter(
+    ([x, z]) => Math.hypot(x - finish.x, z - finish.z) < 3,
+  );
+  assert.ok(end.length > 0, 'finish is inaccessible');
+  assert.ok(
+    Math.min(...end.map(([x, z]) => distances.get(x + ',' + z))) > 350,
+    'a shortcut bypasses the winding route',
+  );
   for (let n = 1; n <= 3; n++)
     for (const a of new Missions.Mission(n).allies)
       assert.ok(

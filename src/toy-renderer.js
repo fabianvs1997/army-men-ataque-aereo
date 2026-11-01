@@ -502,21 +502,57 @@ void main(){
             r.yaw,
             -1,
           );
-      this.part('box', 0, 0.22, 0, 7, 0.05, 7, [0.34, 0.39, 0.29], 0, 0.04);
-      for (const side of [-1, 1])
+      for (const site of world ? world.pads : [{ x: 0, z: 0, final: false }]) {
         this.part(
           'box',
-          side * 2,
-          0.32,
+          site.x,
+          0.18,
+          site.z,
+          8,
+          0.05,
+          8,
+          site.final ? [0.57, 0.88, 0.61] : [0.84, 0.8, 0.58],
           0,
-          0.35,
+          0,
+        );
+        this.part(
+          'box',
+          site.x,
+          0.26,
+          site.z,
+          7,
+          0.05,
+          7,
+          site.final ? [0.16, 0.4, 0.28] : [0.34, 0.39, 0.29],
+          0,
           0.04,
-          3,
+        );
+        for (const side of [-1, 1])
+          this.part(
+            'box',
+            site.x + side * 2,
+            0.36,
+            site.z,
+            0.35,
+            0.04,
+            3,
+            [0.84, 0.8, 0.58],
+            0,
+            0,
+          );
+        this.part(
+          'box',
+          site.x,
+          0.36,
+          site.z,
+          2,
+          0.04,
+          0.35,
           [0.84, 0.8, 0.58],
           0,
           0,
         );
-      this.part('box', 0, 0.32, 0, 2, 0.04, 0.35, [0.84, 0.8, 0.58], 0, 0);
+      }
 
       // The lower viewing angle and off-center framing expose more distant ground.
       const radius =

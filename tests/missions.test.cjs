@@ -1,7 +1,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const ToyWorld = require('../src/toy-world.js');
-const { Mission, configs, segmentHit } = require('../src/toy-missions.js');
+const {
+  Mission,
+  configs,
+  layout,
+  segmentHit,
+} = require('../src/toy-missions.js');
 const advance = (m, p, seconds, controls = {}) => {
   const events = [];
   for (let i = 0; i < seconds * 20; i++) {
@@ -61,13 +66,13 @@ test('all three missions complete only after rescue and a stationary extraction'
     }
     assert.equal(m.rescued, m.allies.length);
     assert.equal(m.complete, false);
-    advance(m, { x: 0, z: 0 }, 1);
-    m.update(0.05, { x: 0, z: 0 }, { firing: true });
+    advance(m, m.finish, 1);
+    m.update(0.05, m.finish, { firing: true });
     assert.equal(m.hold, 0);
-    const events = advance(m, { x: 0, z: 0 }, 3);
+    const events = advance(m, m.finish, 3);
     assert.deepEqual(events, ['complete']);
     assert.equal(m.complete, true);
-    assert.equal(m.update(0.05, { x: 0, z: 0 }), null);
+    assert.equal(m.update(0.05, m.finish), null);
   }
 });
 test('campaign bounds prevent undefined next missions', () => {
@@ -110,4 +115,33 @@ test('swept impact hits a small target crossed in one frame but misses other hei
     ),
     null,
   );
+});
+
+test('all objectives and rescue soldiers stay far from the departure point', () => {
+  for (let n = 1; n <= 3; n++) {
+    const m = new Mission(n),
+      distance = (p) => Math.hypot(p.x - m.start.x, p.z - m.start.z);
+    assert.ok(distance(m.finish) > 180);
+    for (const [x, z] of m.config.bases)
+      assert.ok(distance({ x, z }) >= layout.minRescueDistance);
+    for (const ally of m.allies)
+      assert.ok(distance(ally) >= layout.minRescueDistance);
+    assert.ok(distance(m.target(m.start)) >= layout.minRescueDistance);
+  }
+});
+test('only the distant finish can extract, after every soldier is aboard', () => {
+  for (let n = 1; n <= 3; n++) {
+    const m = new Mission(n);
+    advance(m, m.finish, 3);
+    assert.equal(m.complete, false);
+    m.config.bases.forEach((_, i) => m.release(i));
+    for (const a of m.allies) advance(m, a, 1.5);
+    assert.deepEqual(m.target(m.start), m.finish);
+    advance(m, m.start, 3);
+    assert.equal(m.complete, false, 'start must not extract');
+    advance(m, m.finish, 1);
+    advance(m, m.start, 0.05);
+    assert.equal(m.hold, 0);
+    assert.deepEqual(advance(m, m.finish, 2), ['complete']);
+  }
 });

@@ -574,8 +574,8 @@
         state.P.cd = 0;
         state.P.inv = 0;
         state.P.sc = full ? state.checkpoint : state.P.sc;
-        state.P.x = 0;
-        state.P.z = 0;
+        state.P.x = state.mission.start.x;
+        state.P.z = state.mission.start.z;
         state.P.y = 8;
         state.P.yaw = 0;
         state.P.pitch = 0;
@@ -611,8 +611,8 @@
         ring('tank', state.mission.config.tanks, 45, 110);
         ring('tur', state.mission.config.turrets, 45, 110);
         ring('inf', state.mission.config.infantry, 35, 100);
-        cam.x = 0;
-        cam.z = 0;
+        cam.x = state.P.x;
+        cam.z = state.P.z;
         cam.yaw = state.P.yaw;
         setState('play');
       }

@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — recorrido con inicio y final
+
+- Una sola vereda abierta conecta la salida, los campamentos lejanos y la extracción final.
+- Bases y soldados de las tres misiones permanecen a más de 100 unidades del inicio.
+- Helipuerto final verde independiente: solo permite ganar con todos los soldados a bordo, manteniendo posición durante 2 segundos.
+- Flecha, ayuda y mensajes apuntan a la extracción final; regresar al inicio ya no completa la misión.
+- Pruebas de distancia, accesibilidad del final y rechazo de extracciones prematuras.
+
 ## Sin publicar — veredas entre cerros
 
 - Recorrido sinuoso conectado con desvíos y claros para las bases y los rescates.
