@@ -35,7 +35,6 @@ const path = require('node:path');
       const g = window.fixtureGame;
       g.start(1, true);
       g.state.E = [];
-      g.state.airLeft = 0;
       g.view.cam.yaw = 0;
     });
     await page.keyboard.down('w');

@@ -33,7 +33,6 @@ const path = require('node:path');
         const g = window.fixtureGame;
         g.start(1, true);
         g.state.E = [];
-        g.state.airLeft = 0;
       });
       await page.keyboard.down(direction);
       const values = await page.evaluate(() => {
@@ -79,7 +78,6 @@ const path = require('node:path');
       const g = window.fixtureGame;
       g.start(1, true);
       g.state.E = [];
-      g.state.airLeft = 0;
     });
     const client = await page.context().newCDPSession(page);
     const touch = (type, points) =>

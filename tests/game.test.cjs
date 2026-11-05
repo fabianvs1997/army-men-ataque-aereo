@@ -8,7 +8,6 @@ function completeMission(g) {
   for (const e of s.E) app.combat.kill(e);
   s.E = [];
   s.EB = [];
-  s.airLeft = 0;
   for (const a of s.mission.allies) {
     s.P.x = a.x;
     s.P.z = a.z;
@@ -59,7 +58,6 @@ test('chase flight advances, reverses and steers continuously with camera alignm
       s = g.state;
     g.app.start(1, true);
     s.E = [];
-    s.airLeft = 0;
     key(g, k);
     for (let i = 0; i < 20; i++) {
       const before = s.P.yaw;
@@ -184,7 +182,7 @@ test('seeded missions reproduce spawns and terrain heights; fallback renders all
   assert.deepEqual(a.state.E, b.state.E);
   const world = require('../src/toy-world.js');
   for (const e of a.state.E) {
-    assert.equal(e.y, world.height(e.x, e.z));
+    assert.equal(e.y, e.k === 'heli' ? 8 : world.height(e.x, e.z));
     assert.ok(world.clearOfLandmarks(e.x, e.z, 10));
   }
   a.state.mission.release(0);

@@ -23,6 +23,7 @@ SMOKE_ENTRY=army-men-ataque-aereo.html BROWSER_EXECUTABLE=/ruta/a/chromium node 
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-helicopter.cjs
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-trails.cjs
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-route.cjs
+BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-initial-air.cjs
 ```
 
 Abre file://, inicia, dispara, pausa, navega ayuda/ajustes, silencia, continúa,

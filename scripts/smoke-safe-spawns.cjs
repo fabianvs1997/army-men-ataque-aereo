@@ -48,14 +48,6 @@ const path = require('node:path');
             !!e && dist(e) - e.r >= ToyMissions.layout.minEnemyDistance,
           );
         }
-        g.state.E = g.state.E.filter((e) => e.k !== 'heli');
-        g.state.hs = 0;
-        g.upd(0.01);
-        const air = g.state.E.filter((e) => e.k === 'heli');
-        checks.push(
-          air.length === 1 &&
-            air.every((e) => dist(e) >= ToyMissions.layout.minEnemyDistance),
-        );
       }
       g.start(1, true);
       g.upd(0.01);
@@ -66,7 +58,7 @@ const path = require('node:path');
     await page.screenshot({ path: '/tmp/safe-start.png' });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS safe spawns: initial enemies, requested near-start spawns and timed reinforcements across three missions; no JS errors',
+      'PASS safe spawns: initial enemies, requested near-start spawns and preloaded helicopters across three missions; no JS errors',
     );
   } finally {
     await browser.close();
