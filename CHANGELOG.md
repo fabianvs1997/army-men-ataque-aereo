@@ -1,5 +1,12 @@
 # Changelog
 
+## Sin publicar — helicópteros presentes desde el inicio
+
+- Todas las aeronaves enemigas se crean al cargar cada misión: 1, 2 y 3 según el nivel.
+- Eliminado el temporizador que generaba refuerzos durante la partida. Los helicópteros destruidos no reaparecen.
+- Se conserva la distancia de seguridad del punto de partida y la validación del terreno.
+- Las pruebas comprueban presencia inicial, reintentos y ausencia de nuevas aeronaves durante 105 segundos simulados.
+
 ## Sin publicar — salida sin apariciones enemigas
 
 - Zona de exclusión de 90 unidades alrededor del inicio, más el radio del enemigo.

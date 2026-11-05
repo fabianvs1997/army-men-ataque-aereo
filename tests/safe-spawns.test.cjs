@@ -13,7 +13,11 @@ test('all three missions and retries keep every enemy outside the departure buff
         const config = state.mission.config;
         assert.equal(
           state.E.length,
-          config.bases.length + config.tanks + config.turrets + config.infantry,
+          config.bases.length +
+            config.tanks +
+            config.turrets +
+            config.infantry +
+            config.air,
         );
         for (const e of state.E) {
           assert.ok(distance(e) - e.r >= layout.minEnemyDistance - 1e-9, e.k);
@@ -22,7 +26,7 @@ test('all three missions and retries keep every enemy outside the departure buff
       }
   }
 });
-test('near-start spawn requests and timed air reinforcements obey the same buffer', () => {
+test('near-start spawn requests obey the same buffer', () => {
   for (const seed of [1, 31, 77]) {
     const { app, state } = game(seed);
     app.start(3, true);
@@ -31,12 +35,6 @@ test('near-start spawn requests and timed air reinforcements obey the same buffe
       assert.ok(e);
       assert.ok(distance(e) - e.r >= layout.minEnemyDistance - 1e-9);
     }
-    state.E = state.E.filter((e) => e.k !== 'heli');
-    state.hs = 0;
-    app.upd(0.01);
-    const air = state.E.filter((e) => e.k === 'heli');
-    assert.equal(air.length, 1);
-    assert.ok(distance(air[0]) >= layout.minEnemyDistance);
   }
 });
 test('no valid terrain cancels the spawn instead of using an unsafe fallback', () => {
@@ -48,14 +46,6 @@ test('no valid terrain cancels the spawn instead of using an unsafe fallback', (
     World.canTravel = () => false;
     assert.equal(app.spawnE('inf', 0, 0), null);
     assert.equal(state.E.length, count);
-    const air = state.airLeft;
-    state.hs = 0;
-    app.upd(0.01);
-    assert.equal(
-      state.airLeft,
-      air,
-      'failed reinforcement should remain available',
-    );
     assert.equal(state.E.length, count);
   } finally {
     World.canTravel = original;

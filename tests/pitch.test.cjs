@@ -35,7 +35,6 @@ test('blocked movement stays level; pause preserves pose and restart clears it',
   const g = game();
   g.app.start(1, true);
   g.state.E = [];
-  g.state.airLeft = 0;
   g.app.view.cover.move = (p) => ({ ...p });
   g.host.emit('keydown', { key: 'w', repeat: false, preventDefault() {} });
   for (let i = 0; i < 20; i++) g.app.upd(0.05);

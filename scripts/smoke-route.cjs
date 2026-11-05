@@ -85,7 +85,6 @@ const path = require('node:path');
         for (const e of s.E) g.combat.kill(e);
         s.E = [];
         s.EB = [];
-        s.airLeft = 0;
         const stand = (point, frames) => {
           s.P.x = point.x;
           s.P.z = point.z;

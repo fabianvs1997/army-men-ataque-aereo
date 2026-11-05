@@ -279,8 +279,6 @@
       for (const key of [
         'lastDraw',
         'last',
-        'hs',
-        'airLeft',
         'tb',
         'muted',
         'mis',
@@ -467,7 +465,6 @@
       Object.assign(state, {
         mission: null,
         checkpoint: 0,
-        airLeft: 0,
         overlayPage: 'main',
       });
       Object.assign(state, {
@@ -487,7 +484,6 @@
         shk: 0,
         bd: 0,
         tb: 0,
-        hs: 3,
       });
 
       const groundAt = (x, z) =>
@@ -566,7 +562,6 @@
         state.shk = 0;
         state.mis = n;
         state.mission = new ToyMissions.Mission(n);
-        state.airLeft = state.mission.config.air;
         state.E = [];
         state.BL = [];
         state.EB = [];
@@ -591,7 +586,6 @@
         state.P.pitchSpeed = 0;
         state.bd = 0;
         state.tb = state.mission.config.bases.length;
-        state.hs = 25;
         const ring = (k, c, a, b) => {
           for (let i = 0; i < c; i++) {
             let x = 0,
@@ -622,6 +616,7 @@
         ring('tank', state.mission.config.tanks, 100, 150);
         ring('tur', state.mission.config.turrets, 100, 150);
         ring('inf', state.mission.config.infantry, 100, 150);
+        ring('heli', state.mission.config.air, 100, 150);
         cam.x = state.P.x;
         cam.z = state.P.z;
         cam.yaw = state.P.yaw;
@@ -726,23 +721,6 @@
             );
             o.tg = tg;
             sfx.miss();
-          }
-        }
-        state.hs -= dt;
-        if (state.hs <= 0 && state.airLeft > 0 && state.bd < state.tb) {
-          state.hs = 25;
-          state.airLeft--;
-          if (
-            state.E.filter((e) => e.k === 'heli' && !e.dead).length <
-            Math.min(1 + state.mis, 4)
-          ) {
-            const a = R(0, 6.28);
-            const reinforcement = spawnE(
-              'heli',
-              clamp(state.P.x + Math.sin(a) * 110, -185, 185),
-              clamp(state.P.z + Math.cos(a) * 110, -185, 185),
-            );
-            if (!reinforcement) state.airLeft++;
           }
         }
         for (const e of state.E) {
