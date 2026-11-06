@@ -1,5 +1,14 @@
 # Changelog
 
+## Sin publicar — Supabase con variables de entorno (sin hardcodear)
+
+- La URL y la clave ANON de Supabase ya no se pegan en ningún archivo del repositorio. `src/supabase-config.js` ya no contiene valores: lee la configuración inyectada en `globalThis.__SUPABASE_CONFIG__` y, sin ella, el juego va como invitado sin servidor, como hasta ahora.
+- `scripts/generate-supabase-config.cjs` genera `src/supabase-env.js` (gitignorado, nunca en el repo) a partir de variables de entorno o de un `.env` local. Sin variables genera una configuración vacía (modo invitado); con una sola variable, con una URL que no sea `https://<proyecto>.supabase.co` o con una clave que parezca la secreta (`service_role`, `sb_secret_`, `sk-`), falla en vez de publicar algo roto. La clave nunca se imprime en la salida.
+- `.github/workflows/deploy-pages.yml` (nuevo): al hacer push a `Master` corre los tests, genera la configuración desde los secretos de GitHub `SUPABASE_URL` y `SUPABASE_ANON_KEY` y publica en GitHub Pages. Para activarlo hay un paso manual único: Settings → Pages → Build and deployment → Source → GitHub Actions. **Ojo:** la integración de GitHub no permite crear archivos de workflow por API, así que este archivo no viene en la rama del PR: hay que añadirlo una vez desde la web (Add file → Create new file con esa ruta, pegando el contenido que está en `docs/SUPABASE.md` §3). Hasta ese cambio, Pages sigue publicando directo desde la rama sin configuración (modo invitado) y el juego no se rompe: `src/bootstrap.js` carga `supabase-env` como script opcional y tolera que no exista.
+- `.env.example` con los nombres de las variables (sin valores reales) y `.gitignore` para `.env` y `src/supabase-env.js`.
+- `docs/SUPABASE.md` reescrito con el flujo nuevo: secretos en GitHub, cambio de despliegue a Actions, prueba en local con `.env`, desactivación y solución de problemas. Sin cambios de jugabilidad.
+- Pruebas nuevas en `tests/supabase-config.test.cjs` (inyección válida/inválida, lectura en el momento de uso) y `tests/generate-supabase-config.test.cjs` (variables, `.env`, casos de fallo). `VERSION` pasa a `supabase-env-1`.
+
 ## Sin publicar — registro de errores y Supabase (cuentas y puntuaciones)
 
 - Registro de errores en el dispositivo (`src/logger.js`, `ToyLogger`): captura `console.error`, errores no controlados, rechazos de promesas y frames de más de 500 ms (como mucho un aviso cada 5 s), con versión, misión, fase, semilla, FPS/ms, nivel de degradado y dispositivo. Sin datos personales. Últimas 100 entradas en localStorage con rotación; si el almacenamiento falla, sigue en memoria y nunca rompe el juego. Se ve en Menú → Registro, se exporta como `army-men-logs.json` y el contador aparece en el HUD con `?logs=1`.

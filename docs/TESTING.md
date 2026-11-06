@@ -141,6 +141,13 @@ por gesto de la primera cámara de seguimiento.
   congelamientos con enfriamiento y tolerancia a almacenamiento roto.
 - `tests/supabase.test.cjs`: cliente simulado; modo invitado con cola,
   guardado con sesión, lotes de errores y registro/inicio de sesión.
+- `tests/supabase-config.test.cjs`: sin inyección, modo invitado; con
+  `__SUPABASE_CONFIG__` válida, activo; URL o clave no válidas no lo
+  activan y una inyección mal formada no rompe el juego.
+- `tests/generate-supabase-config.test.cjs`: el generador escribe la
+  configuración desde variables de entorno o `.env`, genera vacío sin
+  variables, y falla si falta una variable, si la URL no es de
+  Supabase o si la clave parece la secreta. Sin red ni secretos reales.
 - `tests/logging-integration.test.cjs`: el juego instala el logger y
   Supabase offline, y los paneles de Cuenta y Registro funcionan sin
   servidor. Sin red: `node --test` no toca Supabase real.
@@ -149,4 +156,7 @@ Manual: con la configuración vacía, Menú → Cuenta dice "sin
 configurar" y Menú → Registro muestra y exporta errores. Con Supabase
 configurado (ver `docs/SUPABASE.md`), crea una cuenta, completa una
 misión y comprueba la fila en Table Editor → scores y los errores en
-Table Editor → error_logs.
+Table Editor → error_logs. En local, genera la configuración con
+`cp .env.example .env` y `node scripts/generate-supabase-config.cjs`;
+`git status` debe seguir limpio (`.env` y `src/supabase-env.js` están
+gitignorados).

@@ -22,7 +22,8 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | escort-navigation | Desvíos locales con búsqueda de ruta y colisiones barridas. A* con montón binario y presupuestos duros: meta recortada a 64 u, inicio y meta saneados al punto libre más cercano, como mucho 1200 expansiones o 12 ms por llamada; si no encuentra ruta devuelve null y el soldado espera. |
 | perf | Monitor de rendimiento: EMA del tiempo real por frame y degradado automático en 3 niveles (tope de DPR 1.75 → 1.25 → 1, dibujo a 30 fps y mitad de escombros/humo en el nivel 2) con recuperación gradual. |
 | logger | Registro de errores en el dispositivo: `console.error`, errores no controlados, rechazos y frames de más de 500 ms, con versión, misión, fase, semilla y rendimiento; últimas 100 entradas en localStorage con rotación, nunca rompe el juego. |
-| supabase-config | URL y clave ANON de Supabase (vacías = modo invitado offline). La clave secreta no se usa nunca. |
+| supabase-env | Archivo generado en el despliegue (o en local) desde variables de entorno; define `__SUPABASE_CONFIG__`. Gitignorado, nunca en el repo. |
+| supabase-config | Lee la configuración inyectada (`__SUPABASE_CONFIG__`); sin ella, modo invitado offline. Ningún valor va pegado en el código. La clave secreta no se usa nunca. |
 | supabase | Cliente opcional de Supabase: Auth por correo, puntuaciones y envío de errores. Carga perezosa del CDN; sin configuración o sin red, todo queda en local. |
 | escort-progress | Mejores resultados con esquema versionado y almacenamiento opcional |
 | toy-helicopter | Modelo plástico del jugador compartido por WebGL y Canvas |
@@ -88,13 +89,21 @@ guarda en localStorage con rotación (últimas 100) y se puede ver en
 Menú → Registro, exportar como JSON o ver el contador con `?logs=1`.
 
 `src/supabase.js` (`ToySupabase`) es un cliente opcional: sin
-configuración en `src/supabase-config.js` todos sus métodos son no-op
-offline y el juego sigue como invitado. Con URL y clave ANON, carga la
-librería oficial desde el CDN solo cuando hace falta; si el CDN no carga,
-sigue offline. Auth por correo y contraseña (las contraseñas solo pasan
-por Supabase Auth), puntuaciones en `scores` al completar cada misión
-(como invitado o sin red quedan en cola local, máximo 20, y se envían al
-iniciar sesión) y envío de errores en lotes a `error_logs`. El esquema y
-las políticas RLS están en `supabase/schema.sql`; los pasos para
-activarlo, en `docs/SUPABASE.md`. La clave secreta (service_role) no se
-usa nunca en el juego.
+configuración inyectada todos sus métodos son no-op offline y el juego
+sigue como invitado. La configuración no vive en el repositorio: en
+producción, el workflow `.github/workflows/deploy-pages.yml` genera
+`src/supabase-env.js` a partir de los secretos de GitHub
+`SUPABASE_URL` y `SUPABASE_ANON_KEY`, y en local se genera igual con
+`node scripts/generate-supabase-config.cjs` desde variables de entorno
+o un `.env` (ambos gitignorados; ver `.env.example`). `src/bootstrap.js`
+carga `supabase-env` como script opcional: si el archivo no existe
+(despliegue desde la rama, `file://` sin generar), se tolera el 404 y
+el juego sigue como invitado. Con URL y clave ANON, carga la librería
+oficial desde el CDN solo cuando hace falta; si el CDN no carga, sigue
+offline. Auth por correo y contraseña (las contraseñas solo pasan por
+Supabase Auth), puntuaciones en `scores` al completar cada misión
+(como invitado o sin red quedan en cola local, máximo 20, y se envían
+al iniciar sesión) y envío de errores en lotes a `error_logs`. El
+esquema y las políticas RLS están en `supabase/schema.sql`; los pasos
+para activarlo, en `docs/SUPABASE.md`. La clave secreta (service_role)
+no se usa nunca en el juego: el generador la rechaza.
