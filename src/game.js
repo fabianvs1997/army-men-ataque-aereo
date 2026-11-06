@@ -743,12 +743,15 @@
             sfx.miss();
           }
         }
+        const soldiers = state.mission.activeSoldiers();
         for (const e of state.E) {
           if (e.dead) continue;
           e.fl = Math.max(0, e.fl - dt);
           let target = state.P,
             nearest = Math.hypot(state.P.x - e.x, state.P.z - e.z);
-          for (const ally of state.mission.activeSoldiers()) {
+          // La lista de soldados activos es la misma para todos los
+          // enemigos de este frame: se construye una sola vez.
+          for (const ally of soldiers) {
             if (
               ally.wounded &&
               ['INICIO_A', 'COMBATE_RUTA_AB', 'DESPEJAR_B'].includes(

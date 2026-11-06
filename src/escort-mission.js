@@ -99,6 +99,8 @@
       this.stars = 0;
       this.deliveryHold = 0;
       this.reason = '';
+      // Pertenencia O(1) sin reconstruir la lista de activos en cada daño.
+      this._soldiers = new Set(this.guards.concat(this.allies));
     }
     activeSoldiers() {
       return this.guards
@@ -106,7 +108,13 @@
         .filter((a) => !['A_BORDO', 'SEGURO_EN_C', 'CAIDO'].includes(a.state));
     }
     damageSoldier(a, damage = 1, reason = 'combate') {
-      if (!this.activeSoldiers().includes(a)) return false;
+      // Misma condición que activeSoldiers(), sin reconstruir la lista:
+      // pertenencia a la misión y estado aún activo.
+      if (
+        !this._soldiers.has(a) ||
+        ['A_BORDO', 'SEGURO_EN_C', 'CAIDO'].includes(a.state)
+      )
+        return false;
       if (
         a.wounded &&
         ['INICIO_A', 'COMBATE_RUTA_AB', 'DESPEJAR_B'].includes(this.stage)

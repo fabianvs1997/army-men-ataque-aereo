@@ -237,6 +237,7 @@ void main(){
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
       gl.clearColor(0.27, 0.36, 0.23, 1);
+      this.boundMesh = null;
     }
     setWorld(world, restoring = false) {
       this.world = world;
@@ -249,16 +250,24 @@ void main(){
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
       this.meshes.terrain = { buffer, count: data.length / 6 };
+      // setWorld cambia el buffer enlazado: la caché de malla queda inválida.
+      this.boundMesh = null;
     }
     part(kind, x, y, z, sx, sy, sz, color, yaw = 0, gloss = 0.6) {
       const gl = this.gl,
         m = this.meshes[kind],
         u = this.loc;
-      gl.bindBuffer(gl.ARRAY_BUFFER, m.buffer);
-      gl.enableVertexAttribArray(this.position);
-      gl.enableVertexAttribArray(this.normal);
-      gl.vertexAttribPointer(this.position, 3, gl.FLOAT, false, 24, 0);
-      gl.vertexAttribPointer(this.normal, 3, gl.FLOAT, false, 24, 12);
+      // Las piezas consecutivas del mismo tipo (escombros, humo, trazadoras)
+      // reutilizan el buffer y los punteros ya enlazados: en una escena con
+      // ~900 dibujos por frame eso ahorra varias llamadas GL por pieza.
+      if (this.boundMesh !== kind) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, m.buffer);
+        gl.enableVertexAttribArray(this.position);
+        gl.enableVertexAttribArray(this.normal);
+        gl.vertexAttribPointer(this.position, 3, gl.FLOAT, false, 24, 0);
+        gl.vertexAttribPointer(this.normal, 3, gl.FLOAT, false, 24, 12);
+        this.boundMesh = kind;
+      }
       gl.uniform3f(u.origin, x, y + (this.groundOffset || 0), z);
       gl.uniform3f(u.size, sx, sy, sz);
       gl.uniform1f(u.yaw, yaw);
@@ -491,24 +500,30 @@ void main(){
       );
       const world = this.world;
       this.groundOffset = 0;
+      // The lower viewing angle and off-center framing expose more distant ground.
+      const radius =
+          Math.hypot(W / 2, Math.max(HY, H - HY) / Math.sin(PITCH)) / F + 48,
+        visible = (o) => Math.hypot(o.x - cam.x, o.z - cam.z) < radius;
       if (world)
         this.part('terrain', 0, 0, 0, 1, 1, 1, [0.39, 0.5, 0.24], 0, -2);
       else this.part('box', 0, -1, 0, 200, 1, 200, [0.39, 0.49, 0.25], 0, 0.02);
       // A compact practice clearing, roads and helipad on a cleared central area.
+      // Las carreteras cubren todo el mapa: solo se dibujan las cercanas.
       if (world)
         for (const r of world.roads)
-          this.part(
-            'box',
-            r.x,
-            r.y,
-            r.z,
-            5,
-            0.04,
-            r.length,
-            [0.63, 0.51, 0.32],
-            r.yaw,
-            -1,
-          );
+          if (Math.hypot(r.x - cam.x, r.z - cam.z) < radius + r.length)
+            this.part(
+              'box',
+              r.x,
+              r.y,
+              r.z,
+              5,
+              0.04,
+              r.length,
+              [0.63, 0.51, 0.32],
+              r.yaw,
+              -1,
+            );
       for (const site of world ? world.pads : [{ x: 0, z: 0, final: false }]) {
         this.part(
           'box',
@@ -553,10 +568,7 @@ void main(){
           0,
         );
 
-      // The lower viewing angle and off-center framing expose more distant ground.
-      const radius =
-          Math.hypot(W / 2, Math.max(HY, H - HY) / Math.sin(PITCH)) / F + 48,
-        visible = (o) => Math.hypot(o.x - cam.x, o.z - cam.z) < radius;
+      // Rocas y objetos del patio cercanos.
       if (world) {
         for (const r of world.rocks)
           if (visible(r)) {
@@ -604,13 +616,22 @@ void main(){
               0,
             );
       }
+      // Aliados activos una sola vez por frame: la comprobación por arbusto
+      // antes creaba un cierre y recorría los aliados en cada arbusto.
+      const allies = scene.allies || [];
       for (const d of DC) {
+        if (!visible(d)) continue;
+        let nearAlly = false;
+        for (const a of allies)
+          if (
+            a.state !== 'rescued' &&
+            Math.hypot(a.x - d.x, a.z - d.z) < 7
+          ) {
+            nearAlly = true;
+            break;
+          }
         if (
-          (scene.allies || []).some(
-            (a) =>
-              a.state !== 'rescued' && Math.hypot(a.x - d.x, a.z - d.z) < 7,
-          ) ||
-          !visible(d) ||
+          nearAlly ||
           (world && !world.clearOfLandmarks(d.x, d.z, 3))
         )
           continue;

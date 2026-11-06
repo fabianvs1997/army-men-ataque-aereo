@@ -51,7 +51,54 @@
       rescued,
       grid = new Map(),
       solids = [];
+    // Escombros: la mayoría están asentados y no se mueven nunca más, así
+    // que van a su propio índice espacial (como los sólidos). Solo las
+    // piezas aún en el aire se revisan directamente, y son pocas.
+    // Antes cada trace/move recorría los 320 escombros con un segment()
+    // con trigonometría; con la misión 2 (pelotón en marcha + ~80
+    // trazados por frame) eso era el grueso del coste por frame.
+    let debrisGrid = new Map(),
+      debrisLen = -1,
+      debrisSettled = -1,
+      debrisMoving = 0;
     const CELL = 24;
+    function indexInto(map, o) {
+      const c = Math.abs(Math.cos(o.yaw || 0)),
+        s = Math.abs(Math.sin(o.yaw || 0)),
+        rx = o.sx * c + o.sz * s,
+        rz = o.sx * s + o.sz * c;
+      for (
+        let x = Math.floor((o.x - rx) / CELL);
+        x <= Math.floor((o.x + rx) / CELL);
+        x++
+      )
+        for (
+          let z = Math.floor((o.z - rz) / CELL);
+          z <= Math.floor((o.z + rz) / CELL);
+          z++
+        ) {
+          const key = x + ',' + z;
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(o);
+        }
+    }
+    function rebuildDebris() {
+      const list = scene.DB || [];
+      // Si no ha cambiado la longitud y ya no hay piezas en el aire, el
+      // conjunto asentado no puede haber cambiado: no se reescanea nada.
+      if (list.length === debrisLen && debrisMoving === 0) return;
+      let settled = 0;
+      for (const p of list) if (p.settled) settled++;
+      if (list.length === debrisLen && settled === debrisSettled) {
+        debrisMoving = list.length - settled;
+        return;
+      }
+      debrisLen = list.length;
+      debrisSettled = settled;
+      debrisMoving = list.length - settled;
+      debrisGrid = new Map();
+      for (const p of list) if (p.settled) indexInto(debrisGrid, p);
+    }
     function rebuild() {
       if (
         dc === scene.DC &&
@@ -114,29 +161,11 @@
           });
       }
       grid = new Map();
-      for (const o of solids) {
-        const c = Math.abs(Math.cos(o.yaw || 0)),
-          s = Math.abs(Math.sin(o.yaw || 0)),
-          rx = o.sx * c + o.sz * s,
-          rz = o.sx * s + o.sz * c;
-        for (
-          let x = Math.floor((o.x - rx) / CELL);
-          x <= Math.floor((o.x + rx) / CELL);
-          x++
-        )
-          for (
-            let z = Math.floor((o.z - rz) / CELL);
-            z <= Math.floor((o.z + rz) / CELL);
-            z++
-          ) {
-            const key = x + ',' + z;
-            if (!grid.has(key)) grid.set(key, []);
-            grid.get(key).push(o);
-          }
-      }
+      for (const o of solids) indexInto(grid, o);
     }
     function candidates(a, b, r) {
       rebuild();
+      rebuildDebris();
       const found = new Set();
       for (
         let x = Math.floor((Math.min(a.x, b.x) - r) / CELL);
@@ -147,9 +176,13 @@
           let z = Math.floor((Math.min(a.z, b.z) - r) / CELL);
           z <= Math.floor((Math.max(a.z, b.z) + r) / CELL);
           z++
-        )
+        ) {
           for (const o of grid.get(x + ',' + z) || []) found.add(o);
-      for (const p of scene.DB || []) found.add(p);
+          for (const o of debrisGrid.get(x + ',' + z) || []) found.add(o);
+        }
+      // Piezas aún en el aire: pocas y transitorias; se revisan directas.
+      if (debrisMoving > 0)
+        for (const p of scene.DB || []) if (!p.settled) found.add(p);
       return found;
     }
     function trace(a, b, r = 0, halfY = r) {
