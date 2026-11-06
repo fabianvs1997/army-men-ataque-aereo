@@ -100,3 +100,61 @@ test('no waiting wounded explicitly starts escort and configured capacity limits
     c.capacity,
   );
 });
+function escorted(config) {
+  const m = new Mission(1, config);
+  tick(m, m.rules.B, 0.1);
+  for (const a of m.allies.filter((a) => a.wounded)) tick(m, a, 2);
+  return m;
+}
+test('ground escort reaches C through real terrain without exceeding speed or crossing hills', () => {
+  const World = require('../src/toy-world.js'),
+    Collision = require('../src/collision.js');
+  const m = escorted(),
+    env = {
+      groundAt: World.height,
+      cover: Collision.create({ DC: World.shrubs, DB: [] }, World),
+      enemies: [],
+    };
+  for (
+    let i = 0;
+    i < 1800 && m.allies.some((a) => !a.wounded && a.state !== 'SEGURO_EN_C');
+    i++
+  ) {
+    const old = m.allies.map((a) => ({ ...a }));
+    m.update(0.05, m.finish, env);
+    m.allies.forEach((a, j) => {
+      assert.ok(
+        Math.hypot(a.x - old[j].x, a.z - old[j].z) <=
+          m.rules.soldierSpeed * 0.05 * 1.1,
+      );
+      if (!a.wounded)
+        assert.ok(World.canTravel(a.x, a.z, m.rules.soldierRadius));
+    });
+  }
+  assert.ok(
+    m.allies.filter((a) => !a.wounded).every((a) => a.state === 'SEGURO_EN_C'),
+  );
+  assert.equal(m.delivered, m.rules.healthy);
+  tick(m, m.finish, 2, env);
+  assert.equal(m.delivered, m.rules.healthy);
+});
+test('blocked soldiers become explicit casualties after timeout instead of teleporting', () => {
+  const c = require('../src/escort-config.js'),
+    m = escorted({ ...c, stuckSeconds: 1 });
+  const old = m.allies
+    .filter((a) => !a.wounded)
+    .map((a) => ({ x: a.x, z: a.z }));
+  tick(m, m.finish, 2, {
+    cover: { trace: () => null, move: (a) => ({ ...a }) },
+  });
+  m.allies
+    .filter((a) => !a.wounded)
+    .forEach((a, i) => {
+      assert.equal(a.state, 'CAIDO');
+      assert.deepEqual({ x: a.x, z: a.z }, old[i]);
+    });
+  assert.equal(
+    m.drainEvents().filter((e) => e.reason === 'atasco').length,
+    c.healthy,
+  );
+});

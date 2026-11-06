@@ -162,7 +162,90 @@
       return target;
     }
     stepSoldiers(dt, env) {
-      for (const a of this.activeSoldiers()) this.defend(a, dt, env);
+      for (const a of this.activeSoldiers()) {
+        const enemy = this.defend(a, dt, env);
+        if (
+          a.group === 'A' ||
+          a.wounded ||
+          !['ESCOLTAR_BC', 'ENTREGA_C'].includes(this.stage)
+        )
+          continue;
+        a.state = enemy ? 'EN_COMBATE' : 'MARCHANDO_A_C';
+        a.combatTime = enemy ? (a.combatTime || 0) + dt : 0;
+        if (enemy && a.combatTime < this.rules.combatPause) continue;
+        const route = this.rules.routeBC,
+          i = Math.min(a.waypoint, route.length - 1),
+          before = route[Math.max(0, i - 1)],
+          after = route[Math.min(route.length - 1, i + 1)],
+          length = Math.hypot(after[0] - before[0], after[1] - before[1]) || 1,
+          lane =
+            (Number(a.id.split('-')[1]) - (this.rules.healthy - 1) / 2) *
+            this.rules.separation,
+          target = {
+            x: route[i][0] - ((after[1] - before[1]) / length) * lane,
+            z: route[i][1] + ((after[0] - before[0]) / length) * lane,
+          };
+        const dx = target.x - a.x,
+          dz = target.z - a.z,
+          d = Math.hypot(dx, dz),
+          step = Math.min(d, this.rules.soldierSpeed * dt);
+        if (d < 0.8) {
+          a.waypoint++;
+          a.stuck = 0;
+          a.bestDistance = Infinity;
+          if (a.waypoint >= route.length) {
+            a.state = 'SEGURO_EN_C';
+            this.delivered++;
+            this.events.push({ type: 'arrived', id: a.id });
+          }
+          continue;
+        }
+        const origin = { x: a.x, y: env.groundAt(a.x, a.z) + 1.5, z: a.z };
+        let goal = {
+          x: a.x + (dx / d) * step,
+          y: origin.y,
+          z: a.z + (dz / d) * step,
+        };
+        let next = env.cover
+          ? env.cover.move(origin, goal, this.rules.soldierRadius, 1.3)
+          : goal;
+        // Small local detours use the same swept collision query and speed limit.
+        if (Math.hypot(next.x - a.x, next.z - a.z) < step * 0.2 && env.cover) {
+          for (const turn of [
+            -Math.PI / 4,
+            Math.PI / 4,
+            -Math.PI / 2,
+            Math.PI / 2,
+          ]) {
+            const yaw = Math.atan2(dx, dz) + turn;
+            const q = env.cover.move(
+              origin,
+              {
+                x: a.x + Math.sin(yaw) * step,
+                y: origin.y,
+                z: a.z + Math.cos(yaw) * step,
+              },
+              this.rules.soldierRadius,
+              1.3,
+            );
+            if (
+              Math.hypot(q.x - a.x, q.z - a.z) >
+              Math.hypot(next.x - a.x, next.z - a.z)
+            )
+              next = q;
+          }
+        }
+        a.yaw = Math.atan2(next.x - a.x, next.z - a.z);
+        a.x = next.x;
+        a.z = next.z;
+        const remaining = Math.hypot(target.x - a.x, target.z - a.z);
+        if (remaining < (a.bestDistance ?? Infinity) - 0.05) {
+          a.bestDistance = remaining;
+          a.stuck = 0;
+        } else a.stuck += dt;
+        if (a.stuck >= this.rules.stuckSeconds)
+          this.damageSoldier(a, a.hp, 'atasco');
+      }
     }
     update(dt, player, env = {}) {
       if (this.complete || this.failed) return null;
@@ -244,6 +327,22 @@
             if (!a.wounded && a.state !== 'CAIDO') a.state = 'MARCHANDO_A_C';
         }
       }
+      const marching = this.allies.filter(
+        (a) => !a.wounded && !['CAIDO', 'SEGURO_EN_C'].includes(a.state),
+      );
+      this.remaining = marching.length;
+      this.lagDistance = Math.round(
+        Math.max(
+          0,
+          ...marching.map((a) => Math.hypot(a.x - player.x, a.z - player.z)),
+        ),
+      );
+      if (['ESCOLTAR_BC', 'ENTREGA_C'].includes(this.stage))
+        this.message +=
+          ' · En camino: ' +
+          this.remaining +
+          ' · Distancia: ' +
+          this.lagDistance;
       return null;
     }
     transition(next) {
