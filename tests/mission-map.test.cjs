@@ -52,6 +52,30 @@ test('generated routes stay connected, objectives distant, troops safe and escor
         }
       }
     }
+    assert.equal(m.enemyPlan.filter((e) => e.zone === 'AB').length, 8);
+    assert.equal(
+      m.enemyPlan.filter((e) => e.zone === 'BC' && e.k !== 'heli').length,
+      8,
+    );
+    assert.equal(
+      new Set(m.enemyPlan.map((e) => e.id)).size,
+      m.enemyPlan.length,
+    );
+    for (const e of m.enemyPlan.filter((e) => e.id.startsWith('patrol-'))) {
+      assert.ok(
+        Math.hypot(e.x - m.rules.B.x, e.z - m.rules.B.z) >
+          m.rules.perimeter + 10,
+      );
+      assert.ok(Math.hypot(e.x - m.rules.C.x, e.z - m.rules.C.z) > 45);
+      assert.equal(
+        cover.overlaps(
+          { x: e.x, y: 2, z: e.z },
+          e.k === 'tank' ? 3.5 : 1.5,
+          1.3,
+        ),
+        false,
+      );
+    }
     for (const e of m.enemyPlan) {
       assert.ok(Math.hypot(e.x, e.z) >= m.rules.safeRadius + 4);
       assert.ok(world.canTravel(e.x, e.z, 4), `seed ${seed} enemy ${e.id}`);

@@ -48,6 +48,27 @@
       e.x = p[0];
       e.z = p[1] + 3;
     }
+    for (const [zone, route] of [
+      ['AB', routeAB],
+      ['BC', routeBC],
+    ]) {
+      defaults.routePatrols[zone].forEach((patrol, i) => {
+        const segment = Math.floor(patrol.at),
+          t = patrol.at - segment;
+        const a = route[segment],
+          b = route[segment + 1];
+        const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const side = i % 2 ? 9 : -9;
+        enemies.push({
+          id: `patrol-${zone.toLowerCase()}-${i}`,
+          zone,
+          k: patrol.k,
+          hp: patrol.hp,
+          x: a[0] + (b[0] - a[0]) * t - ((b[1] - a[1]) / length) * side,
+          z: a[1] + (b[1] - a[1]) * t + ((b[0] - a[0]) / length) * side,
+        });
+      });
+    }
     const extraAir = defaults.extraAir.map((e, i) => ({
       ...e,
       x: routeBC[7 + i * 4][0],
