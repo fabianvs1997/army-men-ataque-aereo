@@ -164,6 +164,28 @@
           Math.PI +
         'deg)';
       setText('dg', 'Puntos: ' + env.P.sc);
+      // Lectura de rendimiento opcional (?perf=1): FPS, ms por frame,
+      // peor frame y nivel de degradado, para diagnosticar en el iPhone.
+      if (env.perfVisible && env.perf) {
+        if (env.t - (env._perfAt || 0) >= 0.5) {
+          env._perfAt = env.t;
+          env.$('perf').style.display = 'block';
+          setText(
+            'perf',
+            'FPS ' +
+              Math.round(1000 / Math.max(1, env.perf.ema)) +
+              ' · ' +
+              env.perf.ema.toFixed(1) +
+              ' ms · peor ' +
+              env.perf.worst.toFixed(0) +
+              ' ms · nivel ' +
+              env.perf.level +
+              (env.perf.level > 0 ? ' (ahorro automático)' : '') +
+              ' · ' +
+              (env.mission?.stage || ''),
+          );
+        }
+      }
     }
     function bind() {
       env.$('go').addEventListener('pointerdown', () => env.audio());

@@ -472,9 +472,11 @@ void main(){
           scene,
         gl = this.gl,
         u = this.loc;
+      // Nivel de degradado 2: se dibuja la mitad de escombros y de humo.
+      const stride = (scene.perfLevel || 0) >= 2 ? 2 : 1;
       const d = Math.min(
           root.devicePixelRatio || 1,
-          scene.pixelRatio === 1 ? 1 : 1.75,
+          scene.pixelRatio || 1.75,
         ),
         width = Math.round(W * d),
         height = Math.round(H * d);
@@ -706,7 +708,8 @@ void main(){
         }
       }
       this.groundOffset = 0;
-      for (const d of scene.DB || [])
+      for (let di = 0; di < (scene.DB || []).length; di += stride) {
+        const d = scene.DB[di];
         if (visible(d)) {
           this.part(
             d.kind,
@@ -721,6 +724,7 @@ void main(){
             0.85,
           );
         }
+      }
       for (const e of E) {
         if (!visible(e)) continue;
         this.groundOffset = 0;
@@ -867,7 +871,8 @@ void main(){
           );
       // Humo de misil. Sin canal alfa en WebGL, el desvanecimiento se simula
       // creciendo y oscureciendo la bocanada, y encogiéndola al final.
-      for (const s of SM)
+      for (let si = 0; si < SM.length; si += stride) {
+        const s = SM[si];
         if (visible(s)) {
           const max = s.max || 0.9,
             age = Math.min(1, Math.max(0, 1 - s.l / max));
@@ -889,6 +894,7 @@ void main(){
             0,
           );
         }
+      }
       // Trazadoras finas en forma de destello: punta brillante, halo que se
       // estrecha y cola apagada. Sin canal alfa, el desvanecimiento se
       // simula oscureciendo el color hacia la cola, como con el humo.

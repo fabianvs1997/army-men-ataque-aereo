@@ -44,6 +44,11 @@ una partida manual completa ni las restricciones reales de Safari/iOS.
 - [Audio y segundo plano #13](https://github.com/fabianvs1997/army-men-ataque-aereo/issues/13)
 - [Multitáctil y orientación #14](https://github.com/fabianvs1997/army-men-ataque-aereo/issues/14)
 - [Campaña, WebGL y Canvas #15](https://github.com/fabianvs1997/army-men-ataque-aereo/issues/15)
+- Congelamiento en la escolta a C (misión 2): jugar la escolta B → C y
+  anotar el momento exacto, si el sonido sigue, si responde Pausa y si hay
+  que cerrar Safari. Con `?perf=1` el HUD muestra FPS, ms por frame, peor
+  frame, nivel de rendimiento y fase; esa lectura es el dato que falta para
+  reproducir el problema si persiste.
 
 Registrar modelo, iOS y resultados antes de cerrar cada Issue.
 
@@ -54,6 +59,21 @@ Las pruebas locales sí se ejecutaron. `v-pre-refactor` apunta localmente a
 `1c59125bb925e7727cd265c64f1d2f5a2cb62a05`; su publicación remota sigue pendiente.
 Tras desbloquear Actions, volver a ejecutar el workflow Preserve pre-refactor baseline
 y el de pruebas. El workflow se niega a mover una etiqueta existente a otro commit.
+
+## Congelamiento en la escolta a C
+
+`tests/freeze-escort.test.cjs` y `scripts/bench-escort-freeze.cjs` cubren
+la causa encontrada tras el PR #35: el A* del pelotón sin presupuesto.
+Las pruebas fijan que un A* con meta lejana no quema el frame, que una
+meta dentro de un obstáculo vuelve al instante, que un muro alto tiene
+rodeo, que como mucho hay un recálculo por frame aunque se atasquen los
+4 soldados, y que el monitor de rendimiento degrada y recupera por
+niveles. El bench simula la escolta con un muro de escombros en la ruta
+y reporta peor frame, llamadas y coste máximo de `Navigation.path`.
+Los picos de peor frame en Node están dominados por calentamiento del
+JIT/GC en los primeros frames; el dato fiable es el coste máximo de
+ruta (32,3 ms antes → 4,9 ms después) y el coste de arranque
+(241 ms antes → 109 ms peor caso después).
 
 ## Rotura de plástico
 

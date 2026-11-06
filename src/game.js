@@ -14,6 +14,7 @@
       require('./escort-mission.js'),
       require('./escort-progress.js'),
       require('./mission-map.js'),
+      require('./perf.js'),
     );
   else
     root.ToyGame = factory(
@@ -30,6 +31,7 @@
       root.ToyEscort,
       root.ToyEscortProgress,
       root.ToyMissionMap,
+      root.ToyPerf,
     );
 })(
   typeof globalThis !== 'undefined' ? globalThis : this,
@@ -47,6 +49,7 @@
     ToyEscort,
     ToyEscortProgress,
     ToyMissionMap,
+    ToyPerf,
   ) {
     'use strict';
     const transitions = Object.freeze({
@@ -168,6 +171,9 @@
         },
         get audio() {
           return audio;
+        },
+        get perf() {
+          return perf;
         },
         get humOn() {
           return humOn;
@@ -323,6 +329,9 @@
         'needsDraw',
         'overlayPage',
         'st',
+        'pixelRatioCap',
+        'perfLevel',
+        'perfVisible',
       ])
         Object.defineProperty(env, key, {
           enumerable: true,
@@ -335,6 +344,16 @@
       const { preference, savePreference } = ToyPrefs.create(
         () => host.localStorage,
       );
+      // Monitor de rendimiento: si los frames se alargan, baja solo de
+      // detalle (ver src/perf.js) en vez de quedarse congelado.
+      const perf = ToyPerf.create();
+      Object.assign(state, {
+        pixelRatioCap: perf.pixelRatioCap,
+        perfLevel: 0,
+        perfVisible:
+          typeof host.location === 'object' &&
+          /[?&]perf=1/.test(host.location.search || ''),
+      });
       const audioEngine = ToyAudio.create({
         host,
         isPlaying: () => state.st === 'play',
@@ -441,7 +460,10 @@
       Object.assign(state, { W: 360, H: 640, HY: 256, F: 380 });
       function rs() {
         const r = cv.getBoundingClientRect(),
-          d = Math.min(host.devicePixelRatio || 1, state.lowQuality ? 1 : 1.75);
+          d = Math.min(
+            host.devicePixelRatio || 1,
+            state.lowQuality ? 1 : state.pixelRatioCap || 1.75,
+          );
         cv.width = r.width * d;
         cv.height = r.height * d;
         state.W = r.width;
@@ -744,6 +766,13 @@
           }
         }
         const soldiers = state.mission.activeSoldiers();
+        // Puntos de los soldados: una vez por frame, no uno por enemigo
+        // y soldado (antes se construía el mismo punto ~20 veces/frame).
+        const soldierPoints = soldiers.map((ally) => ({
+          x: ally.x,
+          y: groundAt(ally.x, ally.z) + 1.5,
+          z: ally.z,
+        }));
         for (const e of state.E) {
           if (e.dead) continue;
           e.fl = Math.max(0, e.fl - dt);
@@ -751,7 +780,8 @@
             nearest = Math.hypot(state.P.x - e.x, state.P.z - e.z);
           // La lista de soldados activos es la misma para todos los
           // enemigos de este frame: se construye una sola vez.
-          for (const ally of soldiers) {
+          for (let i = 0; i < soldiers.length; i++) {
+            const ally = soldiers[i];
             if (
               ally.wounded &&
               ['INICIO_A', 'COMBATE_RUTA_AB', 'DESPEJAR_B'].includes(
@@ -760,11 +790,7 @@
             )
               continue;
             const d = Math.hypot(ally.x - e.x, ally.z - e.z);
-            const point = {
-              x: ally.x,
-              y: groundAt(ally.x, ally.z) + 1.5,
-              z: ally.z,
-            };
+            const point = soldierPoints[i];
             if (
               d < nearest &&
               !cover.trace({ x: e.x, y: e.y + 2, z: e.z }, point)
@@ -938,10 +964,19 @@
       Object.assign(state, {
         last: host.performance.now(),
         lastDraw: -Infinity,
+        lastFrameN: null,
       });
       function loop(n) {
         const dt = Math.max(0, Math.min(0.05, (n - state.last) / 1e3));
         state.last = n;
+        // Rendimiento real del frame (sin topar): alimenta el monitor
+        // que degrada el detalle si el juego se atasca.
+        if (state.lastFrameN !== null) {
+          perf.update(n - state.lastFrameN);
+          state.pixelRatioCap = perf.pixelRatioCap;
+          state.perfLevel = perf.level;
+        }
+        state.lastFrameN = n;
         if (!host.document.hidden) {
           if (state.st === 'play') {
             state.rot += dt * 30;
@@ -952,10 +987,15 @@
             cam.z = Math.cos(n / 12000) * 20;
           }
           // Throttle drawing only: simulation/input keep the browser's frame cadence.
+          // El degradado automático también limita el dibujo a 30 fps
+          // (nivel 2), como el modo ahorro.
+          const throttleMs = state.lowQuality
+            ? 1000 / 30
+            : perf.drawThrottleMs;
           if (
             state.needsDraw ||
             ((state.st === 'play' || state.st === 'menu') &&
-              (!state.lowQuality || n - state.lastDraw >= 1000 / 30 - 1))
+              (!throttleMs || n - state.lastDraw >= throttleMs - 1))
           ) {
             draw();
             state.lastDraw = n;

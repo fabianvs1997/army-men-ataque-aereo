@@ -178,6 +178,12 @@
       return target;
     }
     stepSoldiers(dt, env) {
+      // Presupuesto de rutas por frame: un A* es el trabajo más caro del
+      // paso (hasta decenas de ms si la meta está bloqueada). Si varios
+      // soldados se atascan a la vez, solo uno recalcula por frame; los
+      // demás reintentan en el siguiente sin perder su turno (su
+      // repathCooldown sigue a 0).
+      let repaths = 0;
       for (const a of this.activeSoldiers()) {
         const enemy = this.defend(a, dt, env);
         if (
@@ -291,19 +297,27 @@
           a.stuck = 0;
         } else a.stuck += dt;
         if (a.stuck > 0.8 && a.repathCooldown <= 0 && env.cover) {
-          a.repathCooldown = 3;
-          const path = Navigation.path(
-            a,
-            direct,
-            env.cover,
-            env.groundAt,
-            this.rules.soldierRadius,
-            this.rules.soldierHalfHeight,
-          );
-          if (path) {
-            a.detour = path;
-            a.bestDistance = Infinity;
-            a.stuck = 0;
+          if (repaths < 1) {
+            repaths++;
+            a.repathCooldown = 3;
+            const path = Navigation.path(
+              a,
+              direct,
+              env.cover,
+              env.groundAt,
+              this.rules.soldierRadius,
+              this.rules.soldierHalfHeight,
+            );
+            if (path) {
+              a.detour = path;
+              a.bestDistance = Infinity;
+              a.stuck = 0;
+            } else {
+              // Sin ruta dentro del presupuesto: no insistir cada 3 s.
+              // El soldado sigue deslizándose por el obstáculo y el
+              // próximo intento espera 6 s.
+              a.repathCooldown = 6;
+            }
           }
         }
         if (a.stuck >= this.rules.stuckSeconds)
