@@ -75,6 +75,22 @@ JIT/GC en los primeros frames; el dato fiable es el coste máximo de
 ruta (32,3 ms antes → 4,9 ms después) y el coste de arranque
 (241 ms antes → 109 ms peor caso después).
 
+## Congelamiento al regresar al punto A (misión 1)
+
+`tests/freeze-regreso-a.test.cjs` y `scripts/bench-regreso-a.cjs` cubren
+las dos variantes del reporte: volver a A sin haber recogido a los
+heridos, y volver a A con los heridos a bordo sin entregarlos en C. La
+causa era la línea de visión enemigo → soldado sin límite de distancia
+en `upd()` (`src/game.js`); ahora solo se traza dentro del alcance de
+disparo del enemigo. Las pruebas fijan que ningún trace supera 80 u en
+el regreso a A (antes hasta 370 u), que la entrega en C sigue
+completando la misión y que un tanque persigue al jugador (no a un
+soldado fuera de su alcance) pero sigue apuntando a un soldado dentro
+de él. El bench reporta por tramo peor frame, traces por frame y
+segmento de trace más largo; los picos aislados de peor frame en Node
+no se reproducen en el mismo frame ni desaparecen forzando GC (ruido
+de GC/JIT), el dato fiable es el coste de trace por frame.
+
 ## Rotura de plástico
 
 `BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-debris.cjs` comprueba
