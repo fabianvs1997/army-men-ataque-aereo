@@ -65,13 +65,58 @@ nuevo con el mismo nombre.
 Hoy GitHub Pages publica directo desde la rama, y en ese modo no hay
 dónde inyectar variables de entorno. Para que el flujo funcione:
 
-1. En el repositorio, **Settings → Pages → Build and deployment →
+1. **Añade el archivo del workflow desde la web** (una vez): la
+   integración de GitHub que usa este asistente no puede crear archivos
+   de `.github/workflows/` por API, así que el archivo no viene en el
+   PR. En GitHub, abre la rama del PR, **Add file → Create new file**,
+   ponle la ruta `.github/workflows/deploy-pages.yml` y pega este
+   contenido (es el mismo archivo del repo local):
+
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [Master]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run tests
+        run: node --test
+      - name: Generate Supabase config from secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/generate-supabase-config.cjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+2. En el repositorio, **Settings → Pages → Build and deployment →
    Source** y cambia de "Deploy from a branch" a **GitHub Actions**.
-2. Haz push a `Master` (o pulsa **Run workflow** en Actions →
-   Deploy to GitHub Pages). El workflow `.github/workflows/
-   deploy-pages.yml` corre los tests, genera `src/supabase-env.js`
-   desde los secretos y publica el sitio.
-3. Comprueba en **Actions** que el workflow terminó en verde.
+3. Haz push a `Master` (o pulsa **Run workflow** en Actions →
+   Deploy to GitHub Pages). El workflow corre los tests, genera
+   `src/supabase-env.js` desde los secretos y publica el sitio.
+4. Comprueba en **Actions** que el workflow terminó en verde.
 
 Hasta que se haga este cambio, Pages sigue sirviendo la rama sin
 configuración (modo invitado) y el juego no se rompe: el archivo
