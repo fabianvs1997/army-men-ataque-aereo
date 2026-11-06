@@ -66,8 +66,12 @@ const scene = () => ({
     { t: 'b', x: -15, z: 0, s: 5, c: '#d9473f' },
   ],
   BL: [{ x: 0, y: 8, z: 4, vx: 0, vz: 130 }],
-  EB: [],
-  MS: [],
+  EB: [{ x: 0, y: 8, z: 10, vx: 0, vy: 0, vz: -42 }],
+  MS: [{ x: 0, y: 8, z: 4, vx: 0, vy: 0, vz: 75 }],
+  SM: [
+    { x: 0, y: 8, z: 0, l: 0.6, max: 0.9, s: 1.5, dark: false, dx: 0, dy: 0.5, dz: 0 },
+    { x: 2, y: 8, z: 2, l: 0.3, max: 0.9, s: 3, dark: true, dx: 0, dy: 0.7, dz: 0 },
+  ],
   FX: [{ x: 0, y: 2, z: 8, l: 0.3, s: 4 }],
   allies: [
     { x: -15, z: 30, state: 'waiting' },

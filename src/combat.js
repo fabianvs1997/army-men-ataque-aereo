@@ -10,6 +10,16 @@
   'use strict';
   const GUN_ASSIST_ANGLE = (12 * Math.PI) / 180,
     GUN_ASSIST_RANGE = 130;
+  const MAX_SMOKE = 160,
+    SMOKE_TRAIL_INTERVAL = 0.05,
+    SMOKE_TRAIL_LIFE = 0.9,
+    SMOKE_IMPACT_LIFE = 0.9;
+  function pushSmoke(list, puff) {
+    if (!list) return;
+    list.push(puff);
+    if (list.length > MAX_SMOKE)
+      list.splice(0, list.length - MAX_SMOKE);
+  }
   function mk(arr, x, y, z, vx, vy, vz, l) {
     const o = { x, y, z, vx, vy, vz, l };
     arr.push(o);
@@ -171,6 +181,40 @@
         }
         if (o.y < env.groundAt(o.x, o.z)) ex = true;
         if (ex) {
+          // Impacto: una bocanada oscura marca el punto, sin bola de fuego.
+          pushSmoke(env.SM, {
+            x: o.x,
+            y: o.y,
+            z: o.z,
+            l: SMOKE_IMPACT_LIFE,
+            max: SMOKE_IMPACT_LIFE,
+            s: 3,
+            dark: true,
+            dx: 0,
+            dy: 0.7,
+            dz: 0,
+          });
+        } else {
+          // Estela: bocanadas blancas detrás del misil, como en la referencia.
+          o.smoke = (o.smoke ?? 0) - dt;
+          if (o.smoke <= 0) {
+            o.smoke = SMOKE_TRAIL_INTERVAL;
+            const r = effects.visualRandom;
+            pushSmoke(env.SM, {
+              x: o.x - o.vx * 0.02 + (r() - 0.5) * 0.8,
+              y: o.y + (r() - 0.5) * 0.6,
+              z: o.z - o.vz * 0.02 + (r() - 0.5) * 0.8,
+              l: SMOKE_TRAIL_LIFE,
+              max: SMOKE_TRAIL_LIFE,
+              s: 1.2 + r() * 0.7,
+              dark: false,
+              dx: (r() - 0.5) * 0.6,
+              dy: 0.5 + r() * 0.5,
+              dz: (r() - 0.5) * 0.6,
+            });
+          }
+        }
+        if (ex) {
           o.l = 0;
           // Resolve on the incident side so splash cannot leak through a solid wall.
           const length = Math.hypot(
@@ -253,5 +297,6 @@
     mk,
     GUN_ASSIST_ANGLE,
     GUN_ASSIST_RANGE,
+    MAX_SMOKE,
   };
 });

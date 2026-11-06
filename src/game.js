@@ -318,6 +318,7 @@
         'bd',
         'P',
         'FX',
+        'SM',
         'DB',
         'needsDraw',
         'overlayPage',
@@ -414,6 +415,7 @@
         state.EB = [];
         state.MS = [];
         state.FX = [];
+        state.SM = [];
         state.DB = [];
         state.PK = [];
         state.checkpoint = 0;
@@ -490,6 +492,7 @@
         EB: [],
         MS: [],
         FX: [],
+        SM: [],
         DB: [],
         PK: [],
         DC: [],
@@ -594,6 +597,7 @@
         state.EB = [];
         state.MS = [];
         state.FX = [];
+        state.SM = [];
         state.DB = [];
         state.PK = [];
         if (full || !state.P)
@@ -734,6 +738,7 @@
               3,
             );
             o.tg = tg;
+            o.smoke = 0;
             sfx.miss();
           }
         }
@@ -838,12 +843,19 @@
           }
         stepDebris(dt);
         for (const o of state.FX) o.l -= dt;
+        for (const o of state.SM) {
+          o.l -= dt;
+          o.x += (o.dx || 0) * dt;
+          o.y += (o.dy || 0) * dt;
+          o.z += (o.dz || 0) * dt;
+        }
         state.E = state.E.filter((e) => !e.dead);
         state.BL = state.BL.filter((b) => b.l > 0);
         state.MS = state.MS.filter((o) => o.l > 0);
         state.EB = state.EB.filter((b) => b.l > 0);
         state.PK = state.PK.filter((q) => !q.d);
         state.FX = state.FX.filter((o) => o.l > 0);
+        state.SM = state.SM.filter((o) => o.l > 0);
         const event = state.mission.update(dt, state.P, {
           enemies: state.E,
           cover,
