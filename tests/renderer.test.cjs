@@ -65,8 +65,8 @@ const scene = () => ({
     { t: 't', x: 15, z: 0 },
     { t: 'b', x: -15, z: 0, s: 5, c: '#d9473f' },
   ],
-  BL: [{ x: 0, y: 8, z: 4, vx: 0, vz: 130 }],
-  EB: [{ x: 0, y: 8, z: 10, vx: 0, vy: 0, vz: -42 }],
+  BL: [{ x: 0, y: 8, z: 4, vx: 0, vz: 170 }],
+  EB: [{ x: 0, y: 8, z: 10, vx: 0, vy: 0, vz: -55 }],
   MS: [{ x: 0, y: 8, z: 4, vx: 0, vy: 0, vz: 75 }],
   SM: [
     { x: 0, y: 8, z: 0, l: 0.6, max: 0.9, s: 1.5, dark: false, dx: 0, dy: 0.5, dz: 0 },

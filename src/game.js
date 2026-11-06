@@ -707,7 +707,7 @@
             velocity.vx,
             velocity.vy,
             velocity.vz,
-            1.1,
+            0.85,
           );
           sfx.shot();
         }
@@ -818,7 +818,9 @@
             !cover.trace({ x: e.x, y: e.y + 2, z: e.z }, target)
           ) {
             e.cd = e.k === 'heli' ? 1.5 : e.k === 'inf' ? 2.8 : 2.4;
-            const s2 = 42,
+            // 55 u/s con vida 3,05 s: mismo alcance (~168 u) que 42 u/s y
+            // 4 s, pero las balas enemigas ya no se arrastran por la pantalla.
+            const s2 = 55,
               a2 = a + R(-0.06, 0.06);
             mk(
               state.EB,
@@ -828,7 +830,7 @@
               Math.sin(a2) * s2,
               (target.y - (e.y + 2)) / Math.max(0.3, d / s2),
               Math.cos(a2) * s2,
-              4,
+              3.05,
             );
           }
         }
@@ -871,7 +873,7 @@
               ((target.x - origin.x) / d) * speed,
               ((target.y - origin.y) / d) * speed,
               ((target.z - origin.z) / d) * speed,
-              1.5,
+              1.15,
             );
           },
           moving: magnitude > 0.08,

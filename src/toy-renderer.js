@@ -868,8 +868,9 @@ void main(){
             0,
           );
         }
-      // Trazadoras: estela alargada en la dirección del disparo, halo
-      // naranja/rojo con núcleo blanco-amarillo caliente.
+      // Trazadoras finas en forma de destello: punta brillante, halo que se
+      // estrecha y cola apagada. Sin canal alfa, el desvanecimiento se
+      // simula oscureciendo el color hacia la cola, como con el humo.
       const streak = (b, length, outer, core, outerSize, coreSize) => {
         const hv = Math.hypot(b.vx || 0, b.vz || 0);
         if (hv < 1) {
@@ -878,36 +879,65 @@ void main(){
         }
         const dx = (b.vx || 0) / hv,
           dz = (b.vz || 0) / hv,
-          yaw = Math.atan2(b.vx || 0, b.vz || 0);
+          yaw = Math.atan2(b.vx || 0, b.vz || 0),
+          fade = outer.map((v) => v * 0.4);
+        // Cola apagada y estrecha.
         this.part(
           'rounded',
-          b.x - dx * length * 0.5,
+          b.x - dx * length * 0.72,
           b.y,
-          b.z - dz * length * 0.5,
-          outerSize,
-          outerSize,
-          length * 0.5,
+          b.z - dz * length * 0.72,
+          outerSize * 0.5,
+          outerSize * 0.5,
+          length * 0.28,
+          fade,
+          yaw,
+          0,
+        );
+        // Halo medio.
+        this.part(
+          'rounded',
+          b.x - dx * length * 0.4,
+          b.y,
+          b.z - dz * length * 0.4,
+          outerSize * 0.75,
+          outerSize * 0.75,
+          length * 0.32,
           outer,
           yaw,
           0,
         );
+        // Núcleo brillante y corto en la punta.
         this.part(
           'rounded',
-          b.x - dx * length * 0.35,
+          b.x - dx * length * 0.15,
           b.y,
-          b.z - dz * length * 0.35,
+          b.z - dz * length * 0.15,
           coreSize,
           coreSize,
-          length * 0.4,
+          length * 0.2,
           core,
           yaw,
           0,
         );
+        // Punto caliente en la punta.
+        this.part(
+          'sphere',
+          b.x,
+          b.y,
+          b.z,
+          coreSize * 1.1,
+          coreSize * 1.1,
+          coreSize * 1.1,
+          core,
+          0,
+          0,
+        );
       };
       for (const b of BL)
-        if (visible(b)) streak(b, 6, [1, 0.45, 0.08], [1, 0.95, 0.75], 0.5, 0.28);
+        if (visible(b)) streak(b, 6, [1, 0.45, 0.08], [1, 0.95, 0.75], 0.24, 0.13);
       for (const b of EB)
-        if (visible(b)) streak(b, 4.5, [1, 0.25, 0.05], [1, 0.62, 0.25], 0.55, 0.3);
+        if (visible(b)) streak(b, 4.5, [1, 0.25, 0.05], [1, 0.62, 0.25], 0.26, 0.14);
       // Misil: cuerpo oscuro, punta roja y llama naranja parpadeante atrás.
       for (const o of MS)
         if (visible(o)) {

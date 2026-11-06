@@ -204,6 +204,10 @@ test('assisted bullets hit offset infantry without turning the player', () => {
   g.element('fu').emit('pointerdown', { pointerId: 1 });
   g.app.upd(0.01);
   g.element('fu').emit('pointerup', { pointerId: 1 });
+  // Aislar el disparo asistido del jugador: las balas aliadas, ahora más
+  // rápidas, también alcanzarían al objetivo dentro de la ventana y lo
+  // matarían antes de comprobar el impacto del jugador.
+  s.BL = s.BL.filter((b) => b.vy < 0);
   for (let i = 0; i < 8; i++) g.app.upd(0.04);
   assert.equal(target.hp, 1);
   assert.equal(s.P.yaw, 0);

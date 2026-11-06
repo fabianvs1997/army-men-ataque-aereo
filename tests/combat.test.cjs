@@ -31,13 +31,13 @@ test('gunVelocity covers both cone edges, rejects range/behind and keeps horizon
       v = Combat.gunVelocity({ x: 0, z: 0, yaw: 0 }, { x: 0, y: 8, z: 0 }, [e]);
     if (Math.abs(angle) < 12) {
       assert.ok(v.vx * angle > 0);
-      assert.ok(Math.abs(Math.hypot(v.vx, v.vz) - 130) < 1e-8);
+      assert.ok(Math.abs(Math.hypot(v.vx, v.vz) - 170) < 1e-8);
     } else assert.equal(v.vx, 0);
   }
   for (const e of [enemy(10, 140), enemy(0, 1)])
     assert.deepEqual(
       Combat.gunVelocity({ x: 0, z: 0, yaw: 0 }, { x: 0, y: 8, z: 0 }, [e]),
-      { vx: 0, vy: -16, vz: 130 },
+      { vx: 0, vy: -16, vz: 170 },
     );
 });
 test('gunVelocity selects nearest living enemy and converges from either muzzle', () => {

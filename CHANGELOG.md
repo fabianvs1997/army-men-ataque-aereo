@@ -6,6 +6,7 @@
 - Misiles con cuerpo oscuro, punta roja y llama naranja parpadeante en la parte trasera, más estela de bocanadas blancas que crecen y se desvanecen; al impactar queda una bocanada de humo oscuro.
 - El humo vive en `state.SM`, separado de las explosiones (`FX`): no cambia daño, velocidad, alcance ni cadencia, y los misiles siguen sin generar bolas de fuego.
 - Pruebas de estela, impacto, envejecimiento del humo y dibujo en WebGL.
+- Afinado de las trazadoras: la mitad de gruesas, con punta brillante y cola en gradiente (aditiva en Canvas 2D; oscurecida hacia la cola en WebGL) para que se lean como destellos rápidos y no como barras sólidas. Balas un 30 % más rápidas con la vida recortada en la misma proporción: mismo alcance, daño y cadencia (jugador 170 u/s y 0,85 s; aliadas 85 u/s y 1,15 s; enemigas 55 u/s y 3,05 s).
 
 ## Sin publicar — patrullas en los trayectos
 
