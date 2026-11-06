@@ -511,7 +511,11 @@ void main(){
           8,
           0.05,
           8,
-          site.final ? [0.57, 0.88, 0.61] : [0.84, 0.8, 0.58],
+          site.rescue
+            ? [0.96, 0.68, 0.25]
+            : site.final
+              ? [0.57, 0.88, 0.61]
+              : [0.84, 0.8, 0.58],
           0,
           0,
         );
@@ -527,32 +531,20 @@ void main(){
           0,
           0.04,
         );
-        for (const side of [-1, 1])
-          this.part(
-            'box',
-            site.x + side * 2,
-            0.36,
-            site.z,
-            0.35,
-            0.04,
-            3,
-            [0.84, 0.8, 0.58],
-            0,
-            0,
-          );
+      }
+      for (const p of world?.padMarks || [])
         this.part(
           'box',
-          site.x,
+          p.x,
           0.36,
-          site.z,
-          2,
+          p.z,
+          0.55,
           0.04,
-          0.35,
+          0.55,
           [0.84, 0.8, 0.58],
           0,
           0,
         );
-      }
 
       // The lower viewing angle and off-center framing expose more distant ground.
       const radius =
@@ -822,14 +814,14 @@ void main(){
       }
       this.groundOffset = 0;
       for (const a of scene.allies || [])
-        if (a.state !== 'rescued' && visible(a))
+        if (!['rescued', 'A_BORDO', 'CAIDO'].includes(a.state) && visible(a))
           this.soldier(
             a.x,
             world ? world.height(a.x, a.z) : 0,
             a.z,
             true,
-            0,
-            a.state === 'waiting',
+            a.yaw || 0,
+            a.wounded || a.state === 'waiting',
           );
       for (const q of PK)
         if (visible(q))

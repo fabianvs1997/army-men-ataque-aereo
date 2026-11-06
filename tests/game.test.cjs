@@ -8,14 +8,14 @@ function completeMission(g) {
   for (const e of s.E) app.combat.kill(e);
   s.E = [];
   s.EB = [];
-  for (const a of s.mission.allies) {
+  for (const a of s.mission.allies.filter((a) => a.wounded)) {
     s.P.x = a.x;
     s.P.z = a.z;
     for (let i = 0; i < 30; i++) app.upd(0.05);
   }
   s.P.x = s.mission.finish.x;
   s.P.z = s.mission.finish.z;
-  for (let i = 0; i < 40; i++) app.upd(0.05);
+  for (let i = 0; i < 1800 && s.st === 'play'; i++) app.upd(0.05);
 }
 test('campaign integrates rescue, extraction, next mission and play again', () => {
   const g = game();
@@ -185,7 +185,7 @@ test('seeded missions reproduce spawns and terrain heights; fallback renders all
     assert.equal(e.y, e.k === 'heli' ? 8 : world.height(e.x, e.z));
     assert.ok(world.clearOfLandmarks(e.x, e.z, 10));
   }
-  a.state.mission.release(0);
+  a.state.mission.transition('COMBATE_RUTA_AB');
   assert.doesNotThrow(() => a.app.render2d.draw(a.app.view));
   a.app.pauseGame();
   assert.doesNotThrow(() => a.app.render2d.draw(a.app.view));

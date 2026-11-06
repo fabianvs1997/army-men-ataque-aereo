@@ -11,6 +11,8 @@
       require('./toy-world.js'),
       require('./toy-missions.js'),
       require('./toy-renderer.js'),
+      require('./escort-mission.js'),
+      require('./escort-progress.js'),
     );
   else
     root.ToyGame = factory(
@@ -24,6 +26,8 @@
       root.ToyWorld,
       root.ToyMissions,
       root.ToyRenderer,
+      root.ToyEscort,
+      root.ToyEscortProgress,
     );
 })(
   typeof globalThis !== 'undefined' ? globalThis : this,
@@ -38,6 +42,8 @@
     ToyWorld,
     ToyMissions,
     ToyRenderer,
+    ToyEscort,
+    ToyEscortProgress,
   ) {
     'use strict';
     const transitions = Object.freeze({
@@ -110,7 +116,11 @@
       const Renderer =
         options.Renderer === undefined ? ToyRenderer : options.Renderer;
       const state = {};
+      const progress = ToyEscortProgress.create(() => host.localStorage);
       const env = {
+        get savedProgress() {
+          return progress.read();
+        },
         get random() {
           return random;
         },
@@ -561,7 +571,7 @@
         state.t = 0;
         state.shk = 0;
         state.mis = n;
-        state.mission = new ToyMissions.Mission(n);
+        state.mission = new ToyEscort.Mission(n);
         state.E = [];
         state.BL = [];
         state.EB = [];
@@ -586,37 +596,14 @@
         state.P.pitchSpeed = 0;
         state.bd = 0;
         state.tb = state.mission.config.bases.length;
-        const ring = (k, c, a, b) => {
-          for (let i = 0; i < c; i++) {
-            let x = 0,
-              z = b;
-            for (let attempt = 0; attempt < 24; attempt++) {
-              const an = R(0, 6.28),
-                d = R(a, b),
-                nx = Math.cos(an) * d,
-                nz = Math.sin(an) * d;
-              if (
-                typeof ToyWorld === 'undefined' ||
-                ToyWorld.clearOfLandmarks(nx, nz, 10)
-              ) {
-                x = nx;
-                z = nz;
-                break;
-              }
-            }
-            spawnE(k, x, z);
-          }
-        };
-        state.mission.config.bases.forEach(([x, z], camp) => {
-          const base = spawnE('base', x, z);
-          if (!base)
-            throw new Error('No hay espacio seguro para la base de misión.');
-          base.camp = camp;
-        });
-        ring('tank', state.mission.config.tanks, 100, 150);
-        ring('tur', state.mission.config.turrets, 100, 150);
-        ring('inf', state.mission.config.infantry, 100, 150);
-        ring('heli', state.mission.config.air, 100, 150);
+        for (const placement of state.mission.enemyPlan) {
+          const e = spawnE(placement.k, placement.x, placement.z);
+          if (!e)
+            throw new Error('No hay espacio para el despliegue de misión.');
+          e.id = placement.id;
+          e.zone = placement.zone;
+          e.hp = placement.hp;
+        }
         cam.x = state.P.x;
         cam.z = state.P.z;
         cam.yaw = state.P.yaw;
@@ -631,6 +618,8 @@
         sfx.hurt();
         buzz(60);
         if (state.P.arm <= 0) {
+          state.mission.reason = 'Helicóptero destruido';
+          state.mission.transition('FRACASADA');
           setState('over');
           sfx.over();
           buzz(300);
@@ -726,8 +715,32 @@
         for (const e of state.E) {
           if (e.dead) continue;
           e.fl = Math.max(0, e.fl - dt);
-          const dx = state.P.x - e.x,
-            dz = state.P.z - e.z,
+          let target = state.P,
+            nearest = Math.hypot(state.P.x - e.x, state.P.z - e.z);
+          for (const ally of state.mission.activeSoldiers()) {
+            if (
+              ally.wounded &&
+              ['INICIO_A', 'COMBATE_RUTA_AB', 'DESPEJAR_B'].includes(
+                state.mission.stage,
+              )
+            )
+              continue;
+            const d = Math.hypot(ally.x - e.x, ally.z - e.z);
+            const point = {
+              x: ally.x,
+              y: groundAt(ally.x, ally.z) + 1.5,
+              z: ally.z,
+            };
+            if (
+              d < nearest &&
+              !cover.trace({ x: e.x, y: e.y + 2, z: e.z }, point)
+            ) {
+              target = point;
+              nearest = d;
+            }
+          }
+          const dx = target.x - e.x,
+            dz = target.z - e.z,
             d = Math.hypot(dx, dz),
             a = Math.atan2(dx, dz);
           const previousPosition = {
@@ -768,7 +781,12 @@
                     ? 45
                     : 0;
           e.cd -= dt;
-          if (rg && d < rg && e.cd <= 0) {
+          if (
+            rg &&
+            d < rg &&
+            e.cd <= 0 &&
+            !cover.trace({ x: e.x, y: e.y + 2, z: e.z }, target)
+          ) {
             e.cd = e.k === 'heli' ? 1.5 : e.k === 'inf' ? 2.8 : 2.4;
             const s2 = 42,
               a2 = a + R(-0.06, 0.06);
@@ -778,7 +796,7 @@
               e.y + 2,
               e.z,
               Math.sin(a2) * s2,
-              (8 - (e.y + 2)) / Math.max(0.3, d / s2),
+              (target.y - (e.y + 2)) / Math.max(0.3, d / s2),
               Math.cos(a2) * s2,
               4,
             );
@@ -802,16 +820,61 @@
         state.PK = state.PK.filter((q) => !q.d);
         state.FX = state.FX.filter((o) => o.l > 0);
         const event = state.mission.update(dt, state.P, {
+          enemies: state.E,
+          cover,
+          groundAt,
+          fireAlly(origin, target) {
+            const d = Math.hypot(target.x - origin.x, target.z - origin.z) || 1;
+            const speed = state.mission.rules.bulletSpeed;
+            mk(
+              state.BL,
+              origin.x,
+              origin.y,
+              origin.z,
+              ((target.x - origin.x) / d) * speed,
+              ((target.y - origin.y) / d) * speed,
+              ((target.z - origin.z) / d) * speed,
+              1.5,
+            );
+          },
           moving: magnitude > 0.08,
           firing: !!(controls.fire || usedMissile),
           damaged: state.P.inv > 0,
         });
-        if (event === 'rescued') {
-          state.P.sc += 50;
-          sfx.pick();
-          buzz(20);
+        for (const change of state.mission.drainEvents()) {
+          if (change.type === 'boarded') {
+            state.P.sc += 50;
+            sfx.pick();
+            buzz(20);
+          }
+          if (change.type === 'soldier-fallen') {
+            const a = state.mission.guards
+              .concat(state.mission.allies)
+              .find((a) => a.id === change.id);
+            for (const offset of [-0.5, 0.5])
+              state.DB.push({
+                kind: 'box',
+                x: a.x + offset,
+                y: groundAt(a.x, a.z) + 0.2,
+                z: a.z,
+                sx: 0.3,
+                sy: 0.2,
+                sz: 0.65,
+                color: [0.24, 0.65, 0.16],
+                yaw: a.yaw || 0,
+                settled: true,
+                vx: 0,
+                vy: 0,
+                vz: 0,
+              });
+          }
+        }
+        if (event === 'failed') {
+          setState('over');
+          sfx.over();
         }
         if (event === 'complete') {
+          progress.record(state.mis, state.mission);
           state.P.sc += 250;
           setState(
             state.mis === ToyMissions.configs.length ? 'campaign' : 'win',

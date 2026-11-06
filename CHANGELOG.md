@@ -1,5 +1,15 @@
 # Changelog
 
+## Sin publicar — misión arcade A → B → C (#27)
+
+- Guardia de infantería en A, pelotón sano y heridos en B, extracción en C; marcadores A/B/C en ambos renderizadores.
+- Enemigos predefinidos desde el inicio en la ruta y alrededor de B. Aliados y enemigos combaten entre sí con línea de visión y colisión de proyectiles.
+- B debe estar despejada para recoger heridos. Capacidad 4, carga inicial 3; los sanos nunca abordan.
+- Escolta por waypoints, carriles y desvíos alrededor de restos grandes; los soldados pisan fragmentos bajos. Sin teletransporte, con bajas explícitas por bloqueo prolongado.
+- Victoria solo al entregar heridos y llegar todos los supervivientes a C. Fracaso por pérdida total o destrucción del helicóptero.
+- Estrellas 1–3 y mejores resultados en almacenamiento local versionado, tolerante a ausencia, bloqueo y corrupción.
+- Reinicio de misión idempotente; HUD, ayuda y flecha actualizados.
+
 ## Sin publicar — helicópteros presentes desde el inicio
 
 - Todas las aeronaves enemigas se crean al cargar cada misión: 1, 2 y 3 según el nivel.

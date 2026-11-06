@@ -61,7 +61,8 @@
       if (next === 'over') {
         show(
           'Misión fallida',
-          'Reintenta ' +
+          (env.mission.reason ? env.mission.reason + '. ' : '') +
+            'Reintenta ' +
             env.mission.config.name +
             '. Los rescates de esta misión se reinician.',
           'Reintentar misión',
@@ -72,14 +73,24 @@
         next === 'campaign'
           ? 'Campaña completada'
           : 'Misión ' + env.mis + ' cumplida',
-        'Rescatados: ' + env.mission.rescued + '. Puntos: ' + env.P.sc + '.',
+        '★'.repeat(env.mission.stars || 1) +
+          ' · A salvo: ' +
+          env.mission.delivered +
+          '/' +
+          env.mission.allies.length +
+          '. Puntos: ' +
+          env.P.sc +
+          '.',
         next === 'campaign' ? 'Jugar de nuevo' : 'Siguiente misión',
       );
     }
     function showMain() {
       env.$('ti').innerHTML = 'ARMY MEN<span>Ataque aéreo</span>';
       env.$('tx').textContent =
-        'Un pequeño helicóptero. Un gran rescate. Libera a tu escuadrón en una campaña de tres misiones.';
+        'Sal de A, despeja B y escolta al pelotón hasta C. ' +
+        Object.entries(env.savedProgress?.missions || {})
+          .map(([n, r]) => 'Misión ' + n + ': ' + '★'.repeat(r.stars))
+          .join(' · ');
       env.$('go').textContent = 'Iniciar campaña →';
       menuLayout('main');
       env.$('go').focus?.();
@@ -128,14 +139,16 @@
         'inf',
         'Misión ' +
           env.mis +
-          '/3 · Bases ' +
-          env.bd +
-          '/' +
-          env.tb +
-          ' · Rescate ' +
+          '/3 · Heridos ' +
           env.mission.rescued +
           '/' +
-          env.mission.allies.length,
+          env.mission.allies.filter((a) => a.wounded).length +
+          ' · A salvo ' +
+          env.mission.delivered +
+          '/' +
+          env.mission.allies.length +
+          ' · Bajas ' +
+          env.mission.allies.filter((a) => a.state === 'CAIDO').length,
       );
       setText('mi', 'Misil ' + env.P.mi);
       setText(

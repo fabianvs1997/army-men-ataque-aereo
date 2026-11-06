@@ -16,7 +16,11 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | ui | Menús, HUD y textos |
 | game | Estado, transiciones, simulación y bucle |
 | toy-world | Geometría y decoración compartidas |
-| toy-missions | Reglas de rescate y campaña |
+| toy-missions | Geometría de campaña y utilidades de impactos; API anterior conservada para regresión |
+| escort-config | Reglas y constantes A/B/C, fuerzas iniciales y ruta terrestre |
+| escort-mission | Estados, eventos, combate aliado, abordaje, escolta y resultado |
+| escort-navigation | Desvíos locales con búsqueda de ruta y colisiones barridas |
+| escort-progress | Mejores resultados con esquema versionado y almacenamiento opcional |
 | toy-helicopter | Modelo plástico del jugador compartido por WebGL y Canvas |
 | toy-renderer | Renderizado WebGL y detección de disponibilidad |
 

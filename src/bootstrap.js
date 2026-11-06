@@ -12,9 +12,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'preloaded-air-1';
+  const VERSION = 'escort-abc-1';
   const scripts = Object.freeze([
+    'escort-config',
     'toy-missions',
+    'escort-navigation',
+    'escort-mission',
+    'escort-progress',
     'toy-world',
     'toy-helicopter',
     'toy-renderer',

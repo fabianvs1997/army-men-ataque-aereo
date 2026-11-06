@@ -3,10 +3,13 @@
     typeof module === 'object' && module.exports
       ? require('./escort-config.js')
       : root.ToyEscortConfig,
+    typeof module === 'object' && module.exports
+      ? require('./escort-navigation.js')
+      : root.ToyEscortNavigation,
   );
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ToyEscort = api;
-})(globalThis, function (Config) {
+})(globalThis, function (Config, Navigation) {
   'use strict';
   const transitions = {
     INICIO_A: ['COMBATE_RUTA_AB'],
@@ -57,7 +60,11 @@
         group,
         wounded,
         hp: group === 'A' ? config.guardHP : config.soldierHP,
-        state: wounded ? 'HERIDO_ESPERANDO' : 'DEFENDIENDO_B',
+        state: wounded
+          ? 'HERIDO_ESPERANDO'
+          : group === 'A'
+            ? 'DEFENDIENDO_A'
+            : 'DEFENDIENDO_B',
         waypoint: 0,
         cooldown: 0,
         stuck: 0,
@@ -109,6 +116,7 @@
       if (a.hp <= 0) {
         a.hp = 0;
         a.state = 'CAIDO';
+        a.cause = reason;
         a.hold = 0;
         this.events.push({ type: 'soldier-fallen', id: a.id, reason });
         return true;
@@ -185,11 +193,37 @@
             x: route[i][0] - ((after[1] - before[1]) / length) * lane,
             z: route[i][1] + ((after[0] - before[0]) / length) * lane,
           };
+        a.repathCooldown = Math.max(0, (a.repathCooldown || 0) - dt);
+        const direct = { ...target };
+        if (
+          !a.detour?.length &&
+          env.cover?.overlaps?.(
+            {
+              x: target.x,
+              y: env.groundAt(target.x, target.z) + 1.5,
+              z: target.z,
+            },
+            this.rules.soldierRadius,
+            this.rules.soldierHalfHeight,
+          ) &&
+          a.waypoint < route.length - 1
+        ) {
+          a.waypoint++;
+          a.bestDistance = Infinity;
+          continue;
+        }
+        if (a.detour?.length) Object.assign(target, a.detour[0]);
         const dx = target.x - a.x,
           dz = target.z - a.z,
           d = Math.hypot(dx, dz),
           step = Math.min(d, this.rules.soldierSpeed * dt);
         if (d < 0.8) {
+          if (a.detour?.length) {
+            a.detour.shift();
+            a.bestDistance = Infinity;
+            a.stuck = 0;
+            continue;
+          }
           a.waypoint++;
           a.stuck = 0;
           a.bestDistance = Infinity;
@@ -207,7 +241,12 @@
           z: a.z + (dz / d) * step,
         };
         let next = env.cover
-          ? env.cover.move(origin, goal, this.rules.soldierRadius, 1.3)
+          ? env.cover.move(
+              origin,
+              goal,
+              this.rules.soldierRadius,
+              this.rules.soldierHalfHeight,
+            )
           : goal;
         // Small local detours use the same swept collision query and speed limit.
         if (Math.hypot(next.x - a.x, next.z - a.z) < step * 0.2 && env.cover) {
@@ -226,7 +265,7 @@
                 z: a.z + Math.cos(yaw) * step,
               },
               this.rules.soldierRadius,
-              1.3,
+              this.rules.soldierHalfHeight,
             );
             if (
               Math.hypot(q.x - a.x, q.z - a.z) >
@@ -243,6 +282,22 @@
           a.bestDistance = remaining;
           a.stuck = 0;
         } else a.stuck += dt;
+        if (a.stuck > 0.8 && a.repathCooldown <= 0 && env.cover) {
+          a.repathCooldown = 3;
+          const path = Navigation.path(
+            a,
+            direct,
+            env.cover,
+            env.groundAt,
+            this.rules.soldierRadius,
+            this.rules.soldierHalfHeight,
+          );
+          if (path) {
+            a.detour = path;
+            a.bestDistance = Infinity;
+            a.stuck = 0;
+          }
+        }
         if (a.stuck >= this.rules.stuckSeconds)
           this.damageSoldier(a, a.hp, 'atasco');
       }
@@ -344,6 +399,8 @@
         if (this.deliveryHold >= this.rules.deliverySeconds - 1e-9) {
           for (const a of this.allies)
             if (a.state === 'A_BORDO') {
+              a.x = this.finish.x + (Number(a.id.split('-')[1]) - 1) * 2;
+              a.z = this.finish.z + 4;
               a.state = 'SEGURO_EN_C';
               this.delivered++;
               this.events.push({ type: 'delivered', id: a.id });
@@ -376,6 +433,8 @@
           this.remaining +
           ' · Distancia: ' +
           this.lagDistance;
+      const blocked = this.allies.filter((a) => a.cause === 'atasco').length;
+      if (blocked) this.message += ' · Bajas por bloqueo: ' + blocked;
       return null;
     }
     transition(next) {
@@ -396,7 +455,20 @@
     enemyEliminated(enemy) {
       this.events.push({ type: 'enemy-eliminated', id: enemy.id });
     }
-    target() {
+    target(player = this.rules.B) {
+      if (this.stage === 'EMBARCAR_HERIDOS') {
+        const waiting = this.allies.filter(
+          (a) =>
+            a.wounded && ['HERIDO_ESPERANDO', 'ABORDANDO'].includes(a.state),
+        );
+        if (waiting.length)
+          return waiting.reduce((a, b) =>
+            Math.hypot(a.x - player.x, a.z - player.z) <
+            Math.hypot(b.x - player.x, b.z - player.z)
+              ? a
+              : b,
+          );
+      }
       return this.stage === 'INICIO_A' ||
         this.stage === 'COMBATE_RUTA_AB' ||
         this.stage === 'DESPEJAR_B' ||

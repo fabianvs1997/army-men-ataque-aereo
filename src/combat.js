@@ -54,13 +54,14 @@
   ) {
     if (e.dead) return false;
     e.dead = 1;
+    state.mission?.enemyEliminated?.(e);
     Debris.emit(state, e, true, visualRandom);
     onBreak(true);
     onBuzz(30);
     state.P.sc += e.p;
     if (e.k === 'base') {
       state.bd++;
-      state.mission.release(e.camp);
+      state.mission.release?.(e.camp);
     }
     if (e.k !== 'base' && random() < 0.25)
       state.PK.push({ x: e.x, z: e.z, ty: random() < 0.5 ? 'a' : 'm' });
@@ -202,12 +203,29 @@
         b.y += b.vy * dt;
         b.z += b.vz * dt;
         const playerHit = env.ToyMissions.segmentHit(previous, b, env.P, 3);
+        let nearest = playerHit ?? Infinity,
+          soldier = null;
+        for (const a of context.mission?.activeSoldiers?.() || []) {
+          const fraction = env.ToyMissions.segmentHit(
+            previous,
+            b,
+            { x: a.x, y: env.groundAt(a.x, a.z) + 1.5, z: a.z },
+            0.9,
+          );
+          if (fraction !== null && fraction < nearest) {
+            nearest = fraction;
+            soldier = a;
+          }
+        }
         const obstruction = env.cover?.trace(previous, b);
-        if (obstruction && (playerHit === null || obstruction.t <= playerHit)) {
+        if (obstruction && obstruction.t <= nearest) {
           b.l = 0;
           continue;
         }
-        if (playerHit !== null) {
+        if (soldier) {
+          context.mission.damageSoldier(soldier, 1);
+          b.l = 0;
+        } else if (playerHit !== null) {
           env.hurt();
           b.l = 0;
           if (env.st === 'over') return false;

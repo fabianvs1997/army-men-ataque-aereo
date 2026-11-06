@@ -123,6 +123,7 @@ test('ground escort reaches C through real terrain without exceeding speed or cr
     const old = m.allies.map((a) => ({ ...a }));
     m.update(0.05, m.finish, env);
     m.allies.forEach((a, j) => {
+      if (a.wounded) return; // Transported soldiers unload at C; only the marching squad walks.
       assert.ok(
         Math.hypot(a.x - old[j].x, a.z - old[j].z) <=
           m.rules.soldierSpeed * 0.05 * 1.1,
