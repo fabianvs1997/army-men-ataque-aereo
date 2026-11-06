@@ -125,11 +125,20 @@
       // Soldados activos del paso: se calcula una vez y la reutilizan
       // todas las balas enemigas, en vez de reconstruir la lista por bala.
       const soldiers = context.mission?.activeSoldiers?.() || [];
+      // Centros de los enemigos: se calculan una vez por paso. Antes,
+      // cada bala volvía a construir el centro de cada enemigo (una
+      // asignación por bala × enemigo en cada frame, presión al GC).
       const center = (e) => ({
         x: e.x,
         y: e.y + (e.k === 'heli' ? 0 : e.k === 'base' ? 3 : 1.5),
         z: e.z,
       });
+      const centers = env.E.map(center);
+      const soldierPoints = soldiers.map((a) => ({
+        x: a.x,
+        y: env.groundAt(a.x, a.z) + 1.5,
+        z: a.z,
+      }));
       for (const b of env.BL) {
         const previous = { x: b.x, y: b.y, z: b.z };
         b.l -= dt;
@@ -138,12 +147,13 @@
         b.z += b.vz * dt;
         let target = null,
           nearest = Infinity;
-        for (const e of env.E) {
+        for (let i = 0; i < env.E.length; i++) {
+          const e = env.E[i];
           if (e.dead) continue;
           const fraction = env.ToyMissions.segmentHit(
             previous,
             b,
-            center(e),
+            centers[i],
             e.r,
           );
           if (fraction !== null && fraction < nearest) {
@@ -182,16 +192,18 @@
         o.z += o.vz * dt;
         let ex = o.l <= 0;
         let nearest = Infinity;
-        for (const e of env.E)
+        for (let i = 0; i < env.E.length; i++) {
+          const e = env.E[i];
           if (!e.dead) {
             const fraction = env.ToyMissions.segmentHit(
               previous,
               o,
-              center(e),
+              centers[i],
               e.r + 1,
             );
             if (fraction !== null && fraction < nearest) nearest = fraction;
           }
+        }
         const obstruction = env.cover?.trace(previous, o);
         if (obstruction) nearest = Math.min(nearest, obstruction.t);
         if (nearest !== Infinity) {
@@ -253,10 +265,10 @@
               : o;
           // Snapshot visibility before this blast creates new wreckage.
           const victims = env.E.filter(
-            (e) =>
+            (e, i) =>
               !e.dead &&
-              Math.hypot(e.x - o.x, center(e).y - o.y, e.z - o.z) < e.r + 8 &&
-              !env.cover?.trace(blast, center(e)),
+              Math.hypot(e.x - o.x, centers[i].y - o.y, e.z - o.z) < e.r + 8 &&
+              !env.cover?.trace(blast, centers[i]),
           );
           for (const e of victims) hitEnemy(e, 6);
         }
@@ -272,11 +284,12 @@
           soldier = null;
         // Los soldados activos son los mismos para todas las balas
         // enemigas de este paso: no se reconstruye la lista por bala.
-        for (const a of soldiers) {
+        for (let i = 0; i < soldiers.length; i++) {
+          const a = soldiers[i];
           const fraction = env.ToyMissions.segmentHit(
             previous,
             b,
-            { x: a.x, y: env.groundAt(a.x, a.z) + 1.5, z: a.z },
+            soldierPoints[i],
             0.9,
           );
           if (fraction !== null && fraction < nearest) {

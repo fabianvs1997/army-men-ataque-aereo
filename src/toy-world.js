@@ -61,21 +61,49 @@
     const segments = trails.flatMap((route) =>
       route.slice(1).map((b, i) => [route[i], b]),
     );
+    // Tramos con su caja envolvente: trailDistance es el bucle caliente
+    // de la generación del mundo (se llama ~26 000 veces al crear las
+    // alturas) y antes recorría todos los tramos con Math.hypot. Con la
+    // caja se descartan los lejanos sin trigonometría y la distancia se
+    // compara al cuadrado; solo se hace la raíz al final.
+    const segData = segments.map(([[ax, az], [bx, bz]]) => {
+      const dx = bx - ax,
+        dz = bz - az;
+      return {
+        ax,
+        az,
+        dx,
+        dz,
+        len2: dx * dx + dz * dz,
+        minX: Math.min(ax, bx),
+        maxX: Math.max(ax, bx),
+        minZ: Math.min(az, bz),
+        maxZ: Math.max(az, bz),
+      };
+    });
     function trailDistance(x, z) {
-      let distance = Infinity;
-      for (const [[ax, az], [bx, bz]] of segments) {
-        const dx = bx - ax,
-          dz = bz - az;
-        const t = Math.max(
-          0,
-          Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)),
-        );
-        distance = Math.min(
-          distance,
-          Math.hypot(x - ax - t * dx, z - az - t * dz),
-        );
+      let best2 = Infinity;
+      for (const s of segData) {
+        let dx = 0,
+          dz = 0;
+        if (x < s.minX) dx = s.minX - x;
+        else if (x > s.maxX) dx = x - s.maxX;
+        if (z < s.minZ) dz = s.minZ - z;
+        else if (z > s.maxZ) dz = z - s.maxZ;
+        if (dx * dx + dz * dz >= best2) continue;
+        const t =
+          s.len2 === 0
+            ? 0
+            : Math.max(
+                0,
+                Math.min(1, ((x - s.ax) * s.dx + (z - s.az) * s.dz) / s.len2),
+              ),
+          ex = x - (s.ax + t * s.dx),
+          ez = z - (s.az + t * s.dz),
+          d2 = ex * ex + ez * ez;
+        if (d2 < best2) best2 = d2;
       }
-      return distance;
+      return Math.sqrt(best2);
     }
     function rawHeight(x, z) {
       let distance = trailDistance(x, z) - 14;
@@ -106,7 +134,13 @@
         : a + (c - d) * u + (d - a) * v;
     }
     function mesh() {
-      const data = [];
+      // Malla prealocada: antes se construía con push(...p, ...n) por
+      // vértice (~1,8 millones de push en un mapa de 640 u), que era la
+      // mitad del coste de entrar en una misión. El contenido es el
+      // mismo: mismos triángulos, mismas normales.
+      const cells = (LIMIT * 2) / STEP,
+        data = new Float32Array(cells * cells * 36);
+      let at = 0;
       for (let z = -LIMIT; z < LIMIT; z += STEP)
         for (let x = -LIMIT; x < LIMIT; x += STEP) {
           const a = [x, height(x, z), z],
@@ -125,10 +159,17 @@
                 u[0] * v[1] - u[1] * v[0],
               ],
               length = Math.hypot(...n);
-            for (const p of tri) data.push(...p, ...n.map((v) => v / length));
+            for (const p of tri) {
+              data[at++] = p[0];
+              data[at++] = p[1];
+              data[at++] = p[2];
+              data[at++] = n[0] / length;
+              data[at++] = n[1] / length;
+              data[at++] = n[2] / length;
+            }
           }
         }
-      return new Float32Array(data);
+      return data;
     }
     const roads = [];
     for (const [[ax, az], [bx, bz]] of segments) {

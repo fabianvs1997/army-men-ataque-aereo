@@ -489,7 +489,8 @@
         if (
           scene.renderer3d &&
           scene.renderer3d.render({
-            pixelRatio: scene.lowQuality ? 1 : 1.75,
+            pixelRatio: scene.lowQuality ? 1 : scene.pixelRatioCap || 1.75,
+            perfLevel: scene.perfLevel || 0,
             W: scene.W,
             H: scene.H,
             F: scene.F,

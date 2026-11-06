@@ -1,5 +1,17 @@
 # Changelog
 
+## Sin publicar — congelamiento en la escolta a C (misión 2, segunda parte)
+
+- Qué se comprobó del PR #35: la optimización de escombros funciona (la simulación con el campo saturado sigue en ~1,3 ms/frame en Node), pero el congelamiento persistía durante la escolta B → C. La causa siguiente era el A* del pelotón (`src/escort-navigation.js`): lista abierta lineal (mínimo en O(n) por expansión) y sin ningún presupuesto; una meta lejana o inalcanzable quemaba ~70 ms por llamada en Node (B → C completa: 70 ms sin encontrar ruta), y hasta 4 soldados atascados podían dispararla en el mismo frame. En iPhone eso son varios cientos de ms de bloqueo por frame.
+- El A* ahora usa un montón binario, sanea inicio y meta al punto libre más cercano (null inmediato si no hay), recorta la meta lejana a un objetivo intermedio a 64 u, y tiene presupuestos duros: como mucho 1200 expansiones o 12 ms por llamada, con paso de rejilla de 2 u. Si no encuentra ruta, devuelve null y el soldado espera en vez de agotar el frame. B → C: 70 → 9 ms; peor llamada en el escenario con muro: 32,3 → 4,9 ms; y el rodeo alrededor de un muro sigue encontrándose.
+- Como mucho un recálculo de ruta por frame en toda la escolta (antes uno por soldado), y si falla el enfriamiento es de 6 s en vez de 3 s.
+- Arrancar la misión 2 también se abarató: `trailDistance` poda los segmentos por caja envolvente (resultado idéntico, diff 1e-13) y `mesh()` escribe en un `Float32Array` prealocado (malla idéntica, diff 0). Peor caso medido: 241 → 109 ms en Node; la mayoría de semillas quedan en 30–48 ms.
+- Válvula de seguridad (`src/perf.js`, `ToyPerf`): monitor de la EMA del tiempo real por frame; si los frames se alargan, degrada en 3 niveles — tope de DPR 1,75 → 1,25 → 1, dibujo a 30 fps y mitad de escombros/humo en el nivel 2 — y recupera un nivel tras 600 frames rápidos. No cambia la jugabilidad: solo resolución y cantidad de decoración dibujada.
+- HUD opcional de rendimiento con `?perf=1`: FPS, ms por frame, peor frame, nivel y fase de la misión, para diagnosticar en el iPhone si el congelamiento persiste.
+- Menos asignaciones en los bucles calientes: los centros de enemigos y puntos de puntería de soldados se calculan una vez por frame/paso en vez de por bala × enemigo.
+- Sin cambios de jugabilidad: daño, velocidad, alcance, cadencia, misiones y controles intactos.
+- Pruebas nuevas en `tests/freeze-escort.test.cjs` (8 pruebas: distancia al sendero, coste de arranque, presupuestos del A*, rodeo de muro, un recálculo por frame, monitor de rendimiento, dibujo en nivel 2) y `scripts/bench-escort-freeze.cjs` para reproducir la medición con un muro de escombros en la ruta.
+
 ## Sin publicar — optimización de la misión 2 (congelamiento)
 
 - Causa: en la fase de escolta B → C, cada trazado de colisión recorría los 320 escombros del campo (un `segment()` con trigonometría por pieza) y la partida hacía ~80 trazados y ~22 movimientos por frame. Con el campo saturado, la simulación pasaba de 2,1 a 8,2 ms/frame en Node; en iPhone eso se convierte en tirones y congelamiento.

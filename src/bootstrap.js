@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'perf-mision2-1';
+  const VERSION = 'escolta-c-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -31,6 +31,7 @@
     'combat',
     'render2d',
     'ui',
+    'perf',
     'game',
   ]);
   function asset(path) {
