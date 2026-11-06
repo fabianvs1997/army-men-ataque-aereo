@@ -43,3 +43,7 @@ excluye las piezas ocultas alrededor de rescates. trace devuelve el primer conta
 move barre ambos ejes para detener y deslizar cuerpos. Combat compara el contacto
 con el del objetivo y comprueba la visibilidad de las víctimas antes del daño de misil.
 Los obstáculos del patio son sólidos pero no destructibles en esta entrega.
+
+### Mapas por misión
+
+`mission-map.js` genera geometría y reglas con una semilla: límites de 320, rutas A–B y B–C, bases y despliegue enemigo. `ToyWorld.create(map)` construye una instancia independiente, compartida por física y renderizado de esa partida. `start(n, full, retry)` conserva la semilla únicamente al reintentar. `Renderer.setWorld` reemplaza el buffer de terreno y libera el anterior; la restauración WebGL reutiliza el mapa activo. El mundo fijo exportado por defecto se conserva para la vista de menú y pruebas de regresión.

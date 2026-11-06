@@ -26,7 +26,7 @@ test('five resets recreate exact forces, reset events and retain saved campaign 
   g.host.localStorage.setItem(Config.progressKey, saved);
   for (let i = 0; i < 5; i++) {
     g.state.mission.damageSoldier(g.state.mission.allies[0], 100);
-    g.app.start(2, true);
+    g.app.start(2, true, true);
     assert.deepEqual(
       {
         enemies: g.state.E.length,
@@ -58,7 +58,7 @@ test('enemy projectiles hit healthy soldiers while wounded remain protected duri
     s.EB = [
       {
         x: a.x,
-        y: World.height(a.x, a.z) + 1.5,
+        y: s.world.height(a.x, a.z) + 1.5,
         z: a.z + 4,
         vx: 0,
         vy: 0,

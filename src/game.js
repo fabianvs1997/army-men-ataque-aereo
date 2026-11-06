@@ -13,6 +13,7 @@
       require('./toy-renderer.js'),
       require('./escort-mission.js'),
       require('./escort-progress.js'),
+      require('./mission-map.js'),
     );
   else
     root.ToyGame = factory(
@@ -28,6 +29,7 @@
       root.ToyRenderer,
       root.ToyEscort,
       root.ToyEscortProgress,
+      root.ToyMissionMap,
     );
 })(
   typeof globalThis !== 'undefined' ? globalThis : this,
@@ -39,11 +41,12 @@
     ToyCombat,
     ToyRender2D,
     ToyUI,
-    ToyWorld,
+    DefaultWorld,
     ToyMissions,
     ToyRenderer,
     ToyEscort,
     ToyEscortProgress,
+    ToyMissionMap,
   ) {
     'use strict';
     const transitions = Object.freeze({
@@ -113,6 +116,8 @@
     }
     function create(host = globalThis, options = {}) {
       const random = options.random || Math.random;
+      const ToyWorld = { ...DefaultWorld };
+      let currentMap;
       const Renderer =
         options.Renderer === undefined ? ToyRenderer : options.Renderer;
       const state = {};
@@ -502,7 +507,7 @@
 
       function spawnE(k, x, z) {
         const radius = { base: 6, tank: 3.5, tur: 2.5, inf: 0.7, heli: 1.8 }[k];
-        const start = ToyMissions.layout.start;
+        const start = state.mission?.start || ToyMissions.layout.start;
         const safeDistance =
           ToyMissions.layout.minEnemyDistance +
           Math.max(radius, k === 'heli' ? 3 : 1.5);
@@ -523,13 +528,13 @@
             for (let i = 0; i < 16; i++) {
               const nx = clamp(
                   ox + Math.cos((i * Math.PI) / 8) * distance,
-                  -185,
-                  185,
+                  -ToyWorld.limit + 15,
+                  ToyWorld.limit - 15,
                 ),
                 nz = clamp(
                   oz + Math.sin((i * Math.PI) / 8) * distance,
-                  -185,
-                  185,
+                  -ToyWorld.limit + 15,
+                  ToyWorld.limit - 15,
                 );
               if (free(nx, nz)) {
                 x = nx;
@@ -566,12 +571,24 @@
         state.E.push(enemy);
         return enemy;
       }
-      function start(n, full) {
+      function start(n, full, retry = false) {
         clearInput();
         state.t = 0;
         state.shk = 0;
         state.mis = n;
-        state.mission = new ToyEscort.Mission(n);
+        if (!retry || !currentMap) {
+          const seed =
+            options.mapSeed === undefined
+              ? Math.floor(random() * 4294967296)
+              : options.mapSeed + n;
+          currentMap = ToyMissionMap.generate(seed);
+        }
+        Object.assign(ToyWorld, DefaultWorld.create(currentMap));
+        state.world = ToyWorld;
+        state.mapSeed = currentMap.seed;
+        state.DC = ToyWorld.shrubs;
+        if (state.renderer3d?.setWorld) state.renderer3d.setWorld(ToyWorld);
+        state.mission = new ToyEscort.Mission(n, currentMap.rules);
         state.E = [];
         state.BL = [];
         state.EB = [];
@@ -646,9 +663,17 @@
         const magnitude = motion.active ? Math.min(1, Math.hypot(sx, sy)) : 0;
         if (motion.dx || motion.dz) {
           const next = cover.move(state.P, {
-            x: clamp(state.P.x + motion.dx, -190, 190),
+            x: clamp(
+              state.P.x + motion.dx,
+              -ToyWorld.limit + 10,
+              ToyWorld.limit - 10,
+            ),
             y: state.P.y,
-            z: clamp(state.P.z + motion.dz, -190, 190),
+            z: clamp(
+              state.P.z + motion.dz,
+              -ToyWorld.limit + 10,
+              ToyWorld.limit - 10,
+            ),
           });
           state.P.x = next.x;
           state.P.z = next.z;

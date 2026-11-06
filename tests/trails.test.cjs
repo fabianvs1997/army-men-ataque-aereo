@@ -65,7 +65,7 @@ test('campaign enemies spawn on the valley floor across deterministic seeds', ()
     for (let n = 1; n <= 3; n++) {
       app.start(n, true);
       for (const e of state.E)
-        assert.ok(World.canTravel(e.x, e.z), `${e.k} spawned on ridge`);
+        assert.ok(state.world.canTravel(e.x, e.z), `${e.k} spawned on ridge`);
       assert.equal(state.E.length, state.mission.enemyPlan.length);
       assert.equal(state.mission.guards.length, 4);
     }

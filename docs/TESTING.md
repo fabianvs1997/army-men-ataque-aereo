@@ -107,3 +107,7 @@ por gesto de la primera cámara de seguimiento.
 `escort.test.cjs` cubre estados, bloqueo de B, capacidad, abordaje selectivo, fuego aliado con visibilidad, marcha, atascos, entrega y guardado. `escort-integration.test.cjs` verifica daño real a soldados, combate autónomo, cinco reinicios con listeners y progreso intactos, y navegación entre restos con varias semillas.
 
 `smoke-escort.cjs` ejecuta A→B→C en Chromium desde file://, verifica que llegar antes que la columna no gana, revisa estrellas guardadas y reinicios, y captura WebGL vertical y Canvas horizontal. Los enemigos de B y de la emboscada se eliminan mediante el API de combate para aislar el flujo de misión; la marcha del pelotón se simula fotograma a fotograma con colisiones reales.
+
+### Mapas aleatorios
+
+`mission-map.test.cjs` verifica reproducibilidad, variación, bases distantes, rutas conectadas y escolta completa sin teletransporte con diez semillas. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.

@@ -12,6 +12,8 @@ Las preferencias y los mejores resultados (estrellas y supervivientes por misió
 
 Cada misión sigue A → B → C: despega de A con guardias aliados, despeja el perímetro de B, recoge solo a los heridos y protege al pelotón que marcha por tierra. Entrega a los heridos en C y espera a los supervivientes para completar la misión.
 
+El patio mide 640 × 640 unidades (2.56 veces el área anterior). Cada nueva partida y misión genera otras veredas, cerros, posiciones de B/C y vegetación. Reintentar conserva el mapa de esa misión. Enemigos y objetivos se colocan al comenzar; la ruta terrestre permanece conectada.
+
 ## Desarrollar
 
 Ejecuta `node --test` (CI usa Node 22). Los scripts son clásicos con exportación UMD/CommonJS;
