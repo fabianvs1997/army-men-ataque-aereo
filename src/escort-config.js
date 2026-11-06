@@ -26,7 +26,7 @@
     guardHP: 30,
     allyRange: 36,
     allyCooldown: 2.5,
-    bulletSpeed: 65,
+    bulletSpeed: 85,
     stuckSeconds: 25,
     separation: 2.2,
     combatPause: 1.5,

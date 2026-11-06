@@ -715,29 +715,51 @@
               q.ty === 'a' ? '#3fbf4a' : '#d9473f',
             ),
           );
-        // Trazadora: halo naranja/rojo con núcleo blanco-amarillo caliente,
-        // alargada en la dirección del disparo como en la referencia.
-        function tracer(p, b, back, outer, core) {
+        // Trazadora fina en forma de destello: punta brillante y cola que
+        // se desvanece en gradiente, sin bloque opaco. Mezcla aditiva para
+        // que el halo se funda con el fondo en vez de taparlo.
+        function tracer(p, b, back, outer, core, tail) {
           const q = P3(
             b.x - b.vx * back,
             b.y - (b.vy || 0) * back,
             b.z - b.vz * back,
           );
           const tx = q ? q[0] : p[0],
-            ty = q ? q[1] : p[1];
+            ty = q ? q[1] : p[1],
+            mx = p[0] + (tx - p[0]) * 0.4,
+            my = p[1] + (ty - p[1]) * 0.4,
+            grad = scene.ctx.createLinearGradient(p[0], p[1], tx, ty);
+          grad.addColorStop(0, core);
+          grad.addColorStop(0.35, outer);
+          grad.addColorStop(1, tail);
+          scene.ctx.save();
+          scene.ctx.globalCompositeOperation = 'lighter';
           scene.ctx.lineCap = 'round';
-          scene.ctx.strokeStyle = outer;
-          scene.ctx.lineWidth = Math.max(2, p[2] * 0.42);
-          scene.ctx.beginPath();
-          scene.ctx.moveTo(p[0], p[1]);
-          scene.ctx.lineTo(tx, ty);
-          scene.ctx.stroke();
-          scene.ctx.strokeStyle = core;
+          scene.ctx.strokeStyle = grad;
           scene.ctx.lineWidth = Math.max(1, p[2] * 0.2);
           scene.ctx.beginPath();
           scene.ctx.moveTo(p[0], p[1]);
           scene.ctx.lineTo(tx, ty);
           scene.ctx.stroke();
+          scene.ctx.strokeStyle = core;
+          scene.ctx.lineWidth = Math.max(0.75, p[2] * 0.09);
+          scene.ctx.beginPath();
+          scene.ctx.moveTo(p[0], p[1]);
+          scene.ctx.lineTo(mx, my);
+          scene.ctx.stroke();
+          scene.ctx.fillStyle = core;
+          scene.ctx.beginPath();
+          scene.ctx.ellipse(
+            p[0],
+            p[1],
+            Math.max(0.75, p[2] * 0.09),
+            Math.max(0.75, p[2] * 0.09),
+            0,
+            0,
+            6.29,
+          );
+          scene.ctx.fill();
+          scene.ctx.restore();
         }
         // Humo de misil: bocanadas blancas/grises que crecen y se desvanecen,
         // y bocanadas oscuras en el impacto. Se dibuja antes que los
@@ -762,7 +784,14 @@
           });
         for (const b of scene.BL)
           add(b.x, b.y, b.z, (p) =>
-            tracer(p, b, 0.05, 'rgba(255,110,20,0.85)', '#fff3b0'),
+            tracer(
+              p,
+              b,
+              0.05,
+              'rgba(255,110,20,0.85)',
+              '#fff3b0',
+              'rgba(255,110,20,0)',
+            ),
           );
         for (const o of scene.MS)
           add(o.x, o.y, o.z, (p) => {
@@ -804,7 +833,14 @@
           });
         for (const b of scene.EB)
           add(b.x, b.y, b.z, (p) =>
-            tracer(p, b, 0.09, 'rgba(255,60,10,0.85)', '#ffc46b'),
+            tracer(
+              p,
+              b,
+              0.09,
+              'rgba(255,60,10,0.85)',
+              '#ffc46b',
+              'rgba(255,60,10,0)',
+            ),
           );
         for (const o of scene.FX)
           add(o.x, o.y, o.z, (p) => {

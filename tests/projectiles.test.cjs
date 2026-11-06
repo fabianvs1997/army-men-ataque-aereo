@@ -114,12 +114,14 @@ test('smoke puffs drift, fade and clear on retry and menu', () => {
 test('Canvas 2D draws tracers, missile flame and smoke with the reference colours', () => {
   const Render2D = require('../src/render2d.js');
   const strokes = [],
-    fills = [];
+    fills = [],
+    widths = [];
   const ctx = {
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
     globalAlpha: 1,
+    globalCompositeOperation: 'source-over',
     lineCap: 'butt',
     beginPath() {},
     closePath() {},
@@ -127,6 +129,7 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
     lineTo() {},
     stroke() {
       strokes.push(this.strokeStyle);
+      widths.push(this.lineWidth);
     },
     fill() {
       fills.push(this.fillStyle);
@@ -160,8 +163,8 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
     DC: [],
     DB: [],
     PK: [],
-    BL: [{ x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: 130, l: 1 }],
-    EB: [{ x: 0, y: 8, z: 30, vx: 0, vy: 0, vz: -42, l: 4 }],
+    BL: [{ x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: 170, l: 1 }],
+    EB: [{ x: 0, y: 8, z: 30, vx: 0, vy: 0, vz: -55, l: 4 }],
     MS: [{ x: 0, y: 8, z: 10, vx: 0, vy: 0, vz: 75, l: 3 }],
     SM: [
       { x: 0, y: 8, z: 5, l: 0.6, max: 0.9, s: 1.5, dark: false, dx: 0, dy: 0.5, dz: 0 },
@@ -175,6 +178,14 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
   assert.doesNotThrow(() => renderer.draw());
   assert.ok(strokes.includes('#fff3b0'), 'bullet core');
   assert.ok(strokes.includes('#ffc46b'), 'enemy bullet core');
+  // La trazadora se desvanece en gradiente (objeto, no color plano) y es
+  // fina: ningún trazo del dibujo supera 2 px de ancho en esta escena.
+  assert.ok(
+    strokes.some((s) => s && typeof s === 'object'),
+    'tracer fades with a gradient',
+  );
+  assert.ok(Math.max(...widths) <= 2, 'tracers are thin');
+  assert.equal(ctx.globalCompositeOperation, 'lighter', 'additive glow');
   assert.ok(strokes.includes('#3a3f36'), 'missile body');
   assert.ok(fills.includes('#ff6a1a'), 'missile flame');
   assert.ok(fills.includes('#d92b1f'), 'missile nose');
@@ -182,13 +193,26 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
   assert.ok(fills.includes('#2b2b28'), 'dark impact smoke');
 });
 
+test('bullets fly about 30% faster with the same effective range', () => {
+  const Config = require('../src/escort-config.js');
+  assert.equal(Combat.BULLET_SPEED, 170);
+  const v = Combat.gunVelocity({ x: 0, z: 0, yaw: 0 }, { x: 0, y: 8, z: 0 }, []);
+  assert.ok(Math.abs(Math.hypot(v.vx, v.vz) - 170) < 1e-8);
+  assert.equal(Config.bulletSpeed, 85);
+  // Alcance efectivo = velocidad × vida, igual que antes: jugador
+  // 170×0,85 ≈ 143, aliadas 85×1,15 ≈ 98, enemigas 55×3,05 ≈ 168.
+  assert.ok(Math.abs(170 * 0.85 - 130 * 1.1) < 2);
+  assert.ok(Math.abs(85 * 1.15 - 65 * 1.5) < 1);
+  assert.ok(Math.abs(55 * 3.05 - 42 * 4) < 1);
+});
+
 test('a flying missile trails smoke and draws in the Canvas 2D fallback', () => {
   const { app, state: s } = game();
   app.start(1, true);
   s.E = [];
   s.MS = [missile({ smoke: 0 })];
-  s.BL = [{ x: 0, y: 8, z: 0, vx: 0, vy: 0, vz: 130, l: 1 }];
-  s.EB = [{ x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: -42, l: 4 }];
+  s.BL = [{ x: 0, y: 8, z: 0, vx: 0, vy: 0, vz: 170, l: 1 }];
+  s.EB = [{ x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: -55, l: 4 }];
   for (let i = 1; i <= 10; i++) app.loop(i * 16);
   assert.ok(s.SM.length >= 1);
   assert.ok(s.SM.every((p) => !p.dark));

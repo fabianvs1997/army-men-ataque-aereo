@@ -9,7 +9,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (Debris) {
   'use strict';
   const GUN_ASSIST_ANGLE = (12 * Math.PI) / 180,
-    GUN_ASSIST_RANGE = 130;
+    GUN_ASSIST_RANGE = 130,
+    // Velocidad del cañón del jugador: 170 u/s con vida 0,85 s en game.js
+    // (antes 130 u/s y 1,1 s): mismo alcance efectivo (~143 u) y mismo
+    // daño, pero las trazadoras se ven rápidas en vez de flotar.
+    BULLET_SPEED = 170;
   const MAX_SMOKE = 160,
     SMOKE_TRAIL_INTERVAL = 0.05,
     SMOKE_TRAIL_LIFE = 0.9,
@@ -40,16 +44,16 @@
         nearest = d;
       }
     }
-    if (!target) return { vx: fx * 130, vy: -16, vz: fz * 130 };
+    if (!target) return { vx: fx * BULLET_SPEED, vy: -16, vz: fz * BULLET_SPEED };
     const dx = target.x - muzzle.x,
       dz = target.z - muzzle.z,
       d = Math.hypot(dx, dz);
     const targetY =
       target.y + (target.k === 'heli' ? 0 : target.k === 'base' ? 3 : 1.5);
     return {
-      vx: (dx / d) * 130,
-      vy: (targetY - muzzle.y) / Math.max(0.01, d / 130),
-      vz: (dz / d) * 130,
+      vx: (dx / d) * BULLET_SPEED,
+      vy: (targetY - muzzle.y) / Math.max(0.01, d / BULLET_SPEED),
+      vz: (dz / d) * BULLET_SPEED,
     };
   }
   function kill(
@@ -297,6 +301,7 @@
     mk,
     GUN_ASSIST_ANGLE,
     GUN_ASSIST_RANGE,
+    BULLET_SPEED,
     MAX_SMOKE,
   };
 });
