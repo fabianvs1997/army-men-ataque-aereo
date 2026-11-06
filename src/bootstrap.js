@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'bullets-by-kind-1';
+  const VERSION = 'perf-mision2-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',

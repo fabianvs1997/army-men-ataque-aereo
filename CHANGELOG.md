@@ -1,5 +1,16 @@
 # Changelog
 
+## Sin publicar — optimización de la misión 2 (congelamiento)
+
+- Causa: en la fase de escolta B → C, cada trazado de colisión recorría los 320 escombros del campo (un `segment()` con trigonometría por pieza) y la partida hacía ~80 trazados y ~22 movimientos por frame. Con el campo saturado, la simulación pasaba de 2,1 a 8,2 ms/frame en Node; en iPhone eso se convierte en tirones y congelamiento.
+- Los escombros asentados (la gran mayoría) ahora van a un índice espacial por celdas, como los sólidos; solo las piezas aún en el aire se revisan directas. El campo saturado vuelve a costar lo mismo que el vacío: 1,3 ms/frame en Node (6× menos que antes).
+- Los restos siguen siendo cobertura sólida: un muro de escombros sigue parando balas y movimiento, y los soldados siguen pisando los fragmentos bajos. Solo cambia cómo se buscan, no qué bloquean.
+- WebGL: las piezas consecutivas del mismo tipo reutilizan el buffer ya enlazado (de 948 a 97 llamadas `bindBuffer` y de 3792 a 388 configuraciones de atributos por frame en la escena de referencia) y las carreteras fuera de pantalla ya no se dibujan (de 948 a 881 dibujos por frame). Sin cambios visuales.
+- La lista de soldados activos se calcula una vez por frame/paso en vez de reconstruirla por cada enemigo y cada bala enemiga; `damageSoldier` usa pertenencia O(1).
+- Sin cambios de jugabilidad: daño, velocidad, alcance, cadencia, misiones y controles intactos.
+- Supabase evaluado y descartado para este problema: el congelamiento es CPU del cliente (colisiones y dibujo por frame), no red ni servidor; el juego es estático y sin assets pesados. Un backend no arregla el bucle de juego. Ver el PR para el detalle.
+- Pruebas nuevas en `tests/perf-mission2.test.cjs` (presupuesto de frame con campo saturado, cobertura de escombros, pertenencia de soldados, caché de mallas WebGL) y `scripts/bench-mission2.cjs` para reproducir la medición.
+
 ## Sin publicar — balas por tipo de arma
 
 - Cada disparo lleva su origen explícito (`b.kind`: `soldier` | `heli` | `tank`) y la trazadora es proporcional al arma: soldados con destello muy fino y corto en amarillo pálido, helicópteros con la trazadora media del afinado anterior, tanques con trazadora claramente más gruesa y larga, con halo naranja/rojo mayor y punta más visible.

@@ -61,8 +61,11 @@ y el de pruebas. El workflow se niega a mover una etiqueta existente a otro comm
 un impacto barrido, cinco tipos de enemigo, ausencia de bolas de fuego, reposo
 sobre el terreno y ambos renderers en file://. Captura imágenes en /tmp.
 Las pruebas Node cubren daño repetido, piezas separadas una sola vez, misiles,
-persistencia, límite de restos, pausa y limpieza de misión. Validación física de
-rendimiento en iPhone pendiente; el límite es 320 piezas, no una garantía de FPS.
+persistencia, límite de restos, pausa y limpieza de misión. La optimización de la
+misión 2 (`tests/perf-mission2.test.cjs`, `scripts/bench-mission2.cjs`) fija el
+presupuesto de frame con el campo de escombros saturado (320 piezas): antes del
+índice espacial costaba ~4× el campo vacío y ahora cuesta lo mismo. Validación
+física de rendimiento en iPhone pendiente.
 
 ## Cobertura y objetos sólidos
 

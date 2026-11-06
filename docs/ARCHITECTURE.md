@@ -38,7 +38,10 @@ Game.create permite visualRandom independiente de random para pruebas de efectos
 
 Collision.create(scene, world) toma las piezas del patio directamente de ToyWorld,
 con cajas orientadas y elipsoides para vegetación/rocas. Cachea un índice espacial
-para objetos fijos; los restos usan su posición actual. La selección de vegetación
+para objetos fijos; los restos usan su posición actual. Los escombros asentados
+van a su propio índice por celdas (se reconstruye solo cuando cambia el conjunto
+asentado) y las piezas aún en el aire se revisan directas: con el campo saturado
+(320 piezas) un trazado ya no recorre todos los escombros. La selección de vegetación
 excluye las piezas ocultas alrededor de rescates. trace devuelve el primer contacto;
 move barre ambos ejes para detener y deslizar cuerpos. Combat compara el contacto
 con el del objetivo y comprueba la visibilidad de las víctimas antes del daño de misil.

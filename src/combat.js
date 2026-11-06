@@ -122,6 +122,9 @@
     }
 
     function stepProjectiles(dt) {
+      // Soldados activos del paso: se calcula una vez y la reutilizan
+      // todas las balas enemigas, en vez de reconstruir la lista por bala.
+      const soldiers = context.mission?.activeSoldiers?.() || [];
       const center = (e) => ({
         x: e.x,
         y: e.y + (e.k === 'heli' ? 0 : e.k === 'base' ? 3 : 1.5),
@@ -267,7 +270,9 @@
         const playerHit = env.ToyMissions.segmentHit(previous, b, env.P, 3);
         let nearest = playerHit ?? Infinity,
           soldier = null;
-        for (const a of context.mission?.activeSoldiers?.() || []) {
+        // Los soldados activos son los mismos para todas las balas
+        // enemigas de este paso: no se reconstruye la lista por bala.
+        for (const a of soldiers) {
           const fraction = env.ToyMissions.segmentHit(
             previous,
             b,
