@@ -1,5 +1,11 @@
 # Changelog
 
+## Sin publicar — patrullas en los trayectos
+
+- A–B y B–C pasan de 2 a 8 enemigos terrestres cada uno: infantería, tanques y torretas distribuidos por la vereda.
+- Las 12 unidades adicionales se cargan al comenzar y mantienen libres el inicio, el perímetro de rescate de B y la llegada a C.
+
+
 ## Sin publicar — mapas grandes y aleatorios
 
 - Patio de 640 × 640 unidades, con veredas, cerros, vegetación y objetivos generados por semilla para cada misión nueva.

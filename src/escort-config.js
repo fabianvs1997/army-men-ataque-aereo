@@ -42,6 +42,25 @@
       { id: 'escort-turret', k: 'tur', x: 35, z: 120, zone: 'BC', hp: 8 },
       { id: 'escort-infantry', k: 'inf', x: 85, z: 112, zone: 'BC', hp: 4 },
     ],
+    // Additional ground patrols along the generated routes; all load at mission start.
+    routePatrols: {
+      AB: [
+        { at: 2.5, k: 'inf', hp: 3 },
+        { at: 3.4, k: 'tank', hp: 8 },
+        { at: 3.8, k: 'inf', hp: 3 },
+        { at: 4.3, k: 'tur', hp: 6 },
+        { at: 4.7, k: 'inf', hp: 3 },
+        { at: 5.2, k: 'tank', hp: 8 },
+      ],
+      BC: [
+        { at: 2, k: 'inf', hp: 3 },
+        { at: 4, k: 'tank', hp: 8 },
+        { at: 6, k: 'inf', hp: 3 },
+        { at: 8, k: 'tur', hp: 6 },
+        { at: 11, k: 'inf', hp: 3 },
+        { at: 12, k: 'tank', hp: 8 },
+      ],
+    },
     extraAir: [
       { id: 'escort-air-2', k: 'heli', x: 65, z: 115, zone: 'BC', hp: 6 },
       { id: 'escort-air-3', k: 'heli', x: 120, z: 117, zone: 'BC', hp: 6 },
