@@ -49,7 +49,7 @@ const path = require('node:path');
       const g = fixtureGame;
       g.start(1, true);
       g.upd(0.01);
-      g.render2d.draw();
+      g.draw3d.draw();
     });
     assert.match(
       await page.locator('#objective').textContent(),
@@ -65,7 +65,7 @@ const path = require('node:path');
       s.P.z = a.z;
       s.P.inv = 100;
       for (let i = 0; i < 40; i++) g.upd(0.05);
-      g.render2d.draw();
+      g.draw3d.draw();
       return { stage: m.stage, boarded: m.rescued, guards: m.guards.length };
     });
     assert.deepEqual(blocked, { stage: 'DESPEJAR_B', boarded: 0, guards: 4 });
@@ -82,7 +82,7 @@ const path = require('node:path');
         s.P.z = a.z;
         for (let i = 0; i < 35; i++) g.upd(0.05);
       }
-      g.render2d.draw();
+      g.draw3d.draw();
       return {
         stage: m.stage,
         boarded: m.rescued,
@@ -116,7 +116,7 @@ const path = require('node:path');
             speedOK = false;
         });
       }
-      g.render2d.draw();
+      g.draw3d.draw();
       return {
         early,
         final: s.st,
@@ -173,7 +173,7 @@ const path = require('node:path');
         if (s.mapSeed !== seed || JSON.stringify(s.world.roads) !== old)
           return false;
         g.start(2, false);
-        g.render2d.draw();
+        g.draw3d.draw();
         return (
           s.mapSeed !== seed &&
           JSON.stringify(s.world.roads) !== old &&
@@ -189,21 +189,20 @@ const path = require('node:path');
       const g = fixtureGame;
       g.rs();
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
       g.upd(0.01);
-      g.render2d.draw();
+      g.draw3d.draw();
     });
-    // Allow the browser resize event to finish before the final Canvas draw.
+    // Allow the browser resize event to finish before the final draw.
     await page.waitForTimeout(100);
     await page.evaluate(() => {
       fixtureGame.rs();
-      fixtureGame.render2d.draw();
+      fixtureGame.draw3d.draw();
     });
-    await page.screenshot({ path: '/tmp/escort-canvas.png' });
+    await page.screenshot({ path: '/tmp/escort-webgl-required.png' });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS escort browser: A guards, B blocking and selective boarding, real ground escort, delayed C victory, persisted stars, five resets, Canvas/landscape. ' +
+      'PASS escort browser: A guards, B blocking and selective boarding, real ground escort, delayed C victory, persisted stars, five resets, WebGL/landscape. ' +
         JSON.stringify(result),
     );
   } finally {

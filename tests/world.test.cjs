@@ -39,38 +39,6 @@ test('height sampling clamps outside the world and is continuous at cell boundar
         0.001,
     );
 });
-test('Canvas terrain fallback draws finite projected paths in portrait and landscape', () => {
-  let points = 0,
-    fills = 0;
-  const ctx = {
-    beginPath() {},
-    closePath() {},
-    fill() {
-      fills++;
-    },
-    moveTo(x, y) {
-      assert.ok(Number.isFinite(x) && Number.isFinite(y));
-      points++;
-    },
-    lineTo(x, y) {
-      this.moveTo(x, y);
-    },
-  };
-  for (const [W, H, F] of [
-    [390, 844, 390 / 105],
-    [844, 390, 390 / 120],
-  ])
-    world.drawGround(
-      ctx,
-      (x, y, z) => [W / 2 - x * F, H / 2 + (z - y) * F],
-      { x: 170, z: 170 },
-      W,
-      H,
-      F,
-    );
-  assert.ok(points > 0 && fills > 0);
-});
-
 test('backyard parts are finite, bounded in count and share safe mission footprints', () => {
   assert.ok(world.yard.length > 200 && world.yard.length < 400);
   for (const p of world.yard) {

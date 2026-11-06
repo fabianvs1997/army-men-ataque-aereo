@@ -1,4 +1,4 @@
-/* Shared deterministic terrain for WebGL and the Canvas fallback. */
+/* Shared deterministic terrain for the WebGL renderer. */
 (function (root) {
   'use strict';
   function create(map) {
@@ -387,130 +387,6 @@
         landmarks.every((p) => Math.hypot(x - p.x, z - p.z) > p.radius + margin)
       );
     }
-    // A lightweight terrain view for devices without WebGL. Same height field and roads.
-    function grassColor(x, z) {
-      const patch =
-          Math.sin(x * 0.047 + Math.sin(z * 0.031)) * Math.cos(z * 0.061),
-        h = height(x, z),
-        t = Math.min(1, h / 18),
-        shade = 8 * patch;
-      const color = `rgb(${Math.round(99 - 60 * t + shade)},${Math.round(123 - 64 * t + shade)},${Math.round(61 - 31 * t + shade)})`;
-      return color;
-    }
-
-    function drawGround(ctx, project, cam, W, H, F) {
-      const range = (Math.hypot(W, H) / F) * 0.65 + 50,
-        faces = [],
-        step = STEP;
-      const add = (vertices, color, terrain = false) => {
-        const points = vertices.map((p) => project(...p));
-        if (points.some((p) => !p)) return;
-        const depth =
-          vertices.reduce(
-            (d, [x, y, z]) =>
-              d +
-              (x * Math.sin(cam.yaw || 0) + z * Math.cos(cam.yaw || 0)) *
-                0.766 -
-              y * 0.643,
-            0,
-          ) / vertices.length;
-        faces.push({
-          points,
-          color,
-          depth:
-            depth + (terrain && vertices.every((p) => p[1] < 0.2) ? 1000 : 0),
-        });
-      };
-      for (
-        let z = Math.max(-LIMIT, Math.floor((cam.z - range) / step) * step);
-        z < Math.min(LIMIT, cam.z + range);
-        z += step
-      )
-        for (
-          let x = Math.max(-LIMIT, Math.floor((cam.x - range) / step) * step);
-          x < Math.min(LIMIT, cam.x + range);
-          x += step
-        ) {
-          const a = [x, height(x, z), z],
-            b = [x + step, height(x + step, z), z],
-            c = [x + step, height(x + step, z + step), z + step],
-            d = [x, height(x, z + step), z + step];
-          add([a, c, b], grassColor(x + step * 0.66, z + step * 0.33), true);
-          add([a, d, c], grassColor(x + step * 0.33, z + step * 0.66), true);
-        }
-      for (const road of roads) {
-        if (Math.hypot(road.x - cam.x, road.z - cam.z) > range) continue;
-        const c = Math.cos(road.yaw),
-          s = Math.sin(road.yaw);
-        add(
-          [
-            [-5, -road.length],
-            [5, -road.length],
-            [5, road.length],
-            [-5, road.length],
-          ].map(([x, z]) => [
-            road.x + x * c + z * s,
-            0.12,
-            road.z - x * s + z * c,
-          ]),
-          '#aa9162',
-        );
-      }
-      for (const site of pads) {
-        const pad = (corners, color, y) =>
-          add(
-            corners.map(([x, z]) => [x + site.x, y, z + site.z]),
-            color,
-          );
-        pad(
-          [
-            [-8, -8],
-            [8, -8],
-            [8, 8],
-            [-8, 8],
-          ],
-          site.rescue ? '#f5ad40' : site.final ? '#93e29b' : '#dfd39e',
-          0.24,
-        );
-        pad(
-          [
-            [-7, -7],
-            [7, -7],
-            [7, 7],
-            [-7, 7],
-          ],
-          site.final ? '#2a6547' : '#566449',
-          0.27,
-        );
-      }
-      for (const p of padMarks)
-        add(
-          [
-            [p.x - 0.55, 0.36, p.z - 0.55],
-            [p.x + 0.55, 0.36, p.z - 0.55],
-            [p.x + 0.55, 0.36, p.z + 0.55],
-            [p.x - 0.55, 0.36, p.z + 0.55],
-          ],
-          '#dfd39e',
-        );
-      faces.sort((a, b) => b.depth - a.depth);
-      if (ctx.save) ctx.save();
-      for (const f of faces) {
-        ctx.fillStyle = f.color;
-        ctx.beginPath();
-        f.points.forEach((p, i) =>
-          i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]),
-        );
-        ctx.closePath();
-        ctx.fill();
-        if (ctx.stroke) {
-          ctx.strokeStyle = f.color;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      }
-      if (ctx.restore) ctx.restore();
-    }
     const api = {
       limit: LIMIT,
       seed: map?.seed,
@@ -528,7 +404,6 @@
       yard,
       shrubs,
       clearOfLandmarks,
-      drawGround,
     };
     return api;
   }

@@ -130,7 +130,7 @@ test('lost WebGL stops drawing and restoration rebuilds buffers/program', () => 
   assert.equal(f.counts.compile, 4);
   assert.equal(r.render(scene()), true);
 });
-test('unavailable WebGL and shader/link failures permit caller fallback', () => {
+test('unavailable WebGL and shader/link failures let the caller show the WebGL-required message', () => {
   for (const option of ['noWebGL', 'failShader', 'failLink']) {
     const f = fixture({ [option]: true });
     assert.throws(
@@ -280,4 +280,46 @@ test('WebGL draws one tracer per bullet kind without falling back', () => {
   // Cada trazadora dibuja 4 piezas (cola, halo, núcleo y punto caliente):
   // 6 balas con tipo = 24 dibujos de trazadora como mínimo.
   assert.ok(f.counts.draw - before >= 24, 'all kinded tracers drawn');
+});
+
+test('helicopter shadow sits on the visible surface: road top, not terrain', () => {
+  const f = fixture(),
+    r = new Renderer(f.canvas, () => {}, () => {});
+  // Mundo plano con un camino en (0, 0) y un helipuerto en (30, 30).
+  r.world = {
+    height: () => 0,
+    roads: [{ x: 0, z: 0, y: 0.1, yaw: 0, length: 10 }],
+    pads: [{ x: 30, z: 30 }],
+  };
+  assert.equal(r.surfaceTop(0, 0), 0.14);
+  assert.equal(r.surfaceTop(30, 30), 0.31);
+  assert.equal(r.surfaceTop(38, 30), 0.23);
+  assert.equal(r.surfaceTop(20, 20), 0);
+  // La sombra sobre el camino queda por encima de su parte superior
+  // (0,14): antes quedaba a 0,06 sobre el terreno y el camino la tapaba.
+  const origins = [],
+    sizes = [];
+  const original = f.gl.uniform3f;
+  f.gl.uniform3f = (name, ...values) => {
+    if (name === 'origin') origins.push(values);
+    if (name === 'size') sizes.push(values);
+    original(name, ...values);
+  };
+  r.helicopter(0, 8, 0, 0, 0);
+  assert.deepEqual(origins[0].slice(0, 3), [0, 0.19, 0]);
+  assert.ok(origins[0][1] > 0.14, 'shadow above the road surface');
+  // A 7,86 u de altitud la sombra se encoge: 1 - 7,86 * 0,02 = 0,8428.
+  assert.ok(Math.abs(sizes[0][0] - 3.4 * 0.8428) < 1e-6);
+  assert.equal(sizes[0][1], 0.04);
+  // Aterrizado sobre el camino: tamaño completo, centrado bajo el heli.
+  origins.length = 0;
+  sizes.length = 0;
+  r.helicopter(0, 0.14, 0, 0, 0);
+  assert.deepEqual(origins[0].slice(0, 3), [0, 0.19, 0]);
+  assert.equal(sizes[0][0], 3.4);
+  // Sobre hierba llana la sombra se apoya en el terreno (0 + 0,05).
+  r.world = { height: () => 0, roads: [], pads: [] };
+  origins.length = 0;
+  r.helicopter(5, 8, -3, 0, 0);
+  assert.deepEqual(origins[0].slice(0, 3), [5, 0.05, -3]);
 });

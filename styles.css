@@ -233,6 +233,19 @@ h1 {
   height: 100dvh;
 }
 
+#webglRequired {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 40ch;
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+  font-size: 18px;
+}
+
 #hud {
   position: absolute;
   pointer-events: none;

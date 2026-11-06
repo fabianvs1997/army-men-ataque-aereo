@@ -84,7 +84,7 @@ test('joystick changes direction without release, keeps firing independent and c
     s = g.state;
   g.app.start(1, true);
   s.E = [];
-  const c = g.element('c');
+  const c = g.element('world3d');
   c.emit('pointerdown', { pointerId: 1, clientX: 40, clientY: 200 });
   c.emit('pointermove', { pointerId: 1, clientX: 40, clientY: 130 });
   g.app.upd(0.03);
@@ -174,7 +174,7 @@ test('economy drawing cadence does not slow simulation and hidden/paused views s
   g.app.loop(1048);
   assert.equal(draws, d);
 });
-test('seeded missions reproduce spawns and terrain heights; fallback renders all states', () => {
+test('seeded missions reproduce spawns and terrain heights; 3D draw without WebGL shows the required message', () => {
   const a = game(78),
     b = game(78);
   a.app.start(2, true);
@@ -186,9 +186,9 @@ test('seeded missions reproduce spawns and terrain heights; fallback renders all
     assert.ok(world.clearOfLandmarks(e.x, e.z, 10));
   }
   a.state.mission.transition('COMBATE_RUTA_AB');
-  assert.doesNotThrow(() => a.app.render2d.draw(a.app.view));
+  assert.doesNotThrow(() => a.app.draw3d.draw(a.app.view));
   a.app.pauseGame();
-  assert.doesNotThrow(() => a.app.render2d.draw(a.app.view));
+  assert.doesNotThrow(() => a.app.draw3d.draw(a.app.view));
 });
 test('assisted bullets hit offset infantry without turning the player', () => {
   const g = game(),

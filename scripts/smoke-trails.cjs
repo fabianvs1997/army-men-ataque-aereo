@@ -39,7 +39,7 @@ const path = require('node:path');
       g.state.rot = 0.55;
       g.state.P.pitch = 0;
       g.view.cam.yaw = 0;
-      g.render2d.draw();
+      g.draw3d.draw();
     });
     assert.equal(
       await page.locator('#world3d').evaluate((e) => e.style.display),
@@ -56,29 +56,28 @@ const path = require('node:path');
       g.view.cam.z = -75;
       g.view.cam.yaw = Math.atan2(80, -45);
       g.state.rot = 1.4;
-      g.render2d.draw();
+      g.draw3d.draw();
     });
     await page.screenshot({ path: '/tmp/trails-tilted.png' });
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
       g.state.P.pitch = 0;
       g.state.rot = 0.55;
-      g.render2d.draw();
+      g.draw3d.draw();
     });
-    await page.screenshot({ path: '/tmp/trails-canvas.png' });
+    await page.screenshot({ path: '/tmp/trails-webgl-required.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.rs();
       g.view.cam.yaw = g.state.P.yaw;
-      g.render2d.draw();
+      g.draw3d.draw();
     });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS trails: overview and valley render in WebGL and Canvas, portrait resize; no JS errors',
+      'PASS trails: overview and valley render in WebGL, portrait resize; no JS errors',
     );
   } finally {
     await browser.close();

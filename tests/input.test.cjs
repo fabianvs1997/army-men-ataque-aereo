@@ -7,7 +7,7 @@ function setup() {
     env = {
       host: f.host,
       $: f.element,
-      cv: f.element('c'),
+      cv: f.element('world3d'),
       st: 'play',
       overlayPage: 'result',
       needsDraw: false,
@@ -34,7 +34,7 @@ const key = (f, k, repeat = false) =>
   f.host.emit('keydown', { key: k, repeat, preventDefault() {} });
 test('pilot pointer has sole ownership and joystick caps visual travel', () => {
   const f = setup(),
-    c = f.element('c');
+    c = f.element('world3d');
   c.emit('pointerdown', { pointerId: 1, clientX: 20, clientY: 200 });
   assert.equal(f.env.unlocked, 1);
   c.emit('pointerdown', { pointerId: 2, clientX: 80, clientY: 220 });

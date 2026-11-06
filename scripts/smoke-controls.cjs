@@ -40,7 +40,7 @@ const path = require('node:path');
         g.upd(1 / 60);
         const yaw = g.state.P.yaw;
         for (let i = 0; i < 30; i++) g.upd(1 / 60);
-        g.render2d.draw();
+        g.draw3d.draw();
         const p = g.state.P;
         return {
           yaw,
@@ -48,8 +48,8 @@ const path = require('node:path');
           z: p.z,
           after: p.yaw,
           camera: g.view.cam.yaw,
-          player: g.render2d.P3(p.x, p.y, p.z),
-          ahead: g.render2d.P3(
+          player: g.view.P3(p.x, p.y, p.z),
+          ahead: g.view.P3(
             p.x + Math.sin(p.yaw) * 10,
             p.y,
             p.z + Math.cos(p.yaw) * 10,
@@ -177,9 +177,9 @@ const path = require('node:path');
       const framing = await page.evaluate(() => {
         const g = window.fixtureGame;
         g.rs();
-        g.render2d.draw();
+        g.draw3d.draw();
         return {
-          point: g.render2d.P3(g.state.P.x, g.state.P.y, g.state.P.z),
+          point: g.view.P3(g.state.P.x, g.state.P.y, g.state.P.z),
           mode: document.getElementById('world3d').style.display,
         };
       });
@@ -201,14 +201,13 @@ const path = require('node:path');
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
-      g.render2d.draw();
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
+      g.draw3d.draw();
     });
-    await page.screenshot({ path: '/tmp/controls-canvas.png' });
+    await page.screenshot({ path: '/tmp/controls-webgl-required.png' });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS controls and multitouch: forward/reverse without flips, progressive steering, camera aligned with nose, forward projects upward, framing and controls in three viewports, WebGL/Canvas',
+      'PASS controls and multitouch: forward/reverse without flips, progressive steering, camera aligned with nose, forward projects upward, framing and controls in three viewports, WebGL',
     );
   } finally {
     await browser.close();

@@ -64,7 +64,7 @@ const path = require('node:path');
       s.E = s.E.filter((e) => !e.dead);
       s.BL = [];
       for (let i = 0; i < 30; i++) g.combat.stepDebris(1 / 60);
-      g.render2d.draw();
+      g.draw3d.draw();
       return {
         pieces: s.DB.length,
         webgl: document.getElementById('world3d').style.display,
@@ -80,22 +80,21 @@ const path = require('node:path');
       for (let i = 0; i < 600; i++) g.combat.stepDebris(1 / 60);
       if (!g.state.DB.every((p) => p.settled))
         throw Error('Unsettled wreckage');
-      g.render2d.draw();
+      g.draw3d.draw();
     });
     await page.screenshot({ path: '/tmp/plastic-settled.png' });
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
-      g.render2d.draw();
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
+      g.draw3d.draw();
     });
-    await page.screenshot({ path: '/tmp/plastic-canvas.png' });
+    await page.screenshot({ path: '/tmp/plastic-webgl-required.png' });
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(() => window.fixtureGame.render2d.draw());
+    await page.evaluate(() => window.fixtureGame.draw3d.draw());
     assert.deepEqual(errors, []);
     console.log(
-      'PASS debris: swept hit, five enemy types, no fireballs, landing, WebGL and Canvas, portrait/landscape; no JS errors',
+      'PASS debris: swept hit, five enemy types, no fireballs, landing, WebGL, portrait/landscape; no JS errors',
     );
   } finally {
     await browser.close();

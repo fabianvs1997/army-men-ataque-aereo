@@ -276,6 +276,38 @@ void main(){
       gl.drawArrays(gl.TRIANGLES, 0, m.count);
       this.drawCalls++;
     }
+    // Altura de la superficie visible bajo (x, z): el terreno, o la
+    // parte superior de un camino (0,14) o de un helipuerto (0,23 fuera,
+    // 0,31 dentro) cuando el punto cae sobre ellos. La sombra del
+    // helicóptero debe apoyarse sobre esa superficie, no sobre el
+    // terreno: antes usaba solo la altura del terreno y quedaba
+    // enterrada bajo el camino, así que solo asomaba su borde fuera
+    // de él y parecía desplazada por debajo del camino.
+    surfaceTop(x, z) {
+      const world = this.world;
+      let top = world ? world.height(x, z) : 0;
+      if (!world) return top;
+      for (const r of world.roads || []) {
+        const dx = x - r.x,
+          dz = z - r.z,
+          c = Math.cos(r.yaw),
+          s = Math.sin(r.yaw),
+          // Coordenadas locales del camino (ancho 5, medio largo r.length).
+          lx = dx * c - dz * s,
+          lz = dx * s + dz * c;
+        if (Math.abs(lx) <= 5 && Math.abs(lz) <= r.length) {
+          top = Math.max(top, r.y + 0.04);
+          break;
+        }
+      }
+      for (const site of world.pads || []) {
+        const dx = Math.abs(x - site.x),
+          dz = Math.abs(z - site.z);
+        if (dx <= 7 && dz <= 7) top = Math.max(top, 0.31);
+        else if (dx <= 8 && dz <= 8) top = Math.max(top, 0.23);
+      }
+      return top;
+    }
     helicopter(
       x,
       y,
@@ -305,14 +337,25 @@ void main(){
           c,
           yaw + angle,
         );
+      // Sombra de contacto sobre la superficie visible justo debajo del
+      // helicóptero (camino, helipuerto o terreno), centrada en su (x, z):
+      // con la cámara oblicua, un punto del suelo bajo el helicóptero se
+      // proyecta desplazado en pantalla, pero la sombra en sí no se
+      // desplaza en el mundo. Se encoge con la altitud (más alto, más
+      // pequeña) y queda 0,01–0,09 u por encima de la superficie para
+      // que el búfer de profundidad no la tape el camino.
+      const ground = this.surfaceTop(x, z),
+        altitude = Math.max(0, y - ground),
+        shadowScale = Math.max(0.7, 1 - altitude * 0.02);
+      this.groundOffset = 0;
       this.part(
         'sphere',
         x,
-        (this.world ? this.world.height(x, z) : 0) + 0.06,
+        ground + 0.05,
         z,
-        3.4,
+        3.4 * shadowScale,
         0.04,
-        2.5,
+        2.5 * shadowScale,
         [0.23, 0.3, 0.18],
         yaw,
         0,

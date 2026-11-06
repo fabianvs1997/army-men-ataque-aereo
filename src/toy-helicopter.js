@@ -1,4 +1,4 @@
-/* Player's molded-plastic gunship. Shared geometry for WebGL and Canvas. */
+/* Player's molded-plastic gunship. Shared geometry for the WebGL renderer. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.ToyHelicopter = factory();

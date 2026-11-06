@@ -58,7 +58,7 @@ const path = require('node:path');
       Object.assign(s.P, { x: -45, y: 8, z: -45, arm: 10, inv: 0 });
       s.EB = [];
       Object.assign(g.view.cam, { x: -45, z: -33, yaw: 0.5 });
-      g.render2d.draw();
+      g.draw3d.draw();
       return {
         sheltered,
         exposed,
@@ -76,16 +76,15 @@ const path = require('node:path');
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
-      g.render2d.draw();
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
+      g.draw3d.draw();
     });
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(() => window.fixtureGame.render2d.draw());
-    await page.screenshot({ path: '/tmp/cover-canvas.png' });
+    await page.evaluate(() => window.fixtureGame.draw3d.draw());
+    await page.screenshot({ path: '/tmp/cover-webgl-required.png' });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS cover: watering can shields player, exposed shot damages, movement blocked at height, clearance above, WebGL/Canvas and both orientations',
+      'PASS cover: watering can shields player, exposed shot damages, movement blocked at height, clearance above, WebGL and both orientations',
     );
   } finally {
     await browser.close();

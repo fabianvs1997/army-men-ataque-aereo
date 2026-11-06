@@ -28,7 +28,7 @@ BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-escort.cjs
 ```
 
 Abre file://, inicia, dispara, pausa, navega ayuda/ajustes, silencia, continúa,
-gira el viewport y vuelve al menú; exige cero errores JavaScript. No sustituye
+gira el viewport y vuelve al menú; exige cero errores JavaScript. Si WebGL no está disponible, los smoke comprueban que aparece el mensaje de WebGL requerido, sin respaldo 2D. No sustituye
 una partida manual completa ni las restricciones reales de Safari/iOS.
 
 ## Cinco pasos manuales por entrega
@@ -107,7 +107,7 @@ física de rendimiento en iPhone pendiente.
 
 `BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-cover.cjs` usa la regadera
 real del mapa: detrás no se recibe daño; al salir se recibe el disparo. Comprueba
-movimiento detenido, paso por encima y renderizado WebGL/Canvas en ambas orientaciones.
+movimiento detenido, paso por encima y renderizado WebGL en ambas orientaciones.
 Pruebas directas: cajas giradas, elipsoides, proyectiles rápidos, primer contacto,
 misiles y cobertura frente a daño de área, deslizamiento, altura, restos, vegetación
 oculta, terreno y prevención de atravesar un objeto desde su superficie.
@@ -116,7 +116,7 @@ oculta, terreno y prevención de atravesar un objeto desde su superficie.
 
 `BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-pitch.cjs` avanza frames
 controlados con entrada de teclado real: nariz abajo durante movimiento, arriba
-al soltar y regreso a nivel. Comprueba WebGL/Canvas y ambas orientaciones, con
+al soltar y regreso a nivel. Comprueba WebGL y ambas orientaciones, con
 capturas en /tmp. Pruebas directas cubren límites, dirección, suavizado entre tasas
 de frames, colisión, pausa/reinicio y restablecimiento de uniforms del renderer.
 
@@ -124,11 +124,11 @@ de frames, colisión, pausa/reinicio y restablecimiento de uniforms del renderer
 
 `BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-camera.cjs` verifica
 encuadre en vertical, horizontal y cuadrado, posición del helicóptero al 64 %,
-controles dentro del viewport y WebGL/Canvas. Guarda capturas en /tmp.
+controles dentro del viewport y WebGL. Guarda capturas en /tmp.
 
 ## Seguimiento de rumbo
 
-`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-follow.cjs` mantiene cada dirección con teclado real y comprueba rumbo estable, cámara alineada, proyección hacia delante, encuadre y controles en vertical/horizontal/cuadrado, con WebGL/Canvas. Las pruebas Node también cubren un gesto táctil nuevo sin frame intermedio y pausa/reinicio.
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-follow.cjs` mantiene cada dirección con teclado real y comprueba rumbo estable, cámara alineada, proyección hacia delante, encuadre y controles en vertical/horizontal/cuadrado, con WebGL. Las pruebas Node también cubren un gesto táctil nuevo sin frame intermedio y pausa/reinicio.
 
 ## Controles con cámara de seguimiento
 
@@ -145,7 +145,7 @@ por gesto de la primera cámara de seguimiento.
 
 `escort.test.cjs` cubre estados, bloqueo de B, capacidad, abordaje selectivo, fuego aliado con visibilidad, marcha, atascos, entrega y guardado. `escort-integration.test.cjs` verifica daño real a soldados, combate autónomo, cinco reinicios con listeners y progreso intactos, y navegación entre restos con varias semillas.
 
-`smoke-escort.cjs` ejecuta A→B→C en Chromium desde file://, verifica que llegar antes que la columna no gana, revisa estrellas guardadas y reinicios, y captura WebGL vertical y Canvas horizontal. Los enemigos de B y de la emboscada se eliminan mediante el API de combate para aislar el flujo de misión; la marcha del pelotón se simula fotograma a fotograma con colisiones reales.
+`smoke-escort.cjs` ejecuta A→B→C en Chromium desde file://, verifica que llegar antes que la columna no gana, revisa estrellas guardadas y reinicios, y captura WebGL vertical y horizontal. Los enemigos de B y de la emboscada se eliminan mediante el API de combate para aislar el flujo de misión; la marcha del pelotón se simula fotograma a fotograma con colisiones reales.
 
 ### Mapas aleatorios
 

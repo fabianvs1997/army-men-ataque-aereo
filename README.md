@@ -1,7 +1,7 @@
 # Army Men: Ataque aéreo
 
 Juego de helicópteros de juguete con campaña de rescate, escenario de patio trasero,
-renderizado WebGL y alternativa Canvas 2D.
+solo renderizado WebGL 3D.
 
 ## Jugar
 
