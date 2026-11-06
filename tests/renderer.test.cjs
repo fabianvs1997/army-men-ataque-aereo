@@ -249,3 +249,35 @@ test('procedural world replaces terrain buffer and survives context restoration'
   assert.equal(r.meshes.terrain.count, world.mesh().length / 6);
   r.render(scene());
 });
+
+test('WebGL draws one tracer per bullet kind without falling back', () => {
+  const f = fixture(),
+    r = new Renderer(
+      f.canvas,
+      () => {},
+      () => {},
+    );
+  const s = scene();
+  s.BL = ['soldier', 'heli', 'tank'].map((kind, i) => ({
+    x: i * 4,
+    y: 8,
+    z: 4,
+    vx: 0,
+    vz: 170,
+    kind,
+  }));
+  s.EB = ['soldier', 'heli', 'tank'].map((kind, i) => ({
+    x: i * 4,
+    y: 8,
+    z: 10,
+    vx: 0,
+    vy: 0,
+    vz: -55,
+    kind,
+  }));
+  const before = f.counts.draw;
+  assert.equal(r.render(s), true);
+  // Cada trazadora dibuja 4 piezas (cola, halo, núcleo y punto caliente):
+  // 6 balas con tipo = 24 dibujos de trazadora como mínimo.
+  assert.ok(f.counts.draw - before >= 24, 'all kinded tracers drawn');
+});

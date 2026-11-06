@@ -346,7 +346,7 @@
         { clearInput, updateStick } = input;
       const cover = ToyCollision.create(env, ToyWorld);
       const combat = ToyCombat.create(env),
-        { mk, boom, hit, kill, gunVelocity, stepProjectiles, stepDebris } =
+        { mk, boom, hit, kill, gunVelocity, bulletKindFor, stepProjectiles, stepDebris } =
           combat;
       const render2d = ToyRender2D.create(env);
       let {
@@ -708,6 +708,7 @@
             velocity.vy,
             velocity.vz,
             0.85,
+            'heli',
           );
           sfx.shot();
         }
@@ -831,6 +832,7 @@
               (target.y - (e.y + 2)) / Math.max(0.3, d / s2),
               Math.cos(a2) * s2,
               3.05,
+              bulletKindFor(e.k),
             );
           }
         }
@@ -874,6 +876,7 @@
               ((target.y - origin.y) / d) * speed,
               ((target.z - origin.z) / d) * speed,
               1.15,
+              'soldier',
             );
           },
           moving: magnitude > 0.08,

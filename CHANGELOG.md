@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — balas por tipo de arma
+
+- Cada disparo lleva su origen explícito (`b.kind`: `soldier` | `heli` | `tank`) y la trazadora es proporcional al arma: soldados con destello muy fino y corto en amarillo pálido, helicópteros con la trazadora media del afinado anterior, tanques con trazadora claramente más gruesa y larga, con halo naranja/rojo mayor y punta más visible.
+- Las torretas (`tur`) se dibujan como tanque: son cañones pesados fijos. Las bases no disparan.
+- El estilo de destello con gradiente y cola que se desvanece se mantiene en WebGL y Canvas 2D, así que ni las de tanque vuelven a parecer barras sólidas.
+- Sin cambios de jugabilidad: daño, velocidad, alcance, cadencia y colisiones intactos.
+- Pruebas de clasificación por tipo, etiquetado en misión real y dibujo por tipo en ambos renderizadores.
+
 ## Sin publicar — trazadoras y humo de misiles
 
 - Balas propias y enemigas como trazadoras en ambos renderizadores: halo naranja/rojo con núcleo blanco-amarillo caliente, alargadas en la dirección del disparo.

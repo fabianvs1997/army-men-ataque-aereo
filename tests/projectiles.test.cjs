@@ -163,8 +163,16 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
     DC: [],
     DB: [],
     PK: [],
-    BL: [{ x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: 170, l: 1 }],
-    EB: [{ x: 0, y: 8, z: 30, vx: 0, vy: 0, vz: -55, l: 4 }],
+    BL: [
+      { x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: 170, l: 1, kind: 'soldier' },
+      { x: 0, y: 8, z: 24, vx: 0, vy: 0, vz: 170, l: 1, kind: 'heli' },
+      { x: 0, y: 8, z: 28, vx: 0, vy: 0, vz: 170, l: 1, kind: 'tank' },
+    ],
+    EB: [
+      { x: 0, y: 8, z: 30, vx: 0, vy: 0, vz: -55, l: 4, kind: 'soldier' },
+      { x: 0, y: 8, z: 34, vx: 0, vy: 0, vz: -55, l: 4, kind: 'heli' },
+      { x: 0, y: 8, z: 38, vx: 0, vy: 0, vz: -55, l: 4, kind: 'tank' },
+    ],
     MS: [{ x: 0, y: 8, z: 10, vx: 0, vy: 0, vz: 75, l: 3 }],
     SM: [
       { x: 0, y: 8, z: 5, l: 0.6, max: 0.9, s: 1.5, dark: false, dx: 0, dy: 0.5, dz: 0 },
@@ -176,8 +184,12 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
   };
   const renderer = Render2D.create(scene);
   assert.doesNotThrow(() => renderer.draw());
-  assert.ok(strokes.includes('#fff3b0'), 'bullet core');
-  assert.ok(strokes.includes('#ffc46b'), 'enemy bullet core');
+  assert.ok(strokes.includes('#fff3b0'), 'heli bullet core');
+  assert.ok(strokes.includes('#ffc46b'), 'enemy heli bullet core');
+  assert.ok(strokes.includes('#fff8d8'), 'soldier bullet core');
+  assert.ok(strokes.includes('#ffedb8'), 'enemy soldier bullet core');
+  assert.ok(strokes.includes('#ffe9a2'), 'tank bullet core');
+  assert.ok(strokes.includes('#ffd27a'), 'enemy tank bullet core');
   // La trazadora se desvanece en gradiente (objeto, no color plano) y es
   // fina: ningún trazo del dibujo supera 2 px de ancho en esta escena.
   assert.ok(
@@ -185,6 +197,22 @@ test('Canvas 2D draws tracers, missile flame and smoke with the reference colour
     'tracer fades with a gradient',
   );
   assert.ok(Math.max(...widths) <= 2, 'tracers are thin');
+  // El halo es proporcional al arma: los dos tanques dibujan el halo más
+  // ancho y los soldados y helicópteros, el fino. Los trazos con gradiente
+  // son los halos; los de color plano, los núcleos.
+  const haloWidths = widths.filter(
+    (_, i) => strokes[i] && typeof strokes[i] === 'object',
+  );
+  assert.ok(haloWidths.length >= 6, 'one halo per tracer');
+  assert.ok(
+    Math.max(...haloWidths) > Math.min(...haloWidths),
+    'tank halo is wider than soldier halo',
+  );
+  assert.equal(
+    haloWidths.filter((w) => w === Math.max(...haloWidths)).length,
+    2,
+    'both tank tracers share the widest halo',
+  );
   assert.equal(ctx.globalCompositeOperation, 'lighter', 'additive glow');
   assert.ok(strokes.includes('#3a3f36'), 'missile body');
   assert.ok(fills.includes('#ff6a1a'), 'missile flame');
@@ -204,6 +232,69 @@ test('bullets fly about 30% faster with the same effective range', () => {
   assert.ok(Math.abs(170 * 0.85 - 130 * 1.1) < 2);
   assert.ok(Math.abs(85 * 1.15 - 65 * 1.5) < 1);
   assert.ok(Math.abs(55 * 3.05 - 42 * 4) < 1);
+});
+
+test('bullets carry their shooter kind and turrets count as tank guns', () => {
+  assert.equal(Combat.bulletKindFor('inf'), 'soldier');
+  assert.equal(Combat.bulletKindFor('heli'), 'heli');
+  assert.equal(Combat.bulletKindFor('tank'), 'tank');
+  // Las torretas son cañones pesados fijos: se dibujan como tanque.
+  assert.equal(Combat.bulletKindFor('tur'), 'tank');
+  assert.equal(Combat.bulletKindFor('base'), 'soldier');
+  const arr = [];
+  const b = Combat.mk(arr, 0, 8, 0, 0, 0, 170, 1, 'tank');
+  assert.equal(b.kind, 'tank');
+  assert.equal(arr[0], b);
+  // Sin origen explícito, la bala no lleva tipo: los renderizadores
+  // usan el de helicóptero por defecto.
+  const plain = Combat.mk(arr, 0, 8, 0, 0, 0, 170, 1);
+  assert.equal(plain.kind, undefined);
+});
+
+test('player, allied and enemy bullets are tagged by shooter in a live mission', () => {
+  const { app, state: s } = game();
+  app.start(1, true);
+  s.P.inv = 999;
+  s.E = [];
+  const px = s.P.x,
+    pz = s.P.z;
+  // Un enemigo de cada tipo que dispara, cerca del jugador y con el
+  // temporizador listo, para que todos disparen en la misma ventana.
+  // Se generan lejos (spawnE rechaza el radio seguro del inicio) y se
+  // colocan junto al jugador, como en el test de balas asistidas.
+  const World = require('../src/toy-world.js');
+  for (const [i, k] of ['inf', 'heli', 'tank', 'tur'].entries()) {
+    const e = app.spawnE(k, -90, 100);
+    e.x = px + 18 + i * 3;
+    e.z = pz + 10;
+    e.y = k === 'heli' ? 8 : World.height(e.x, e.z);
+    e.cd = 0;
+  }
+  // Un enemigo junto a un guardia aliado para que la escolta responda.
+  const guard = s.mission.guards[0];
+  const nearGuard = app.spawnE('inf', -90, 100);
+  nearGuard.x = guard.x + 12;
+  nearGuard.z = guard.z + 5;
+  nearGuard.y = World.height(nearGuard.x, nearGuard.z);
+  nearGuard.cd = 999;
+  const kinds = new Set();
+  for (let i = 0; i < 60 && kinds.size < 3; i++) {
+    app.upd(0.05);
+    for (const b of s.EB) kinds.add(b.kind);
+  }
+  assert.deepEqual([...kinds].sort(), ['heli', 'soldier', 'tank']);
+  // Las balas aliadas son de soldado, como las de infantería enemiga.
+  assert.ok(s.BL.some((b) => b.kind === 'soldier'), 'ally soldier tracer');
+  // El disparo del jugador es de helicóptero.
+  const g = game();
+  g.app.start(1, true);
+  g.element('fu').emit('pointerdown', { pointerId: 1 });
+  g.app.upd(0.01);
+  g.element('fu').emit('pointerup', { pointerId: 1 });
+  assert.ok(
+    g.state.BL.some((b) => b.kind === 'heli'),
+    'player heli tracer',
+  );
 });
 
 test('a flying missile trails smoke and draws in the Canvas 2D fallback', () => {
