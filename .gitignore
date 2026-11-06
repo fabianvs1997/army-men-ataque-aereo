@@ -1,0 +1,8 @@
+# Variables de entorno locales (nunca en el repo).
+.env
+.env.local
+
+# Configuración de Supabase generada en el despliegue o en local
+# (scripts/generate-supabase-config.cjs). Nunca en el repo: los
+# valores reales viven como secretos de GitHub, no en archivos.
+src/supabase-env.js

@@ -8,7 +8,7 @@ renderizado WebGL y alternativa Canvas 2D.
 Abre `index.html` con doble clic o visita [el juego](https://fabianvs1997.github.io/army-men-ataque-aereo/).
 No necesita servidor ni compilación. La dirección antigua `army-men-ataque-aereo.html`
 redirige a la entrada principal. El menú incluye controles, ayuda y ajustes.
-Las preferencias y los mejores resultados (estrellas y supervivientes por misión) se conservan cuando el navegador permite almacenamiento. La partida en curso se reinicia al cerrar. Con Supabase configurado (opcional, ver [Supabase](docs/SUPABASE.md)), se puede crear una cuenta para guardar las puntuaciones en línea y enviar el registro de errores; sin él, se juega como invitado y todo queda en este dispositivo. El menú incluye controles, ayuda, ajustes, cuenta y registro de errores.
+Las preferencias y los mejores resultados (estrellas y supervivientes por misión) se conservan cuando el navegador permite almacenamiento. La partida en curso se reinicia al cerrar. Con Supabase configurado con variables de entorno (opcional, ver [Supabase](docs/SUPABASE.md)), se puede crear una cuenta para guardar las puntuaciones en línea y enviar el registro de errores; sin él, se juega como invitado y todo queda en este dispositivo. El menú incluye controles, ayuda, ajustes, cuenta y registro de errores.
 
 Cada misión sigue A → B → C: despega de A con guardias aliados, despeja el perímetro de B, recoge solo a los heridos y protege al pelotón que marcha por tierra. Entrega a los heridos en C y espera a los supervivientes para completar la misión.
 

@@ -41,10 +41,16 @@ test('el menú de cuenta y registro funciona sin servidor', async () => {
 
 test('bootstrap carga logger y Supabase antes del juego', () => {
   assert.ok(bootstrap.scripts.includes('logger'));
+  assert.ok(bootstrap.scripts.includes('supabase-env'));
   assert.ok(bootstrap.scripts.includes('supabase-config'));
   assert.ok(bootstrap.scripts.includes('supabase'));
+  assert.ok(bootstrap.optionalScripts.includes('supabase-env'));
+  assert.ok(
+    bootstrap.scripts.indexOf('supabase-env') <
+      bootstrap.scripts.indexOf('supabase-config'),
+  );
   assert.ok(
     bootstrap.scripts.indexOf('supabase') < bootstrap.scripts.indexOf('game'),
   );
-  assert.equal(bootstrap.VERSION, 'supabase-logs-1');
+  assert.equal(bootstrap.VERSION, 'supabase-env-1');
 });

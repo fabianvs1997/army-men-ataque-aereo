@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'supabase-logs-1';
+  const VERSION = 'supabase-env-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -33,10 +33,19 @@
     'ui',
     'perf',
     'logger',
+    'supabase-env',
     'supabase-config',
     'supabase',
     'game',
   ]);
+  // Scripts opcionales: si faltan, el juego sigue sin ellos. `supabase-env`
+  // es el archivo generado en el despliegue (o en local con
+  // `scripts/generate-supabase-config.cjs`) que inyecta la configuración
+  // de Supabase en `globalThis.__SUPABASE_CONFIG__`; sin él, el juego
+  // va como invitado. Sin esta tolerancia, un despliegue sin secretos
+  // (o abrir el juego desde la rama sin generar el archivo) rompería
+  // la carga con un 404.
+  const optionalScripts = Object.freeze(['supabase-env']);
   function asset(path) {
     return path + '?v=' + encodeURIComponent(VERSION);
   }
@@ -54,12 +63,15 @@
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.onload = resolve;
-        script.onerror = () => reject(new Error('Could not load ' + name));
+        script.onerror = () => {
+          if (optionalScripts.includes(name)) resolve();
+          else reject(new Error('Could not load ' + name));
+        };
         script.src = asset('src/' + name + '.js');
         document.body.appendChild(script);
       });
     }
     return host.ToyGame.create();
   }
-  return { VERSION, scripts, asset, start };
+  return { VERSION, scripts, optionalScripts, asset, start };
 });
