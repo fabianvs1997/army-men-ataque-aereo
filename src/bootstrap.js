@@ -12,11 +12,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'mapas-random-1';
+  const VERSION = 'mapas-originales-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
-    'mapgen',
+    'original-maps',
     'mission-map',
     'escort-navigation',
     'escort-mission',

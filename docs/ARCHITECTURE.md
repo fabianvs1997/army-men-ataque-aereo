@@ -18,8 +18,8 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | game | Estado, transiciones, simulación y bucle |
 | toy-world | Geometría y decoración compartidas |
 | toy-missions | Geometría de campaña y utilidades de impactos; API anterior conservada para regresión |
-| mapgen | Motor de mapas procedurales: RNG con semilla, posición y forma de A/B/C, trazado de rutas, composición enemiga por misión, vegetación, puntos de interés y relieve, con validación, reintentos y mapa de respaldo (ver [MAPGEN.md](MAPGEN.md)) |
-| mission-map | Fachada de compatibilidad sobre `mapgen`: genera el mapa de una misión y expone `generateCampaign`, `validate` y `seedForMission` |
+| original-maps | Los tres mapas fijos del original: A/B/C, trazado de rutas, composición enemiga por misión, vegetación, puntos de interés y relieve, escritos a mano, con validación de jugabilidad (ver [MAPAS-ORIGINALES.md](MAPAS-ORIGINALES.md)) |
+| mission-map | Fachada de compatibilidad sobre `original-maps`: genera el mapa fijo de una misión y expone `generateCampaign` y `validate` |
 | escort-config | Reglas y constantes A/B/C, fuerzas iniciales y ruta terrestre |
 | escort-mission | Estados, eventos, combate aliado, abordaje, escolta y resultado |
 | escort-navigation | Desvíos locales con búsqueda de ruta y colisiones barridas. A* con montón binario y presupuestos duros: meta recortada a 64 u, inicio y meta saneados al punto libre más cercano, como mucho 1200 expansiones o 12 ms por llamada; si no encuentra ruta devuelve null y el soldado espera. |
@@ -57,18 +57,17 @@ Los obstáculos del patio son sólidos pero no destructibles en esta entrega.
 
 ### Mapas por misión
 
-El motor de mapas (`mapgen.js`, ver [MAPGEN.md](MAPGEN.md)) genera cada
-mapa con una semilla: límites de 320, posición de A/B/C, rutas A–B y
-B–C, composición enemiga por misión, vegetación, puntos de interés y
-relieve. Cada campaña tiene su propia semilla (`state.campaignSeed`)
-y cada misión deriva la suya con `seedForMission`; `generate`
-valida el mapa y reintenta con otra semilla hasta 12 veces, con un
-mapa de respaldo generado si todo falla. `mission-map.js` es solo
-una fachada de compatibilidad sobre el motor. `ToyWorld.create(map)`
-construye una instancia independiente, compartida por física y
-renderizado de esa partida. `start(n, full, retry)` conserva la
-semilla únicamente al reintentar; el botón **Mapa nuevo** del menú
-empieza otra campaña con otros tres mapas. `Renderer.setWorld`
+Los tres mapas son fijos y están escritos a mano en
+`src/original-maps.js` (ver [MAPAS-ORIGINALES.md](MAPAS-ORIGINALES.md)):
+recrean los escenarios del Army Men: Air Attack original —el jardín,
+el picnic y la playa— con límites de 320, posición de A/B/C, rutas
+A–B y B–C, composición enemiga por misión, vegetación, puntos de
+interés y relieve propios de cada escenario. La misma misión siempre
+da el mismo mapa; `validate` comprueba por geometría que cada mapa
+es jugable. `mission-map.js` es solo una fachada de compatibilidad
+sobre los mapas fijos. `ToyWorld.create(map)` construye una instancia
+independiente, compartida por física y renderizado de esa partida.
+`start(n, full, retry)` conserva el mapa al reintentar. `Renderer.setWorld`
 reemplaza el buffer de terreno y libera el anterior; la restauración
 WebGL reutiliza el mapa activo. El mundo fijo exportado por defecto
 se conserva para la vista de menú y pruebas de regresión.
