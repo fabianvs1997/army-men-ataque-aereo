@@ -718,42 +718,97 @@
         // Trazadora fina en forma de destello: punta brillante y cola que
         // se desvanece en gradiente, sin bloque opaco. Mezcla aditiva para
         // que el halo se funda con el fondo en vez de taparlo.
-        function tracer(p, b, back, outer, core, tail) {
+        // El tamaño es proporcional al arma que dispara (b.kind):
+        // soldado = arma ligera, helicóptero = referencia media,
+        // tanque = cañón pesado. Las torretas se dibujan como tanque.
+        const TRACER_2D = {
+          soldier: {
+            back: 0.03,
+            halo: 0.11,
+            coreW: 0.05,
+            outer: 'rgba(255,220,120,0.7)',
+            core: '#fff8d8',
+            tail: 'rgba(255,220,120,0)',
+          },
+          heli: {
+            back: 0.05,
+            halo: 0.2,
+            coreW: 0.09,
+            outer: 'rgba(255,110,20,0.85)',
+            core: '#fff3b0',
+            tail: 'rgba(255,110,20,0)',
+          },
+          tank: {
+            back: 0.14,
+            halo: 0.38,
+            coreW: 0.17,
+            outer: 'rgba(255,70,10,0.9)',
+            core: '#ffe9a2',
+            tail: 'rgba(255,70,10,0)',
+          },
+        };
+        const TRACER_2D_ENEMY = {
+          soldier: {
+            back: 0.03,
+            halo: 0.11,
+            coreW: 0.05,
+            outer: 'rgba(255,190,90,0.7)',
+            core: '#ffedb8',
+            tail: 'rgba(255,190,90,0)',
+          },
+          heli: {
+            back: 0.09,
+            halo: 0.2,
+            coreW: 0.09,
+            outer: 'rgba(255,60,10,0.85)',
+            core: '#ffc46b',
+            tail: 'rgba(255,60,10,0)',
+          },
+          tank: {
+            back: 0.14,
+            halo: 0.38,
+            coreW: 0.17,
+            outer: 'rgba(255,45,10,0.9)',
+            core: '#ffd27a',
+            tail: 'rgba(255,45,10,0)',
+          },
+        };
+        function tracer(p, b, style) {
           const q = P3(
-            b.x - b.vx * back,
-            b.y - (b.vy || 0) * back,
-            b.z - b.vz * back,
+            b.x - b.vx * style.back,
+            b.y - (b.vy || 0) * style.back,
+            b.z - b.vz * style.back,
           );
           const tx = q ? q[0] : p[0],
             ty = q ? q[1] : p[1],
             mx = p[0] + (tx - p[0]) * 0.4,
             my = p[1] + (ty - p[1]) * 0.4,
             grad = scene.ctx.createLinearGradient(p[0], p[1], tx, ty);
-          grad.addColorStop(0, core);
-          grad.addColorStop(0.35, outer);
-          grad.addColorStop(1, tail);
+          grad.addColorStop(0, style.core);
+          grad.addColorStop(0.35, style.outer);
+          grad.addColorStop(1, style.tail);
           scene.ctx.save();
           scene.ctx.globalCompositeOperation = 'lighter';
           scene.ctx.lineCap = 'round';
           scene.ctx.strokeStyle = grad;
-          scene.ctx.lineWidth = Math.max(1, p[2] * 0.2);
+          scene.ctx.lineWidth = Math.max(1, p[2] * style.halo);
           scene.ctx.beginPath();
           scene.ctx.moveTo(p[0], p[1]);
           scene.ctx.lineTo(tx, ty);
           scene.ctx.stroke();
-          scene.ctx.strokeStyle = core;
-          scene.ctx.lineWidth = Math.max(0.75, p[2] * 0.09);
+          scene.ctx.strokeStyle = style.core;
+          scene.ctx.lineWidth = Math.max(0.75, p[2] * style.coreW);
           scene.ctx.beginPath();
           scene.ctx.moveTo(p[0], p[1]);
           scene.ctx.lineTo(mx, my);
           scene.ctx.stroke();
-          scene.ctx.fillStyle = core;
+          scene.ctx.fillStyle = style.core;
           scene.ctx.beginPath();
           scene.ctx.ellipse(
             p[0],
             p[1],
-            Math.max(0.75, p[2] * 0.09),
-            Math.max(0.75, p[2] * 0.09),
+            Math.max(0.75, p[2] * style.coreW),
+            Math.max(0.75, p[2] * style.coreW),
             0,
             0,
             6.29,
@@ -784,14 +839,7 @@
           });
         for (const b of scene.BL)
           add(b.x, b.y, b.z, (p) =>
-            tracer(
-              p,
-              b,
-              0.05,
-              'rgba(255,110,20,0.85)',
-              '#fff3b0',
-              'rgba(255,110,20,0)',
-            ),
+            tracer(p, b, TRACER_2D[b.kind] || TRACER_2D.heli),
           );
         for (const o of scene.MS)
           add(o.x, o.y, o.z, (p) => {
@@ -833,14 +881,7 @@
           });
         for (const b of scene.EB)
           add(b.x, b.y, b.z, (p) =>
-            tracer(
-              p,
-              b,
-              0.09,
-              'rgba(255,60,10,0.85)',
-              '#ffc46b',
-              'rgba(255,60,10,0)',
-            ),
+            tracer(p, b, TRACER_2D_ENEMY[b.kind] || TRACER_2D_ENEMY.heli),
           );
         for (const o of scene.FX)
           add(o.x, o.y, o.z, (p) => {

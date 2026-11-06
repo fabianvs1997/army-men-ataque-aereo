@@ -24,10 +24,24 @@
     if (list.length > MAX_SMOKE)
       list.splice(0, list.length - MAX_SMOKE);
   }
-  function mk(arr, x, y, z, vx, vy, vz, l) {
+  function mk(arr, x, y, z, vx, vy, vz, l, kind) {
     const o = { x, y, z, vx, vy, vz, l };
+    // Origen explícito del disparo: los renderizadores eligen la
+    // trazadora (grosor, longitud, color) según el arma, no por la
+    // velocidad o el daño. 'soldier' | 'heli' | 'tank'.
+    if (kind) o.kind = kind;
     arr.push(o);
     return o;
+  }
+  // Clasificación visual de las balas enemigas por tipo de enemigo.
+  // Las torretas ('tur') son cañones pesados fijos: se dibujan como
+  // tanque. Las bases ('base') no disparan.
+  function bulletKindFor(enemyKind) {
+    return enemyKind === 'tank' || enemyKind === 'tur'
+      ? 'tank'
+      : enemyKind === 'heli'
+        ? 'heli'
+        : 'soldier';
   }
   function gunVelocity(player, muzzle, enemies) {
     const fx = Math.sin(player.yaw),
@@ -289,6 +303,7 @@
       hit: hitEnemy,
       kill: killEnemy,
       gunVelocity,
+      bulletKindFor,
       stepProjectiles,
       stepDebris: (dt) => Debris.step(context, dt, env.groundAt),
     };
@@ -296,6 +311,7 @@
   return {
     create,
     gunVelocity,
+    bulletKindFor,
     hit,
     kill,
     mk,

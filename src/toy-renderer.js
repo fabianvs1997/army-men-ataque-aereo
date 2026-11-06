@@ -871,7 +871,57 @@ void main(){
       // Trazadoras finas en forma de destello: punta brillante, halo que se
       // estrecha y cola apagada. Sin canal alfa, el desvanecimiento se
       // simula oscureciendo el color hacia la cola, como con el humo.
-      const streak = (b, length, outer, core, outerSize, coreSize) => {
+      // El tamaño es proporcional al arma que dispara (b.kind):
+      // soldado = arma ligera, helicóptero = referencia media,
+      // tanque = cañón pesado. Las torretas se dibujan como tanque.
+      const STREAK_3D = {
+        soldier: {
+          length: 3.5,
+          outer: [1, 0.85, 0.45],
+          core: [1, 1, 0.85],
+          outerSize: 0.14,
+          coreSize: 0.07,
+        },
+        heli: {
+          length: 6,
+          outer: [1, 0.45, 0.08],
+          core: [1, 0.95, 0.75],
+          outerSize: 0.24,
+          coreSize: 0.13,
+        },
+        tank: {
+          length: 8,
+          outer: [1, 0.35, 0.05],
+          core: [1, 0.85, 0.5],
+          outerSize: 0.46,
+          coreSize: 0.25,
+        },
+      };
+      const STREAK_3D_ENEMY = {
+        soldier: {
+          length: 3.5,
+          outer: [1, 0.6, 0.2],
+          core: [1, 0.85, 0.55],
+          outerSize: 0.14,
+          coreSize: 0.07,
+        },
+        heli: {
+          length: 4.5,
+          outer: [1, 0.25, 0.05],
+          core: [1, 0.62, 0.25],
+          outerSize: 0.26,
+          coreSize: 0.14,
+        },
+        tank: {
+          length: 8,
+          outer: [1, 0.3, 0.05],
+          core: [1, 0.8, 0.45],
+          outerSize: 0.48,
+          coreSize: 0.26,
+        },
+      };
+      const streak = (b, style) => {
+        const { length, outer, core, outerSize, coreSize } = style;
         const hv = Math.hypot(b.vx || 0, b.vz || 0);
         if (hv < 1) {
           this.part('sphere', b.x, b.y, b.z, coreSize, coreSize, coreSize, core, 0, 0);
@@ -935,9 +985,9 @@ void main(){
         );
       };
       for (const b of BL)
-        if (visible(b)) streak(b, 6, [1, 0.45, 0.08], [1, 0.95, 0.75], 0.24, 0.13);
+        if (visible(b)) streak(b, STREAK_3D[b.kind] || STREAK_3D.heli);
       for (const b of EB)
-        if (visible(b)) streak(b, 4.5, [1, 0.25, 0.05], [1, 0.62, 0.25], 0.26, 0.14);
+        if (visible(b)) streak(b, STREAK_3D_ENEMY[b.kind] || STREAK_3D_ENEMY.heli);
       // Misil: cuerpo oscuro, punta roja y llama naranja parpadeante atrás.
       for (const o of MS)
         if (visible(o)) {
