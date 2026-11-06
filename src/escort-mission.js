@@ -39,6 +39,59 @@
       this.complete = false;
       this.failed = false;
       this.message = objectives[this.stage];
+      this.enemyPlan = config.enemies
+        .concat(config.extraAir.slice(0, number - 1))
+        .map((e) => ({ ...e }));
+      this.config = {
+        name: 'Rescate A → B → C',
+        bases: [],
+        air: number,
+        tanks: this.enemyPlan.filter((e) => e.k === 'tank').length,
+        turrets: this.enemyPlan.filter((e) => e.k === 'tur').length,
+        infantry: this.enemyPlan.filter((e) => e.k === 'inf').length,
+      };
+      const soldier = (id, x, z, group, wounded = false) => ({
+        id,
+        x,
+        z,
+        group,
+        wounded,
+        hp: group === 'A' ? config.guardHP : config.soldierHP,
+        state: wounded ? 'HERIDO_ESPERANDO' : 'DEFENDIENDO_B',
+        waypoint: 0,
+        cooldown: 0,
+        stuck: 0,
+        hold: 0,
+        yaw: 0,
+      });
+      this.guards = Array.from({ length: config.guards }, (_, i) =>
+        soldier(
+          'guard-' + i,
+          config.A.x + (i % 2 ? 9 : -9),
+          config.A.z + (i < 2 ? 8 : -8),
+          'A',
+        ),
+      );
+      this.allies = Array.from({ length: config.healthy }, (_, i) =>
+        soldier('squad-' + i, config.B.x + (i - 1.5) * 3, config.B.z + 3, 'B'),
+      ).concat(
+        Array.from(
+          { length: Math.min(config.capacity, config.wounded) },
+          (_, i) =>
+            soldier(
+              'wounded-' + i,
+              config.B.x + (i - 1) * 3,
+              config.B.z + 9,
+              'B',
+              true,
+            ),
+        ),
+      );
+      this.rescued = 0;
+      this.delivered = 0;
+      this.stars = 0;
+      this.deliveryHold = 0;
+      this.reason = '';
     }
     transition(next) {
       if (this.complete || this.failed || next === this.stage) return false;

@@ -31,6 +31,20 @@
     combatPause: 1.5,
     progressKey: 'toy-escort-progress',
     progressVersion: 1,
+    enemies: [
+      { id: 'route-tank', k: 'tank', x: -100, z: -8, zone: 'AB', hp: 8 },
+      { id: 'route-infantry', k: 'inf', x: -153, z: 32, zone: 'AB', hp: 3 },
+      { id: 'b-west', k: 'tank', x: -109, z: 100, zone: 'B', hp: 16 },
+      { id: 'b-north', k: 'tur', x: -87, z: 119, zone: 'B', hp: 16 },
+      { id: 'b-east', k: 'inf', x: -72, z: 100, zone: 'B', hp: 10 },
+      { id: 'b-air', k: 'heli', x: -104, z: 89, zone: 'B', hp: 8 },
+      { id: 'escort-turret', k: 'tur', x: 35, z: 120, zone: 'BC', hp: 8 },
+      { id: 'escort-infantry', k: 'inf', x: 85, z: 112, zone: 'BC', hp: 4 },
+    ],
+    extraAir: [
+      { id: 'escort-air-2', k: 'heli', x: 65, z: 115, zone: 'BC', hp: 6 },
+      { id: 'escort-air-3', k: 'heli', x: 120, z: 117, zone: 'BC', hp: 6 },
+    ],
     routeBC: [
       [-90, 100],
       [-60, 108],

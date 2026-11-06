@@ -20,3 +20,20 @@ test('escort transitions reject skips and emit each authorized transition once',
   assert.equal(m.drainEvents().length, 0);
   assert.equal(m.transition('FRACASADA'), false);
 });
+test('A guards and B squad are distinct and all enemies are predeclared outside A', () => {
+  const c = require('../src/escort-config.js'),
+    World = require('../src/toy-world.js');
+  for (let n = 1; n <= 3; n++) {
+    const m = new Mission(n);
+    assert.equal(m.guards.length, 4);
+    assert.equal(m.allies.filter((a) => a.wounded).length, 3);
+    assert.ok(m.guards.every((a) => a.group === 'A'));
+    assert.ok(m.allies.every((a) => a.group === 'B'));
+    assert.equal(new Set(m.guards.concat(m.allies).map((a) => a.id)).size, 11);
+    assert.equal(m.enemyPlan.filter((e) => e.k === 'heli').length, n);
+    for (const e of m.enemyPlan) {
+      assert.ok(Math.hypot(e.x, e.z) > c.safeRadius + 3);
+      assert.ok(World.canTravel(e.x, e.z), e.id);
+    }
+  }
+});
