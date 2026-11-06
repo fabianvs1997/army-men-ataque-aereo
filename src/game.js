@@ -15,6 +15,9 @@
       require('./escort-progress.js'),
       require('./mission-map.js'),
       require('./perf.js'),
+      require('./logger.js'),
+      require('./supabase-config.js'),
+      require('./supabase.js'),
     );
   else
     root.ToyGame = factory(
@@ -32,6 +35,9 @@
       root.ToyEscortProgress,
       root.ToyMissionMap,
       root.ToyPerf,
+      root.ToyLogger,
+      root.ToySupabaseConfig,
+      root.ToySupabase,
     );
 })(
   typeof globalThis !== 'undefined' ? globalThis : this,
@@ -50,6 +56,9 @@
     ToyEscortProgress,
     ToyMissionMap,
     ToyPerf,
+    ToyLogger,
+    ToySupabaseConfig,
+    ToySupabase,
   ) {
     'use strict';
     const transitions = Object.freeze({
@@ -174,6 +183,15 @@
         },
         get perf() {
           return perf;
+        },
+        get logger() {
+          return logger;
+        },
+        get online() {
+          return online;
+        },
+        get flushRemoteLogs() {
+          return flushRemoteLogs;
         },
         get humOn() {
           return humOn;
@@ -332,6 +350,7 @@
         'pixelRatioCap',
         'perfLevel',
         'perfVisible',
+        'logsVisible',
       ])
         Object.defineProperty(env, key, {
           enumerable: true,
@@ -353,7 +372,66 @@
         perfVisible:
           typeof host.location === 'object' &&
           /[?&]perf=1/.test(host.location.search || ''),
+        logsVisible:
+          typeof host.location === 'object' &&
+          /[?&]logs=1/.test(host.location.search || ''),
       });
+      // Registro de errores (ver src/logger.js): captura errores de
+      // consola, rechazos y frames de más de 500 ms, con el contexto de
+      // la partida. Nunca rompe el juego si el almacenamiento falla.
+      function deviceInfo() {
+        try {
+          const nav = host.navigator || {};
+          return [nav.platform, nav.userAgent]
+            .filter(Boolean)
+            .join(' ')
+            .slice(0, 160);
+        } catch (_) {
+          return '';
+        }
+      }
+      const logger = ToyLogger.create({
+        getStorage: () => host.localStorage,
+        version: host.ToyVersion || 'dev',
+        device: deviceInfo(),
+        getContext: () => ({
+          mission: state.mis,
+          phase: state.mission?.stage || '',
+          seed: state.mapSeed ?? null,
+          fps: perf.ema
+            ? Math.round(1000 / Math.max(1, perf.ema))
+            : null,
+          ms: +perf.ema.toFixed(1),
+          level: perf.level,
+        }),
+      });
+      try {
+        logger.install(host);
+      } catch (_) {}
+      // Supabase opcional (ver src/supabase.js y docs/SUPABASE.md): sin
+      // configuración el juego sigue 100 % offline como invitado.
+      const online = ToySupabase.create({
+        config: ToySupabaseConfig,
+        logger,
+        getStorage: () => host.localStorage,
+        host,
+      });
+      let logsFlushed = 0;
+      function flushRemoteLogs() {
+        const pending = logger.list().slice(logsFlushed);
+        if (!pending.length) return Promise.resolve({ ok: true, sent: 0 });
+        return online
+          .flushLogs(pending)
+          .then((result) => {
+            if (result.ok) logsFlushed += pending.length;
+            return result;
+          })
+          .catch(() => ({ ok: false, reason: 'offline' }));
+      }
+      online
+        .init()
+        .then(() => online.flushPendingScores().catch(() => {}))
+        .catch(() => {});
       const audioEngine = ToyAudio.create({
         host,
         isPlaying: () => state.st === 'play',
@@ -947,6 +1025,17 @@
         if (event === 'complete') {
           progress.record(state.mis, state.mission);
           state.P.sc += 250;
+          // Puntuación en línea si hay cuenta y conexión; como invitado
+          // o sin red queda en cola local para reintentarlo luego.
+          online
+            .saveScore({
+              mission: state.mis,
+              score: state.P.sc,
+              stars: state.mission.stars || 1,
+              survivors: state.mission.delivered || 0,
+            })
+            .catch(() => {});
+          flushRemoteLogs().catch(() => {});
           setState(
             state.mis === ToyMissions.configs.length ? 'campaign' : 'win',
           );
@@ -972,7 +1061,9 @@
         // Rendimiento real del frame (sin topar): alimenta el monitor
         // que degrada el detalle si el juego se atasca.
         if (state.lastFrameN !== null) {
-          perf.update(n - state.lastFrameN);
+          const frameMs = n - state.lastFrameN;
+          perf.update(frameMs);
+          logger.noteFrame(frameMs);
           state.pixelRatioCap = perf.pixelRatioCap;
           state.perfLevel = perf.level;
         }

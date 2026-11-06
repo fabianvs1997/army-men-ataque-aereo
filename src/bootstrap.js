@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'escolta-c-1';
+  const VERSION = 'supabase-logs-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -32,12 +32,17 @@
     'render2d',
     'ui',
     'perf',
+    'logger',
+    'supabase-config',
+    'supabase',
     'game',
   ]);
   function asset(path) {
     return path + '?v=' + encodeURIComponent(VERSION);
   }
   async function start(host) {
+    // El registro de errores etiqueta cada entrada con esta versión.
+    host.ToyVersion = VERSION;
     const document = host.document;
     await new Promise((resolve, reject) => {
       const style = document.querySelector('link[rel="stylesheet"]');

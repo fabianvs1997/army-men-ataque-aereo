@@ -1,5 +1,14 @@
 # Changelog
 
+## Sin publicar — registro de errores y Supabase (cuentas y puntuaciones)
+
+- Registro de errores en el dispositivo (`src/logger.js`, `ToyLogger`): captura `console.error`, errores no controlados, rechazos de promesas y frames de más de 500 ms (como mucho un aviso cada 5 s), con versión, misión, fase, semilla, FPS/ms, nivel de degradado y dispositivo. Sin datos personales. Últimas 100 entradas en localStorage con rotación; si el almacenamiento falla, sigue en memoria y nunca rompe el juego. Se ve en Menú → Registro, se exporta como `army-men-logs.json` y el contador aparece en el HUD con `?logs=1`.
+- Supabase opcional (`src/supabase.js`, `src/supabase-config.js`, `supabase/schema.sql`, `docs/SUPABASE.md`): cuentas por correo y contraseña con Supabase Auth, puntuaciones en línea y envío remoto de errores. Sin configuración (URL y clave ANON vacías) el juego sigue 100 % offline como invitado. La librería oficial se carga solo cuando hay configuración, desde el CDN; si no carga, no se rompe nada. Las contraseñas nunca se guardan en el juego y la clave secreta (service_role) no se usa nunca.
+- Menú → Cuenta: crear cuenta, iniciar y cerrar sesión, ver las puntuaciones propias y el top 5 del ranking. Al completar una misión, la puntuación (puntos de campaña, estrellas y supervivientes) se guarda en `scores` si hay sesión; como invitado o sin red queda en cola local (máximo 20) y se envía al iniciar sesión. Los errores se envían en lotes a `error_logs` al completar una misión o al iniciar sesión.
+- Esquema SQL con RLS: `profiles`, `scores` y `error_logs`, con políticas para que cada usuario inserte solo lo suyo, ranking de lectura pública y perfil automático al registrarse. Los pasos para Fabian (crear el proyecto, pegar el SQL, copiar URL y clave ANON) están en `docs/SUPABASE.md`; sin ese paso el servidor no está conectado.
+- Sin cambios de jugabilidad: daño, velocidad, alcance, cadencia, misiones y controles intactos.
+- Pruebas nuevas en `tests/logger.test.cjs`, `tests/supabase.test.cjs` (cliente simulado, sin red) y `tests/logging-integration.test.cjs` (el juego instala el logger y Supabase offline, y los paneles funcionan sin servidor).
+
 ## Sin publicar — congelamiento en la escolta a C (misión 2, segunda parte)
 
 - Qué se comprobó del PR #35: la optimización de escombros funciona (la simulación con el campo saturado sigue en ~1,3 ms/frame en Node), pero el congelamiento persistía durante la escolta B → C. La causa siguiente era el A* del pelotón (`src/escort-navigation.js`): lista abierta lineal (mínimo en O(n) por expansión) y sin ningún presupuesto; una meta lejana o inalcanzable quemaba ~70 ms por llamada en Node (B → C completa: 70 ms sin encontrar ruta), y hasta 4 soldados atascados podían dispararla en el mismo frame. En iPhone eso son varios cientos de ms de bloqueo por frame.
