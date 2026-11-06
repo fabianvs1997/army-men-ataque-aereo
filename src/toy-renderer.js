@@ -155,6 +155,7 @@ void main(){
   class ToyRenderer {
     constructor(canvas, onLost, onRestored) {
       this.canvas = canvas;
+      this.world = ToyWorld;
       this.gl =
         canvas.getContext('webgl', { alpha: false, antialias: true }) ||
         canvas.getContext('experimental-webgl', {
@@ -232,16 +233,22 @@ void main(){
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
         this.meshes[kind] = { buffer, count: data.length / 6 };
       }
-      if (ToyWorld) {
-        const data = ToyWorld.mesh(),
-          buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-        this.meshes.terrain = { buffer, count: data.length / 6 };
-      }
+      this.setWorld(this.world, true);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
       gl.clearColor(0.27, 0.36, 0.23, 1);
+    }
+    setWorld(world, restoring = false) {
+      this.world = world;
+      if (!world || (this.lost && !restoring)) return;
+      const gl = this.gl,
+        data = world.mesh();
+      if (this.meshes.terrain && gl.deleteBuffer)
+        gl.deleteBuffer(this.meshes.terrain.buffer);
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      this.meshes.terrain = { buffer, count: data.length / 6 };
     }
     part(kind, x, y, z, sx, sy, sz, color, yaw = 0, gloss = 0.6) {
       const gl = this.gl,
@@ -292,7 +299,7 @@ void main(){
       this.part(
         'sphere',
         x,
-        (ToyWorld ? ToyWorld.height(x, z) : 0) + 0.06,
+        (this.world ? this.world.height(x, z) : 0) + 0.06,
         z,
         3.4,
         0.04,
@@ -482,7 +489,7 @@ void main(){
         Math.sin(PITCH),
         -Math.cos(cam.yaw) * Math.cos(PITCH),
       );
-      const world = ToyWorld;
+      const world = this.world;
       this.groundOffset = 0;
       if (world)
         this.part('terrain', 0, 0, 0, 1, 1, 1, [0.39, 0.5, 0.24], 0, -2);

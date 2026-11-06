@@ -23,6 +23,12 @@ const path = require('node:path');
           api.create = (...a) =>
             (window.fixtureGame = create(a[0], {
               ...a[1],
+              random: (() => {
+                let seed = 1;
+                return () =>
+                  (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) /
+                  4294967296;
+              })(),
               visualRandom: (() => {
                 let seed = 123;
                 return () =>
@@ -145,7 +151,7 @@ const path = require('node:path');
           saved = localStorage.getItem(ToyEscortConfig.progressKey);
         let ok = true;
         for (let i = 0; i < 5; i++) {
-          g.start(1, true);
+          g.start(1, true, true);
           ok &&=
             g.state.E.length === g.state.mission.enemyPlan.length &&
             g.state.mission.allies.length === 7 &&
@@ -153,6 +159,27 @@ const path = require('node:path');
         }
         return (
           ok && localStorage.getItem(ToyEscortConfig.progressKey) === saved
+        );
+      }),
+      true,
+    );
+    assert.equal(
+      await page.evaluate(() => {
+        const g = fixtureGame,
+          s = g.state,
+          seed = s.mapSeed;
+        const old = JSON.stringify(s.world.roads);
+        g.start(1, true, true);
+        if (s.mapSeed !== seed || JSON.stringify(s.world.roads) !== old)
+          return false;
+        g.start(2, false);
+        g.render2d.draw();
+        return (
+          s.mapSeed !== seed &&
+          JSON.stringify(s.world.roads) !== old &&
+          s.world.limit === 320 &&
+          s.renderer3d.world === s.world &&
+          s.renderer3d.meshes.terrain.count === s.world.mesh().length / 6
         );
       }),
       true,
@@ -166,6 +193,12 @@ const path = require('node:path');
       document.getElementById('c').style.opacity = '1';
       g.upd(0.01);
       g.render2d.draw();
+    });
+    // Allow the browser resize event to finish before the final Canvas draw.
+    await page.waitForTimeout(100);
+    await page.evaluate(() => {
+      fixtureGame.rs();
+      fixtureGame.render2d.draw();
     });
     await page.screenshot({ path: '/tmp/escort-canvas.png' });
     assert.deepEqual(errors, []);

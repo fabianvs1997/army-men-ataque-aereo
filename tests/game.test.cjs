@@ -180,7 +180,7 @@ test('seeded missions reproduce spawns and terrain heights; fallback renders all
   a.app.start(2, true);
   b.app.start(2, true);
   assert.deepEqual(a.state.E, b.state.E);
-  const world = require('../src/toy-world.js');
+  const world = a.state.world;
   for (const e of a.state.E) {
     assert.equal(e.y, e.k === 'heli' ? 8 : world.height(e.x, e.z));
     assert.ok(world.clearOfLandmarks(e.x, e.z, 10));

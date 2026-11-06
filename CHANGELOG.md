@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — mapas grandes y aleatorios
+
+- Patio de 640 × 640 unidades, con veredas, cerros, vegetación y objetivos generados por semilla para cada misión nueva.
+- Reintentar mantiene el mismo terreno y despliegue; otra partida o la misión siguiente genera un mapa nuevo.
+- A/B/C, escolta, enemigos, límites, colisiones y ambos renderizadores comparten el mismo mapa.
+- WebGL renueva su malla al cambiar de mapa y conserva el terreno al restaurar el contexto.
+- Pruebas de conexión de rutas, distancia de objetivos, despliegue seguro y llegada de toda la escolta con múltiples semillas.
+
 ## Sin publicar — misión arcade A → B → C (#27)
 
 - Guardia de infantería en A, pelotón sano y heridos en B, extracción en C; marcadores A/B/C en ambos renderizadores.

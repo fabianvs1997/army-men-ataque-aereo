@@ -198,7 +198,7 @@
           retry = env.st === 'over';
         if (nx) env.checkpoint = env.P.sc;
         else if (!retry) env.checkpoint = 0;
-        env.start(nx ? env.mis + 1 : retry ? env.mis : 1, !nx);
+        env.start(nx ? env.mis + 1 : retry ? env.mis : 1, !nx, retry);
       };
       env.$('menuHelp').onclick = () => menuPage('help');
       env.$('menuSettings').onclick = () => menuPage('settings');

@@ -225,3 +225,23 @@ test('helicopter pose tilts the full model and resets before drawing other objec
   assert.ok(calls.includes(-0.2));
   assert.equal(calls.at(-1), 0);
 });
+
+test('procedural world replaces terrain buffer and survives context restoration', () => {
+  const f = fixture(),
+    r = new Renderer(
+      f.canvas,
+      () => {},
+      () => {},
+    );
+  const world = require('../src/toy-world.js').create(
+    require('../src/mission-map.js').generate(17),
+  );
+  r.setWorld(world);
+  assert.equal(r.world, world);
+  assert.equal(r.meshes.terrain.count, world.mesh().length / 6);
+  f.listeners.webglcontextlost({ preventDefault() {} });
+  f.listeners.webglcontextrestored();
+  assert.equal(r.world, world);
+  assert.equal(r.meshes.terrain.count, world.mesh().length / 6);
+  r.render(scene());
+});
