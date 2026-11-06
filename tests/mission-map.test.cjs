@@ -6,23 +6,29 @@ const Collision = require('../src/collision.js');
 const Escort = require('../src/escort-mission.js');
 const { game } = require('../support/fake-host.cjs');
 
-test('seed reproduces geometry; distinct seeds vary routes, objectives and scenery on a larger map', () => {
+test('los mapas son fijos: misma misión, mismo mapa; cada misión, el suyo', () => {
   assert.deepEqual(Maps.generate(123), Maps.generate(123));
+  assert.deepEqual(Maps.generate(999, 2), Maps.generate(1, 2));
   const a = Maps.generate(123),
     b = Maps.generate(124);
-  assert.notDeepEqual(a.routes, b.routes);
-  assert.notDeepEqual(a.rules.B, b.rules.B);
+  // La semilla se ignora: el mapa de la misión 1 es siempre el mismo.
+  assert.deepEqual(a, b);
   assert.equal(a.limit * 2, 640);
+  const m2 = Maps.generate(7, 2),
+    m3 = Maps.generate(7, 3);
+  assert.notDeepEqual(a.routes, m2.routes);
+  assert.notDeepEqual(a.rules.B, m2.rules.B);
+  assert.notDeepEqual(m2.rules.B, m3.rules.B);
   const wa = World.create(a),
-    wb = World.create(b);
+    wb = World.create(m2);
   assert.notDeepEqual(wa.shrubs, wb.shrubs);
   assert.notDeepEqual(wa.roads, wb.roads);
   assert.ok(wa.mesh().every(Number.isFinite));
 });
 
-test('generated routes stay connected, objectives distant, troops safe and escort traversable across seeds', () => {
-  for (const seed of [0, 1, 2, 3, 17, 99, 123, 999, 12345, 0xffffffff]) {
-    const map = Maps.generate(seed),
+test('las rutas fijas están conectadas, los objetivos distantes y la escolta completa', () => {
+  for (const mission of [1, 2, 3]) {
+    const map = Maps.generate(0, mission),
       world = World.create(map);
     assert.deepEqual(
       world.pads.map((p) => [p.x, p.z]),
@@ -43,11 +49,11 @@ test('generated routes stay connected, objectives distant, troops safe and escor
         for (let j = 0; j <= steps; j++) {
           const x = ax + ((bx - ax) * j) / steps,
             z = az + ((bz - az) * j) / steps;
-          assert.ok(world.canTravel(x, z, 4), `seed ${seed} blocked route`);
+          assert.ok(world.canTravel(x, z, 4), `m${mission} ruta bloqueada`);
           assert.equal(
             cover.overlaps({ x, y: 8, z }, 1.8, 1.2),
             false,
-            `seed ${seed} prop on route ${x},${z}`,
+            `m${mission} prop en la ruta ${x},${z}`,
           );
         }
       }
@@ -77,8 +83,11 @@ test('generated routes stay connected, objectives distant, troops safe and escor
       );
     }
     for (const e of m.enemyPlan) {
-      assert.ok(Math.hypot(e.x, e.z) >= m.rules.safeRadius + 4);
-      assert.ok(world.canTravel(e.x, e.z, 4), `seed ${seed} enemy ${e.id}`);
+      assert.ok(
+        Math.hypot(e.x - m.rules.A.x, e.z - m.rules.A.z) >=
+          m.rules.safeRadius + 4,
+      );
+      assert.ok(world.canTravel(e.x, e.z, 4), `m${mission} enemigo ${e.id}`);
     }
     const env = { groundAt: world.height, cover, enemies: [] };
     for (const a of m.allies.filter((a) => a.wounded))
@@ -97,28 +106,35 @@ test('generated routes stay connected, objectives distant, troops safe and escor
     assert.equal(
       m.delivered,
       7,
-      `seed ${seed}: ${m.allies.map((a) => a.cause || a.state)}`,
+      `m${mission}: ${m.allies.map((a) => a.cause || a.state)}`,
     );
     assert.equal(m.stage, 'COMPLETADA');
   }
 });
 
-test('retry keeps the map; new game and next mission regenerate without sharing world instances', () => {
+test('reintentar conserva el mapa; otra misión cambia de mapa fijo; otra partida, mismo mapa', () => {
   const a = game(12),
     b = game(13);
   a.app.start(1, true);
   b.app.start(1, true);
   const seed = a.state.mapSeed,
     roads = JSON.stringify(a.state.world.roads);
-  const other = JSON.stringify(b.state.world.roads);
+  assert.equal(a.state.mapName, 'El jardín');
+  assert.equal(b.state.mapSeed, seed);
+  assert.equal(JSON.stringify(b.state.world.roads), roads);
   a.app.start(1, true, true);
   assert.equal(a.state.mapSeed, seed);
   assert.equal(JSON.stringify(a.state.world.roads), roads);
   a.app.start(2, false);
+  assert.equal(a.state.mapName, 'El picnic');
   assert.notEqual(a.state.mapSeed, seed);
   assert.notEqual(JSON.stringify(a.state.world.roads), roads);
-  assert.equal(JSON.stringify(b.state.world.roads), other);
   const next = a.state.mapSeed;
-  a.app.start(1, true);
+  a.app.start(3, false);
+  assert.equal(a.state.mapName, 'La playa');
   assert.notEqual(a.state.mapSeed, next);
+  // Volver a empezar la campaña vuelve al mismo mapa fijo de la 1.
+  a.app.start(1, true);
+  assert.equal(a.state.mapSeed, seed);
+  assert.equal(JSON.stringify(a.state.world.roads), roads);
 });

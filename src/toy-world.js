@@ -110,8 +110,8 @@
       for (const [cx, cz, radius] of clearings)
         distance = Math.min(distance, Math.hypot(x - cx, z - cz) - radius);
       const t = Math.max(0, Math.min(1, distance / 16));
-      // Relieve del motor de mapas (src/mapgen.js): cada mapa tiene
-      // su amplitud y frecuencias; sin mapa, el relieve clásico.
+      // Relieve de cada mapa fijo (src/original-maps.js): cada mapa
+      // tiene su amplitud y frecuencias; sin mapa, el relieve clásico.
       const terrain = map?.terrain;
       const ridge = terrain
         ? terrain.amp +

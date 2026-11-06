@@ -669,27 +669,16 @@
         state.shk = 0;
         state.mis = n;
         if (!retry || !currentMap) {
-          // Motor de mapas (src/mapgen.js): una campaña tiene una
-          // semilla propia y cada misión deriva la suya de ella, así
-          // que las tres misiones tienen mapas distintos por
-          // construcción y reintentar conserva el mapa de esa misión.
-          // `full` (nueva campaña) genera campaña nueva; continuar
-          // a la siguiente misión reutiliza la de la campaña.
-          if (full || state.campaignSeed === undefined) {
-            state.campaignSeed =
-              options.mapSeed === undefined
-                ? Math.floor(random() * 4294967296)
-                : options.mapSeed >>> 0;
-          }
-          const seed = ToyMissionMap.seedForMission(
-            state.campaignSeed,
-            n,
-          );
-          currentMap = ToyMissionMap.generate(seed, n);
+          // Mapas fijos del original (src/original-maps.js): cada
+          // misión tiene un solo mapa, siempre el mismo; reintentar
+          // conserva el mapa de esa misión y empezar de nuevo vuelve
+          // al mismo mapa fijo. No hay semillas de campaña.
+          currentMap = ToyMissionMap.generate(null, n);
         }
         Object.assign(ToyWorld, DefaultWorld.create(currentMap));
         state.world = ToyWorld;
         state.mapSeed = currentMap.seed;
+        state.mapName = currentMap.name;
         state.DC = ToyWorld.shrubs;
         if (state.renderer3d?.setWorld) state.renderer3d.setWorld(ToyWorld);
         state.mission = new ToyEscort.Mission(n, currentMap.rules);

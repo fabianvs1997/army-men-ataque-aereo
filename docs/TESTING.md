@@ -147,9 +147,9 @@ por gesto de la primera cámara de seguimiento.
 
 `smoke-escort.cjs` ejecuta A→B→C en Chromium desde file://, verifica que llegar antes que la columna no gana, revisa estrellas guardadas y reinicios, y captura WebGL vertical y horizontal. Los enemigos de B y de la emboscada se eliminan mediante el API de combate para aislar el flujo de misión; la marcha del pelotón se simula fotograma a fotograma con colisiones reales.
 
-### Mapas aleatorios
+### Mapas fijos del original
 
-`mapgen.test.cjs` verifica el motor de mapas: misma semilla da el mismo mapa, semillas distintas dan mapas distintos, la campaña da tres mapas diferentes, la dificultad crece por misión (HP y tanques), la validación rechaza mapas manipulados, 300 semillas no producen ningún mapa inválido ni de respaldo, la escolta completa las tres misiones con cinco semillas y la campaña en el juego cambia de mapa entre misiones y con el botón Mapa nuevo. `mission-map.test.cjs` verifica reproducibilidad, variación, bases distantes, rutas conectadas y escolta completa sin teletransporte con diez semillas. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
+`original-maps.test.cjs` verifica los tres mapas fijos: misma misión da siempre el mismo mapa, las tres misiones tienen mapas distintos (nombre, escenario, semilla, A/B/C, rutas y enemigos), la dificultad crece por misión (117, 132 y 156 HP; 3, 6 y 9 tanques), la validación rechaza mapas manipulados, la escolta completa las tres misiones y el mundo usa la vegetación, los puntos de interés y el relieve de cada mapa; además comprueba que no queda rastro del motor random eliminado (ni `mapgen`, ni botón Mapa nuevo, ni semillas de campaña). `mission-map.test.cjs` verifica que las rutas fijas están conectadas, las bases distantes y la escolta completa sin teletransporte, y que reintentar conserva el mapa, otra misión cambia de mapa fijo y otra partida tiene el mismo mapa. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
 
 ## Registro de errores y Supabase
 

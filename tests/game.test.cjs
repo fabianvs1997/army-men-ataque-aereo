@@ -196,17 +196,14 @@ test('seeded missions reproduce spawns and terrain heights; 3D draw without WebG
   assert.doesNotThrow(() => a.app.draw3d.draw(a.app.view));
 });
 test('assisted bullets hit offset infantry without turning the player', () => {
-  // Semilla fija: el mapa (y con él la ruta) cambia con la semilla y
-  // la geometría del disparo depende de él.
+  // Mapa fijo de la misión 1: la geometría del disparo depende de su
+  // ruta. El objetivo va junto a la ruta, 35 u desde A y 5 u a un
+  // lado, sobre el camino llano.
   const g = game(123),
     s = g.state;
   g.app.start(1, true);
   s.E = [];
   const target = g.app.spawnE('inf', -90, 100);
-  // Objetivo junto a la ruta, 35 u desde A y 5 u a un lado: sobre el
-  // camino llano, como el (5, 35) original respecto a la ruta vieja.
-  // La salida A ya no es fija en (0, 0): en coordenadas absolutas la
-  // bala asistida cruzaría terreno elevado y chocaría antes de llegar.
   const route = s.world.routes[0];
   let [tx, tz] = route[0];
   let left = 35;
@@ -228,7 +225,10 @@ test('assisted bullets hit offset infantry without turning the player', () => {
     rdl = Math.hypot(rdx, rdz);
   target.x = tx + (-rdz / rdl) * 5;
   target.z = tz + (rdx / rdl) * 5;
-  target.y = require('../src/toy-world.js').height(target.x, target.z);
+  // La altura del suelo del mundo activo de la partida, no la del
+  // mundo por defecto: con otro relieve, el objetivo quedaría flotando
+  // (o enterrado) y la bala pasaría por encima (o por debajo).
+  target.y = s.world.height(target.x, target.z);
   target.cd = 999;
   // El jugador mira hacia la ruta antes de disparar: la asistencia
   // solo actúa en un cono estrecho y el objetivo está junto al
