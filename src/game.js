@@ -669,11 +669,23 @@
         state.shk = 0;
         state.mis = n;
         if (!retry || !currentMap) {
-          const seed =
-            options.mapSeed === undefined
-              ? Math.floor(random() * 4294967296)
-              : options.mapSeed + n;
-          currentMap = ToyMissionMap.generate(seed);
+          // Motor de mapas (src/mapgen.js): una campaña tiene una
+          // semilla propia y cada misión deriva la suya de ella, así
+          // que las tres misiones tienen mapas distintos por
+          // construcción y reintentar conserva el mapa de esa misión.
+          // `full` (nueva campaña) genera campaña nueva; continuar
+          // a la siguiente misión reutiliza la de la campaña.
+          if (full || state.campaignSeed === undefined) {
+            state.campaignSeed =
+              options.mapSeed === undefined
+                ? Math.floor(random() * 4294967296)
+                : options.mapSeed >>> 0;
+          }
+          const seed = ToyMissionMap.seedForMission(
+            state.campaignSeed,
+            n,
+          );
+          currentMap = ToyMissionMap.generate(seed, n);
         }
         Object.assign(ToyWorld, DefaultWorld.create(currentMap));
         state.world = ToyWorld;

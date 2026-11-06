@@ -149,7 +149,7 @@ por gesto de la primera cámara de seguimiento.
 
 ### Mapas aleatorios
 
-`mission-map.test.cjs` verifica reproducibilidad, variación, bases distantes, rutas conectadas y escolta completa sin teletransporte con diez semillas. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
+`mapgen.test.cjs` verifica el motor de mapas: misma semilla da el mismo mapa, semillas distintas dan mapas distintos, la campaña da tres mapas diferentes, la dificultad crece por misión (HP y tanques), la validación rechaza mapas manipulados, 300 semillas no producen ningún mapa inválido ni de respaldo, la escolta completa las tres misiones con cinco semillas y la campaña en el juego cambia de mapa entre misiones y con el botón Mapa nuevo. `mission-map.test.cjs` verifica reproducibilidad, variación, bases distantes, rutas conectadas y escolta completa sin teletransporte con diez semillas. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
 
 ## Registro de errores y Supabase
 

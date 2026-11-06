@@ -200,6 +200,11 @@
               (env.perf.level > 0 ? ' (ahorro automático)' : '') +
               ' · ' +
               (env.mission?.stage || '') +
+              // La semilla del mapa, para reproducir y reportar el
+              // mapa exacto en el que ocurre algo.
+              (env.state?.mapSeed !== undefined
+                ? ' · semilla ' + env.state.mapSeed
+                : '') +
               logNote,
           );
         }
@@ -334,6 +339,17 @@
         env.start(nx ? env.mis + 1 : retry ? env.mis : 1, !nx, retry);
       };
       env.$('menuHelp').onclick = () => menuPage('help');
+      // Mapa nuevo: otra campaña con otros tres mapas (cada misión
+      // tiene el suyo). Es lo mismo que empezar campaña, pero visible
+      // como opción propia en el menú.
+      env.$('menuNewMap').onclick = () => {
+        if (env.overlayPage !== 'main' && env.overlayPage !== 'result')
+          return;
+        env.audio();
+        env.buzz(20);
+        env.checkpoint = 0;
+        env.start(1, true, false);
+      };
       env.$('menuSettings').onclick = () => menuPage('settings');
       env.$('menuAccount').onclick = () => menuPage('account');
       env.$('menuLogs').onclick = () => menuPage('logs');
