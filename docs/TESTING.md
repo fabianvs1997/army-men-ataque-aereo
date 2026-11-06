@@ -134,3 +134,19 @@ por gesto de la primera cámara de seguimiento.
 ### Mapas aleatorios
 
 `mission-map.test.cjs` verifica reproducibilidad, variación, bases distantes, rutas conectadas y escolta completa sin teletransporte con diez semillas. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
+
+## Registro de errores y Supabase
+
+- `tests/logger.test.cjs`: captura, contexto, rotación a 100 entradas,
+  congelamientos con enfriamiento y tolerancia a almacenamiento roto.
+- `tests/supabase.test.cjs`: cliente simulado; modo invitado con cola,
+  guardado con sesión, lotes de errores y registro/inicio de sesión.
+- `tests/logging-integration.test.cjs`: el juego instala el logger y
+  Supabase offline, y los paneles de Cuenta y Registro funcionan sin
+  servidor. Sin red: `node --test` no toca Supabase real.
+
+Manual: con la configuración vacía, Menú → Cuenta dice "sin
+configurar" y Menú → Registro muestra y exporta errores. Con Supabase
+configurado (ver `docs/SUPABASE.md`), crea una cuenta, completa una
+misión y comprueba la fila en Table Editor → scores y los errores en
+Table Editor → error_logs.

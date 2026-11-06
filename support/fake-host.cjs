@@ -18,6 +18,7 @@ function fakeHost() {
         Object.assign(target(), {
           style: {},
           textContent: '',
+          value: '',
           getContext: (type) =>
             type === '2d'
               ? new Proxy(

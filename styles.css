@@ -485,6 +485,51 @@ h1 {
   margin-bottom: 10px;
 }
 
+.menu-card .field {
+  display: block;
+  font-size: 13px;
+  color: #ced8bf;
+  margin-bottom: 10px;
+}
+
+.menu-card input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 9px 10px;
+  border: 1px solid #aec18b44;
+  border-radius: 8px;
+  background: #0f221b99;
+  color: #e1e8d3;
+  font-size: 14px;
+}
+
+#logsText {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #aec18b44;
+  border-radius: 8px;
+  background: #0f221b99;
+  color: #ced8bf;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#scoresList p {
+  font-size: 13px;
+}
+
+#scoresList {
+  white-space: pre-line;
+  font-size: 13px;
+  color: #ced8bf;
+  line-height: 1.65;
+}
+
 .briefing {
   display: grid;
   grid-template-columns: 24px 1fr;

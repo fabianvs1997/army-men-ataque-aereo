@@ -21,6 +21,9 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | escort-mission | Estados, eventos, combate aliado, abordaje, escolta y resultado |
 | escort-navigation | Desvíos locales con búsqueda de ruta y colisiones barridas. A* con montón binario y presupuestos duros: meta recortada a 64 u, inicio y meta saneados al punto libre más cercano, como mucho 1200 expansiones o 12 ms por llamada; si no encuentra ruta devuelve null y el soldado espera. |
 | perf | Monitor de rendimiento: EMA del tiempo real por frame y degradado automático en 3 niveles (tope de DPR 1.75 → 1.25 → 1, dibujo a 30 fps y mitad de escombros/humo en el nivel 2) con recuperación gradual. |
+| logger | Registro de errores en el dispositivo: `console.error`, errores no controlados, rechazos y frames de más de 500 ms, con versión, misión, fase, semilla y rendimiento; últimas 100 entradas en localStorage con rotación, nunca rompe el juego. |
+| supabase-config | URL y clave ANON de Supabase (vacías = modo invitado offline). La clave secreta no se usa nunca. |
+| supabase | Cliente opcional de Supabase: Auth por correo, puntuaciones y envío de errores. Carga perezosa del CDN; sin configuración o sin red, todo queda en local. |
 | escort-progress | Mejores resultados con esquema versionado y almacenamiento opcional |
 | toy-helicopter | Modelo plástico del jugador compartido por WebGL y Canvas |
 | toy-renderer | Renderizado WebGL y detección de disponibilidad |
@@ -73,3 +76,25 @@ escombros/humo en el nivel 2) y lo recupera tras 600 frames rápidos por
 nivel. Con `?perf=1` el HUD muestra FPS, ms por frame, peor frame, nivel
 y fase de la misión, para diagnosticar en el iPhone si el congelamiento
 persiste.
+
+### Registro de errores y Supabase (opcional)
+
+`src/logger.js` (`ToyLogger`) captura errores de consola, errores no
+controlados, rechazos de promesas y frames de más de 500 ms (con
+enfriamiento de 5 s entre avisos de congelamiento). Cada entrada lleva
+fecha, tipo, mensaje, pila, versión del juego, misión, fase, semilla,
+FPS/ms, nivel de degradado y dispositivo; nunca datos personales. Se
+guarda en localStorage con rotación (últimas 100) y se puede ver en
+Menú → Registro, exportar como JSON o ver el contador con `?logs=1`.
+
+`src/supabase.js` (`ToySupabase`) es un cliente opcional: sin
+configuración en `src/supabase-config.js` todos sus métodos son no-op
+offline y el juego sigue como invitado. Con URL y clave ANON, carga la
+librería oficial desde el CDN solo cuando hace falta; si el CDN no carga,
+sigue offline. Auth por correo y contraseña (las contraseñas solo pasan
+por Supabase Auth), puntuaciones en `scores` al completar cada misión
+(como invitado o sin red quedan en cola local, máximo 20, y se envían al
+iniciar sesión) y envío de errores en lotes a `error_logs`. El esquema y
+las políticas RLS están en `supabase/schema.sql`; los pasos para
+activarlo, en `docs/SUPABASE.md`. La clave secreta (service_role) no se
+usa nunca en el juego.

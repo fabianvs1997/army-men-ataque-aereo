@@ -8,9 +8,12 @@ test('classic modules expose usable CommonJS APIs without an HTML document', () 
     'combat',
     'ui',
     'render2d',
+    'logger',
+    'supabase',
     'game',
   ])
     assert.equal(typeof require('../src/' + name + '.js').create, 'function');
+  assert.equal(typeof require('../src/supabase-config.js').isConfigured, 'function');
   assert.equal(typeof require('../src/toy-missions.js').Mission, 'function');
 });
 test('audio caches noise by sample length and obeys injected playing/mute flags', () => {

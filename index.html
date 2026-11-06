@@ -19,6 +19,8 @@
 <nav id="menuNav" class="menu-nav" aria-label="Menú del juego">
 <button id="menuHelp" class="secondary">Cómo jugar</button>
 <button id="menuSettings" class="secondary">Ajustes</button>
+<button id="menuAccount" class="secondary">Cuenta</button>
+<button id="menuLogs" class="secondary">Registro</button>
 <button id="menuCredits" class="secondary">Acerca del juego</button>
 </nav>
 <div id="helpPane" class="menu-pane">
@@ -34,6 +36,24 @@
 <button id="menuQuality" class="secondary setting" aria-pressed="false">Gráficos: detalle</button>
 <p>Detalle ofrece mayor resolución. Ahorro reduce la resolución y limita el dibujo a unos 30 cuadros por segundo para aligerar la carga.</p>
 <h2>Preferencias</h2><p>Sonido y gráficos se recuerdan en este navegador cuando permite guardarlos. Puedes cambiarlos también durante la partida.</p>
+</div>
+<div id="accountPane" class="menu-pane">
+<p id="accountStatus">Juegas como invitado: tus mejores resultados se guardan solo en este dispositivo.</p>
+<label class="field">Correo<input id="accountEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
+<label class="field">Nombre visible<input id="accountName" type="text" autocomplete="nickname" placeholder="Piloto"></label>
+<label class="field">Contraseña<input id="accountPassword" type="password" autocomplete="current-password" placeholder="Contraseña"></label>
+<button id="accountSignIn" class="secondary setting">Iniciar sesión</button>
+<button id="accountSignUp" class="secondary setting">Crear cuenta</button>
+<button id="accountSignOut" class="secondary setting" style="display:none">Cerrar sesión</button>
+<h2>Mejores puntuaciones</h2>
+<div id="scoresList"><p>Sin conexión con el servidor: aquí aparecerán tus mejores puntuaciones y el ranking cuando actives Supabase.</p></div>
+<p>La cuenta es opcional y solo sirve para guardar tus puntuaciones en línea. Sin ella, el juego funciona igual. Ver <b>docs/SUPABASE.md</b> para activar el servidor.</p>
+</div>
+<div id="logsPane" class="menu-pane">
+<p>Registro de errores de esta sesión y de partidas anteriores en este dispositivo. Con <b>?logs=1</b> en la dirección también se muestra el contador en el HUD. Exporta el archivo y compártelo si algo falla.</p>
+<pre id="logsText">Sin entradas todavía.</pre>
+<button id="logsExport" class="secondary setting">Exportar registro</button>
+<button id="logsClear" class="secondary setting">Borrar registro</button>
 </div>
 <div id="creditsPane" class="menu-pane"><h2>Un patio a escala de juguete</h2><p>Pilota un helicóptero de plástico entre maceteros, senderos y muebles de jardín. Combate, recoge a tus soldados y completa la extracción.</p><h2>Proyecto</h2><p>Desarrollado en el repositorio de fabianvs1997. Inspirado en los clásicos de helicópteros y soldados de juguete.</p></div>
 <div id="confirmPane" class="menu-pane"><p>Perderás el progreso de esta campaña. La próxima partida comenzará desde la misión 1. Tus mejores resultados, sonido y gráficos se conservarán.</p><button id="confirmExit">Abandonar campaña</button></div>

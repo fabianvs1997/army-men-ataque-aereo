@@ -18,6 +18,8 @@
       for (const [id, name] of [
         ['helpPane', 'help'],
         ['settingsPane', 'settings'],
+        ['accountPane', 'account'],
+        ['logsPane', 'logs'],
         ['creditsPane', 'credits'],
         ['confirmPane', 'confirm'],
       ])
@@ -99,18 +101,24 @@
       const titles = {
         help: 'Cómo jugar',
         settings: 'Ajustes',
+        account: 'Cuenta',
+        logs: 'Registro de errores',
         credits: 'Acerca del juego',
         confirm: '¿Abandonar campaña?',
       };
       const subtitles = {
         help: 'Tu guía de vuelo y rescate.',
         settings: 'Prepara el juego a tu manera.',
+        account: 'Guarda tus puntuaciones en línea con Supabase.',
+        logs: 'Errores guardados en este dispositivo.',
         credits: 'Una batalla pequeña en un mundo grande.',
         confirm: 'Esta acción reinicia tu progreso.',
       };
       env.$('ti').textContent = titles[page];
       env.$('tx').textContent = subtitles[page];
       menuLayout(page);
+      if (page === 'account') refreshAccount();
+      if (page === 'logs') refreshLogs();
       env.$(page === 'settings' ? 'menuSound' : 'ti').focus?.();
     }
     function menuBack() {
@@ -166,6 +174,15 @@
       setText('dg', 'Puntos: ' + env.P.sc);
       // Lectura de rendimiento opcional (?perf=1): FPS, ms por frame,
       // peor frame y nivel de degradado, para diagnosticar en el iPhone.
+      // Con ?logs=1 se añade además el contador del registro de errores.
+      const logNote =
+        env.logsVisible && env.logger
+          ? ' · registro ' + env.logger.count
+          : '';
+      if (env.logsVisible && !env.perfVisible && env.logger) {
+        env.$('perf').style.display = 'block';
+        setText('perf', 'Registro: ' + env.logger.count + ' entradas');
+      }
       if (env.perfVisible && env.perf) {
         if (env.t - (env._perfAt || 0) >= 0.5) {
           env._perfAt = env.t;
@@ -182,10 +199,104 @@
               env.perf.level +
               (env.perf.level > 0 ? ' (ahorro automático)' : '') +
               ' · ' +
-              (env.mission?.stage || ''),
+              (env.mission?.stage || '') +
+              logNote,
           );
         }
       }
+    }
+    // Cuenta de Supabase (opcional): sin configuración el juego sigue
+    // como invitado y las puntuaciones quedan solo en este dispositivo.
+    async function refreshScores() {
+      const list = env.$('scoresList');
+      try {
+        if (!env.online || !env.online.configured()) {
+          list.textContent =
+            'Sin conexión con el servidor: aquí aparecerán tus mejores puntuaciones y el ranking cuando actives Supabase.';
+          return;
+        }
+        const top = await env.online.fetchTopScores(null, 5);
+        const mine = await env.online.fetchMyScores(5);
+        const lines = [];
+        if (top.ok && top.rows.length)
+          lines.push(
+            'Ranking: ' +
+              top.rows
+                .map(
+                  (r, i) =>
+                    i +
+                    1 +
+                    '. ' +
+                    (r.display_name || 'Piloto') +
+                    ' · ' +
+                    r.score +
+                    ' pts · M' +
+                    (r.mission || '?'),
+                )
+                .join(' · '),
+          );
+        if (mine.ok && mine.rows.length)
+          lines.push(
+            'Tuyas: ' +
+              mine.rows
+                .map((r) => 'M' + r.mission + ' · ' + r.score + ' pts')
+                .join(' · '),
+          );
+        list.textContent = lines.length
+          ? lines.join('\n')
+          : 'Aún no hay puntuaciones en línea.';
+      } catch (_) {
+        list.textContent = 'No se pudieron cargar las puntuaciones.';
+      }
+    }
+    async function refreshAccount() {
+      const status = env.$('accountStatus');
+      try {
+        if (!env.online || !env.online.configured()) {
+          status.textContent =
+            'Supabase sin configurar: juegas como invitado y tus mejores resultados se guardan solo en este dispositivo. Ver docs/SUPABASE.md para activarlo.';
+          env.$('accountSignOut').style.display = 'none';
+          await refreshScores();
+          return;
+        }
+        const user = env.online.getUser();
+        if (user) {
+          status.textContent =
+            'Sesión iniciada como ' + (user.email || user.id) + '.';
+          env.$('accountSignOut').style.display = 'block';
+          try {
+            await env.flushRemoteLogs();
+          } catch (_) {}
+          try {
+            await env.online.flushPendingScores();
+          } catch (_) {}
+        } else {
+          status.textContent =
+            'Sin sesión: inicia sesión o crea una cuenta para guardar tus puntuaciones en línea.';
+          env.$('accountSignOut').style.display = 'none';
+        }
+        await refreshScores();
+      } catch (_) {
+        status.textContent =
+          'No se pudo conectar con Supabase: juegas como invitado.';
+      }
+    }
+    function refreshLogs() {
+      const entries = env.logger ? env.logger.list() : [];
+      env.$('logsText').textContent = entries.length
+        ? entries
+            .slice(-20)
+            .map(
+              (e) =>
+                e.ts +
+                ' [' +
+                e.type +
+                '] ' +
+                e.message +
+                (e.mission ? ' (M' + e.mission + ' ' + e.phase + ')' : ''),
+            )
+            .join('\n')
+        : 'Sin entradas todavía.';
     }
     function bind() {
       env.$('go').addEventListener('pointerdown', () => env.audio());
@@ -224,7 +335,75 @@
       };
       env.$('menuHelp').onclick = () => menuPage('help');
       env.$('menuSettings').onclick = () => menuPage('settings');
+      env.$('menuAccount').onclick = () => menuPage('account');
+      env.$('menuLogs').onclick = () => menuPage('logs');
       env.$('menuCredits').onclick = () => menuPage('credits');
+      env.$('accountSignIn').onclick = async () => {
+        const status = env.$('accountStatus');
+        const email = env.$('accountEmail').value.trim();
+        const password = env.$('accountPassword').value;
+        if (!email || !password) {
+          status.textContent = 'Escribe tu correo y tu contraseña.';
+          return;
+        }
+        status.textContent = 'Iniciando sesión…';
+        const result = await env.online.signIn(email, password);
+        if (result.ok) {
+          env.$('accountPassword').value = '';
+          await refreshAccount();
+        } else
+          status.textContent =
+            'No se pudo iniciar sesión: ' + (result.error || result.reason);
+      };
+      env.$('accountSignUp').onclick = async () => {
+        const status = env.$('accountStatus');
+        const email = env.$('accountEmail').value.trim();
+        const password = env.$('accountPassword').value;
+        if (!email || !password) {
+          status.textContent = 'Escribe tu correo y tu contraseña.';
+          return;
+        }
+        status.textContent = 'Creando tu cuenta…';
+        const result = await env.online.signUp(
+          email,
+          env.$('accountName').value.trim(),
+          password,
+        );
+        if (result.ok && result.needsConfirmation)
+          status.textContent =
+            'Cuenta creada: revisa tu correo para confirmarla y luego inicia sesión.';
+        else if (result.ok) {
+          env.$('accountPassword').value = '';
+          await refreshAccount();
+        } else
+          status.textContent =
+            'No se pudo crear la cuenta: ' + (result.error || result.reason);
+      };
+      env.$('accountSignOut').onclick = async () => {
+        await env.online.signOut();
+        await refreshAccount();
+      };
+      env.$('logsExport').onclick = () => {
+        const text = env.logger ? env.logger.exportText() : '[]';
+        try {
+          const doc = env.host && env.host.document;
+          const blob = new Blob([text], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = doc.createElement('a');
+          a.href = url;
+          a.download = 'army-men-logs.json';
+          (doc.body || doc).appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (_) {
+          env.$('logsText').textContent = text;
+        }
+      };
+      env.$('logsClear').onclick = () => {
+        if (env.logger) env.logger.clear();
+        refreshLogs();
+      };
       env.$('menuSound').onclick = () => env.$('sound').onclick();
       env.$('menuQuality').onclick = () => env.$('quality').onclick();
       env.$('back').onclick = menuBack;
