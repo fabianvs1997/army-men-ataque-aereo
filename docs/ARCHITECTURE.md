@@ -11,7 +11,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | input | Teclado y punteros; read() y clear() |
 | collision | Volúmenes del escenario, índice espacial, barrido de proyectiles y movimiento |
 | debris | Componentes de juguetes, astillas, gravedad, rebotes y límite de restos |
-| combat | Velocidad de disparo, impactos, bajas y proyectiles |
+| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`) |
 | render2d | Sprites y dibujo a partir de scene; caché de decoración |
 | ui | Menús, HUD y textos |
 | game | Estado, transiciones, simulación y bucle |

@@ -503,6 +503,7 @@
             EB: scene.EB,
             MS: scene.MS,
             FX: scene.FX,
+            SM: scene.SM,
             DB: scene.DB,
             PK: scene.PK,
             rot: scene.rot,
@@ -714,35 +715,96 @@
               q.ty === 'a' ? '#3fbf4a' : '#d9473f',
             ),
           );
-        for (const b of scene.BL)
-          add(b.x, b.y, b.z, (p) => {
-            const q = P3(b.x - b.vx * 0.04, b.y, b.z - b.vz * 0.04);
-            scene.ctx.strokeStyle = '#ffe066';
-            scene.ctx.lineWidth = Math.max(1.5, p[2] * 0.3);
-            scene.ctx.beginPath();
-            scene.ctx.moveTo(p[0], p[1]);
-            scene.ctx.lineTo(q ? q[0] : p[0], q ? q[1] : p[1]);
-            scene.ctx.stroke();
+        // Trazadora: halo naranja/rojo con núcleo blanco-amarillo caliente,
+        // alargada en la dirección del disparo como en la referencia.
+        function tracer(p, b, back, outer, core) {
+          const q = P3(
+            b.x - b.vx * back,
+            b.y - (b.vy || 0) * back,
+            b.z - b.vz * back,
+          );
+          const tx = q ? q[0] : p[0],
+            ty = q ? q[1] : p[1];
+          scene.ctx.lineCap = 'round';
+          scene.ctx.strokeStyle = outer;
+          scene.ctx.lineWidth = Math.max(2, p[2] * 0.42);
+          scene.ctx.beginPath();
+          scene.ctx.moveTo(p[0], p[1]);
+          scene.ctx.lineTo(tx, ty);
+          scene.ctx.stroke();
+          scene.ctx.strokeStyle = core;
+          scene.ctx.lineWidth = Math.max(1, p[2] * 0.2);
+          scene.ctx.beginPath();
+          scene.ctx.moveTo(p[0], p[1]);
+          scene.ctx.lineTo(tx, ty);
+          scene.ctx.stroke();
+        }
+        // Humo de misil: bocanadas blancas/grises que crecen y se desvanecen,
+        // y bocanadas oscuras en el impacto. Se dibuja antes que los
+        // proyectiles para que estos queden por encima.
+        for (const s of scene.SM || [])
+          add(s.x, s.y, s.z, (p) => {
+            const age = 1 - s.l / (s.max || 0.9),
+              r = s.s * (0.6 + age * 1.1) * p[2];
+            scene.ctx.globalAlpha = Math.max(
+              0,
+              (s.dark ? 0.85 : 0.7) * (1 - age),
+            );
+            ell(p[0], p[1], r, r * 0.85, s.dark ? '#2b2b28' : '#f4f4ee');
+            ell(
+              p[0] - r * 0.2,
+              p[1] - r * 0.25,
+              r * 0.55,
+              r * 0.45,
+              s.dark ? '#3d3d39' : '#ffffff',
+            );
+            scene.ctx.globalAlpha = 1;
           });
+        for (const b of scene.BL)
+          add(b.x, b.y, b.z, (p) =>
+            tracer(p, b, 0.05, 'rgba(255,110,20,0.85)', '#fff3b0'),
+          );
         for (const o of scene.MS)
-          add(o.x, o.y, o.z, (p) =>
+          add(o.x, o.y, o.z, (p) => {
+            const rear = P3(o.x - o.vx * 0.03, o.y, o.z - o.vz * 0.03),
+              rx = rear ? rear[0] : p[0],
+              ry = rear ? rear[1] : p[1],
+              flick =
+                1 + 0.15 * Math.sin((scene.t || 0) * 37 + o.x * 1.7 + o.z);
+            // Llama naranja en la parte trasera, con núcleo caliente.
+            ell(
+              rx,
+              ry,
+              Math.max(1.5, 0.85 * p[2] * flick),
+              Math.max(1.5, 0.85 * p[2] * flick),
+              '#ff6a1a',
+            );
+            ell(
+              rx,
+              ry,
+              Math.max(1, 0.45 * p[2] * flick),
+              Math.max(1, 0.45 * p[2] * flick),
+              '#ffe9a2',
+            );
+            // Cuerpo oscuro del misil y punta roja brillante.
+            scene.ctx.lineCap = 'round';
+            scene.ctx.strokeStyle = '#3a3f36';
+            scene.ctx.lineWidth = Math.max(2, p[2] * 0.45);
+            scene.ctx.beginPath();
+            scene.ctx.moveTo(rx, ry);
+            scene.ctx.lineTo(p[0], p[1]);
+            scene.ctx.stroke();
             ell(
               p[0],
               p[1],
-              Math.max(2, 0.7 * p[2]),
-              Math.max(2, 0.7 * p[2]),
-              '#ff5a2e',
-            ),
-          );
+              Math.max(1.2, 0.35 * p[2]),
+              Math.max(1.2, 0.35 * p[2]),
+              '#d92b1f',
+            );
+          });
         for (const b of scene.EB)
           add(b.x, b.y, b.z, (p) =>
-            ell(
-              p[0],
-              p[1],
-              Math.max(2, 0.5 * p[2]),
-              Math.max(2, 0.5 * p[2]),
-              '#ff9a2e',
-            ),
+            tracer(p, b, 0.09, 'rgba(255,60,10,0.85)', '#ffc46b'),
           );
         for (const o of scene.FX)
           add(o.x, o.y, o.z, (p) => {

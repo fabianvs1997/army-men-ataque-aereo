@@ -1,5 +1,12 @@
 # Changelog
 
+## Sin publicar — trazadoras y humo de misiles
+
+- Balas propias y enemigas como trazadoras en ambos renderizadores: halo naranja/rojo con núcleo blanco-amarillo caliente, alargadas en la dirección del disparo.
+- Misiles con cuerpo oscuro, punta roja y llama naranja parpadeante en la parte trasera, más estela de bocanadas blancas que crecen y se desvanecen; al impactar queda una bocanada de humo oscuro.
+- El humo vive en `state.SM`, separado de las explosiones (`FX`): no cambia daño, velocidad, alcance ni cadencia, y los misiles siguen sin generar bolas de fuego.
+- Pruebas de estela, impacto, envejecimiento del humo y dibujo en WebGL.
+
 ## Sin publicar — patrullas en los trayectos
 
 - A–B y B–C pasan de 2 a 8 enemigos terrestres cada uno: infantería, tanques y torretas distribuidos por la vereda.

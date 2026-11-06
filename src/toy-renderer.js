@@ -459,7 +459,7 @@ void main(){
     }
     render(scene) {
       if (this.lost) return false;
-      const { W, H, F, HY, cam, PITCH, P, E, DC, BL, EB, MS, FX, PK, rot } =
+      const { W, H, F, HY, cam, PITCH, P, E, DC, BL, EB, MS, FX, SM = [], PK, rot } =
           scene,
         gl = this.gl,
         u = this.loc;
@@ -844,25 +844,128 @@ void main(){
             0,
             0.4,
           );
-      for (const [list, color, size] of [
-        [BL, [1, 0.82, 0.2], 0.23],
-        [EB, [1, 0.3, 0.1], 0.35],
-        [MS, [0.95, 0.95, 0.75], 0.5],
-      ])
-        for (const b of list)
-          if (visible(b))
-            this.part(
-              'sphere',
-              b.x,
-              b.y,
-              b.z,
-              size,
-              size,
-              size * 2,
-              color,
-              Math.atan2(b.vx, b.vz),
-              0,
-            );
+      // Humo de misil. Sin canal alfa en WebGL, el desvanecimiento se simula
+      // creciendo y oscureciendo la bocanada, y encogiéndola al final.
+      for (const s of SM)
+        if (visible(s)) {
+          const max = s.max || 0.9,
+            age = Math.min(1, Math.max(0, 1 - s.l / max));
+          let grow = s.s * (0.55 + age * 0.9);
+          if (age > 0.75) grow *= 1 - ((age - 0.75) / 0.25) * 0.55;
+          const shade = s.dark
+            ? [0.16 + age * 0.16, 0.15 + age * 0.16, 0.14 + age * 0.15]
+            : [0.96 - age * 0.34, 0.96 - age * 0.32, 0.93 - age * 0.35];
+          this.part(
+            'sphere',
+            s.x,
+            s.y + age * 1.5,
+            s.z,
+            grow,
+            grow * 0.9,
+            grow,
+            shade,
+            0,
+            0,
+          );
+        }
+      // Trazadoras: estela alargada en la dirección del disparo, halo
+      // naranja/rojo con núcleo blanco-amarillo caliente.
+      const streak = (b, length, outer, core, outerSize, coreSize) => {
+        const hv = Math.hypot(b.vx || 0, b.vz || 0);
+        if (hv < 1) {
+          this.part('sphere', b.x, b.y, b.z, coreSize, coreSize, coreSize, core, 0, 0);
+          return;
+        }
+        const dx = (b.vx || 0) / hv,
+          dz = (b.vz || 0) / hv,
+          yaw = Math.atan2(b.vx || 0, b.vz || 0);
+        this.part(
+          'rounded',
+          b.x - dx * length * 0.5,
+          b.y,
+          b.z - dz * length * 0.5,
+          outerSize,
+          outerSize,
+          length * 0.5,
+          outer,
+          yaw,
+          0,
+        );
+        this.part(
+          'rounded',
+          b.x - dx * length * 0.35,
+          b.y,
+          b.z - dz * length * 0.35,
+          coreSize,
+          coreSize,
+          length * 0.4,
+          core,
+          yaw,
+          0,
+        );
+      };
+      for (const b of BL)
+        if (visible(b)) streak(b, 6, [1, 0.45, 0.08], [1, 0.95, 0.75], 0.5, 0.28);
+      for (const b of EB)
+        if (visible(b)) streak(b, 4.5, [1, 0.25, 0.05], [1, 0.62, 0.25], 0.55, 0.3);
+      // Misil: cuerpo oscuro, punta roja y llama naranja parpadeante atrás.
+      for (const o of MS)
+        if (visible(o)) {
+          const hv = Math.hypot(o.vx || 0, o.vz || 0) || 1,
+            dx = (o.vx || 0) / hv,
+            dz = (o.vz || 0) / hv,
+            yaw = Math.atan2(o.vx || 0, o.vz || 0),
+            flick =
+              1 + 0.12 * Math.sin((scene.t || 0) * 37 + o.x * 1.7 + o.z);
+          this.part(
+            'sphere',
+            o.x - dx * 1.6,
+            o.y,
+            o.z - dz * 1.6,
+            0.7 * flick,
+            0.7 * flick,
+            1.1 * flick,
+            [1, 0.55, 0.1],
+            yaw,
+            0,
+          );
+          this.part(
+            'sphere',
+            o.x - dx * 2,
+            o.y,
+            o.z - dz * 2,
+            0.4 * flick,
+            0.4 * flick,
+            0.7 * flick,
+            [1, 0.9, 0.5],
+            yaw,
+            0,
+          );
+          this.part(
+            'rounded',
+            o.x,
+            o.y,
+            o.z,
+            0.55,
+            0.55,
+            1.3,
+            [0.25, 0.28, 0.22],
+            yaw,
+            0.4,
+          );
+          this.part(
+            'sphere',
+            o.x + dx * 1.2,
+            o.y,
+            o.z + dz * 1.2,
+            0.5,
+            0.5,
+            0.6,
+            [0.85, 0.2, 0.1],
+            yaw,
+            0.4,
+          );
+        }
       for (const f of FX)
         if (visible(f)) {
           const age = 1 - f.l / 0.5,
