@@ -50,9 +50,9 @@ const path = require('node:path');
       const framing = await page.evaluate(() => {
         const g = window.fixtureGame;
         g.rs();
-        g.render2d.draw();
+        g.draw3d.draw();
         return {
-          point: g.render2d.P3(g.state.P.x, g.state.P.y, g.state.P.z),
+          point: g.view.P3(g.state.P.x, g.state.P.y, g.state.P.z),
           mode: document.getElementById('world3d').style.display,
         };
       });
@@ -74,14 +74,13 @@ const path = require('node:path');
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
-      g.render2d.draw();
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
+      g.draw3d.draw();
     });
-    await page.screenshot({ path: '/tmp/camera-canvas.png' });
+    await page.screenshot({ path: '/tmp/camera-webgl-required.png' });
     assert.deepEqual(errors, []);
     console.log(
-      'PASS camera: closer framing in portrait/landscape/square, player lower center, visible controls, WebGL and Canvas, no JS errors',
+      'PASS camera: closer framing in portrait/landscape/square, player lower center, visible controls, WebGL, no JS errors',
     );
   } finally {
     await browser.close();

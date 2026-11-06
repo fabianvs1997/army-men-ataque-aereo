@@ -6,7 +6,8 @@
       require('./audio.js'),
       require('./input.js'),
       require('./combat.js'),
-      require('./render2d.js'),
+      require('./projection.js'),
+      require('./draw3d.js'),
       require('./ui.js'),
       require('./toy-world.js'),
       require('./toy-missions.js'),
@@ -26,7 +27,8 @@
       root.ToyAudio,
       root.ToyInput,
       root.ToyCombat,
-      root.ToyRender2D,
+      root.ToyProjection,
+      root.ToyDraw3D,
       root.ToyUI,
       root.ToyWorld,
       root.ToyMissions,
@@ -47,7 +49,8 @@
     ToyAudio,
     ToyInput,
     ToyCombat,
-    ToyRender2D,
+    ToyProjection,
+    ToyDraw3D,
     ToyUI,
     DefaultWorld,
     ToyMissions,
@@ -222,9 +225,6 @@
         },
         get PITCH() {
           return PITCH;
-        },
-        get ctx() {
-          return ctx;
         },
         get R() {
           return R;
@@ -445,23 +445,13 @@
       const combat = ToyCombat.create(env),
         { mk, boom, hit, kill, gunVelocity, bulletKindFor, stepProjectiles, stepDebris } =
           combat;
-      const render2d = ToyRender2D.create(env);
-      let {
-        cs,
-        pj,
-        headingAngle,
-        P3,
-        clip,
-        ell,
-        rc,
-        tri,
-        heli,
-        plasticPart,
-        soldier2d,
-        sprE,
-        yardPart,
-        draw,
-      } = render2d;
+      // Solo 3D: la proyección de cámara (para la brújula del HUD) vive
+      // en ToyProjection y el dibujo, en ToyDraw3D (WebGL). Sin WebGL no
+      // hay respaldo 2D: se muestra el mensaje de WebGL requerido.
+      const projection = ToyProjection.create(env);
+      const { P3 } = projection;
+      const draw3d = ToyDraw3D.create(env);
+      let { draw } = draw3d;
       const ui = ToyUI.create(env),
         {
           renderStatus,
@@ -530,9 +520,8 @@
       host.document.addEventListener('visibilitychange', () => {
         if (host.document.hidden) pauseGame();
       });
-      /* cámara y proyección 3D (canvas 2D, sin WebGL) */
-      const cv = $('c'),
-        ctx = cv.getContext('2d'),
+      /* cámara y proyección 3D (solo WebGL): el canvas es `world3d`. */
+      const cv = $('world3d'),
         cam = { x: 0, z: 0, yaw: Math.PI / 5 },
         PITCH = cameraFraming(360, 640).pitch;
       Object.assign(state, { W: 360, H: 640, HY: 256, F: 380 });
@@ -546,7 +535,6 @@
         cv.height = r.height * d;
         state.W = r.width;
         state.H = r.height;
-        ctx.setTransform(d, 0, 0, d, 0, 0);
         const framing = cameraFraming(state.W, state.H);
         state.F = framing.scale;
         state.cameraCenterY = framing.centerY;
@@ -564,7 +552,6 @@
             () => {
               pauseGame();
               $('world3d').style.display = 'none';
-              $('c').style.opacity = '1';
               renderStatus(false);
             },
             () => {
@@ -572,7 +559,9 @@
             },
           );
       } catch (error) {
-        console.warn('Modo 2D: no se pudo iniciar WebGL.', error);
+        // Sin WebGL no hay respaldo 2D: el juego muestra el mensaje
+        // de WebGL requerido (ver src/draw3d.js) en vez de dibujar.
+        console.warn('WebGL no disponible: el juego necesita WebGL 3D.', error);
       }
       if (state.renderer3d) renderStatus(true);
 
@@ -1056,7 +1045,7 @@
 
       // Rounded molded parts: a solid team color with a narrow plastic highlight.
 
-      // Shared household geometry projected as shaded faces in the fallback.
+      // Shared household geometry (see src/toy-world.js).
 
       /* dibujo */
 
@@ -1116,7 +1105,8 @@
         audio: audioEngine,
         combat,
         ui,
-        render2d,
+        draw3d,
+        projection,
         pauseGame,
         resumeGame,
         rs,

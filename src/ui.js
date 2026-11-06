@@ -9,7 +9,7 @@
       env.needsDraw = true;
       env.$('renderMode').textContent = active
         ? '3D · Plástico'
-        : '2D · 3D no disponible';
+        : 'WebGL no disponible';
     }
     function menuLayout(page) {
       env.overlayPage = page;

@@ -65,7 +65,7 @@ const path = require('node:path');
       }
       g.start(1, true);
       g.upd(0.01);
-      g.render2d.draw();
+      g.draw3d.draw();
       return checks;
     });
     assert.ok(results.every(Boolean));

@@ -11,8 +11,9 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | input | Teclado y punteros; read() y clear() |
 | collision | Volúmenes del escenario, índice espacial, barrido de proyectiles y movimiento |
 | debris | Componentes de juguetes, astillas, gravedad, rebotes y límite de restos |
-| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`). Cada bala lleva su origen (`b.kind`: `soldier` \| `heli` \| `tank`; las torretas cuentan como tanque) y los renderizadores dibujan la trazadora proporcional al arma |
-| render2d | Sprites y dibujo a partir de scene; caché de decoración |
+| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`). Cada bala lleva su origen (`b.kind`: `soldier` \| `heli` \| `tank`; las torretas cuentan como tanque) y el renderizador dibuja la trazadora proporcional al arma |
+| projection | Proyección de cámara ortográfica oblicua (mundo → pantalla); la usa el HUD (brújula) y las pruebas. No dibuja nada |
+| draw3d | Dibujo solo WebGL: si el renderizador dibuja, muestra `world3d`; si WebGL no inicia o se pierde, muestra `#webglRequired` en vez de un respaldo 2D |
 | ui | Menús, HUD y textos |
 | game | Estado, transiciones, simulación y bucle |
 | toy-world | Geometría y decoración compartidas |
@@ -26,8 +27,8 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | supabase-config | Lee la configuración inyectada (`__SUPABASE_CONFIG__`); sin ella, modo invitado offline. Ningún valor va pegado en el código. La clave secreta no se usa nunca. |
 | supabase | Cliente opcional de Supabase: Auth por correo, puntuaciones y envío de errores. Carga perezosa del CDN; sin configuración o sin red, todo queda en local. |
 | escort-progress | Mejores resultados con esquema versionado y almacenamiento opcional |
-| toy-helicopter | Modelo plástico del jugador compartido por WebGL y Canvas |
-| toy-renderer | Renderizado WebGL y detección de disponibilidad |
+| toy-helicopter | Modelo plástico del jugador para el renderizador WebGL |
+| toy-renderer | Renderizado WebGL y detección de disponibilidad. La sombra del helicóptero se apoya en `surfaceTop(x, z)` (terreno, camino o helipuerto) para no quedar enterrada bajo el camino; se encoge con la altitud |
 
 Game.create(host, options) permite inyectar random y Renderer. El objeto state
 posee los datos de partida; view es una vista de acceso a ese mismo estado para

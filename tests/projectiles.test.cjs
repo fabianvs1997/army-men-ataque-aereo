@@ -111,116 +111,6 @@ test('smoke puffs drift, fade and clear on retry and menu', () => {
   assert.equal(s.SM.length, 0);
 });
 
-test('Canvas 2D draws tracers, missile flame and smoke with the reference colours', () => {
-  const Render2D = require('../src/render2d.js');
-  const strokes = [],
-    fills = [],
-    widths = [];
-  const ctx = {
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    globalCompositeOperation: 'source-over',
-    lineCap: 'butt',
-    beginPath() {},
-    closePath() {},
-    moveTo() {},
-    lineTo() {},
-    stroke() {
-      strokes.push(this.strokeStyle);
-      widths.push(this.lineWidth);
-    },
-    fill() {
-      fills.push(this.fillStyle);
-    },
-    ellipse() {},
-    fillRect() {},
-    save() {},
-    restore() {},
-    translate() {},
-    rotate() {},
-    scale() {},
-    createLinearGradient: () => ({ addColorStop() {} }),
-  };
-  const scene = {
-    ctx,
-    W: 390,
-    H: 844,
-    F: 390 / 105,
-    HY: 400,
-    PITCH: Math.PI / 3,
-    cam: { x: 0, z: 0, yaw: 0 },
-    t: 0,
-    shk: 0,
-    rot: 0,
-    lowQuality: false,
-    groundAt: () => 0,
-    R: (a) => a,
-    $: () => ({ style: {} }),
-    P: null,
-    E: [],
-    DC: [],
-    DB: [],
-    PK: [],
-    BL: [
-      { x: 0, y: 8, z: 20, vx: 0, vy: 0, vz: 170, l: 1, kind: 'soldier' },
-      { x: 0, y: 8, z: 24, vx: 0, vy: 0, vz: 170, l: 1, kind: 'heli' },
-      { x: 0, y: 8, z: 28, vx: 0, vy: 0, vz: 170, l: 1, kind: 'tank' },
-    ],
-    EB: [
-      { x: 0, y: 8, z: 30, vx: 0, vy: 0, vz: -55, l: 4, kind: 'soldier' },
-      { x: 0, y: 8, z: 34, vx: 0, vy: 0, vz: -55, l: 4, kind: 'heli' },
-      { x: 0, y: 8, z: 38, vx: 0, vy: 0, vz: -55, l: 4, kind: 'tank' },
-    ],
-    MS: [{ x: 0, y: 8, z: 10, vx: 0, vy: 0, vz: 75, l: 3 }],
-    SM: [
-      { x: 0, y: 8, z: 5, l: 0.6, max: 0.9, s: 1.5, dark: false, dx: 0, dy: 0.5, dz: 0 },
-      { x: 2, y: 8, z: 6, l: 0.3, max: 0.9, s: 3, dark: true, dx: 0, dy: 0.7, dz: 0 },
-    ],
-    FX: [],
-    mission: null,
-    renderer3d: undefined,
-  };
-  const renderer = Render2D.create(scene);
-  assert.doesNotThrow(() => renderer.draw());
-  assert.ok(strokes.includes('#fff3b0'), 'heli bullet core');
-  assert.ok(strokes.includes('#ffc46b'), 'enemy heli bullet core');
-  assert.ok(strokes.includes('#fff8d8'), 'soldier bullet core');
-  assert.ok(strokes.includes('#ffedb8'), 'enemy soldier bullet core');
-  assert.ok(strokes.includes('#ffe9a2'), 'tank bullet core');
-  assert.ok(strokes.includes('#ffd27a'), 'enemy tank bullet core');
-  // La trazadora se desvanece en gradiente (objeto, no color plano) y es
-  // fina: ningún trazo del dibujo supera 2 px de ancho en esta escena.
-  assert.ok(
-    strokes.some((s) => s && typeof s === 'object'),
-    'tracer fades with a gradient',
-  );
-  assert.ok(Math.max(...widths) <= 2, 'tracers are thin');
-  // El halo es proporcional al arma: los dos tanques dibujan el halo más
-  // ancho y los soldados y helicópteros, el fino. Los trazos con gradiente
-  // son los halos; los de color plano, los núcleos.
-  const haloWidths = widths.filter(
-    (_, i) => strokes[i] && typeof strokes[i] === 'object',
-  );
-  assert.ok(haloWidths.length >= 6, 'one halo per tracer');
-  assert.ok(
-    Math.max(...haloWidths) > Math.min(...haloWidths),
-    'tank halo is wider than soldier halo',
-  );
-  assert.equal(
-    haloWidths.filter((w) => w === Math.max(...haloWidths)).length,
-    2,
-    'both tank tracers share the widest halo',
-  );
-  assert.equal(ctx.globalCompositeOperation, 'lighter', 'additive glow');
-  assert.ok(strokes.includes('#3a3f36'), 'missile body');
-  assert.ok(fills.includes('#ff6a1a'), 'missile flame');
-  assert.ok(fills.includes('#d92b1f'), 'missile nose');
-  assert.ok(fills.includes('#f4f4ee'), 'white smoke');
-  assert.ok(fills.includes('#2b2b28'), 'dark impact smoke');
-});
-
 test('bullets fly about 30% faster with the same effective range', () => {
   const Config = require('../src/escort-config.js');
   assert.equal(Combat.BULLET_SPEED, 170);
@@ -297,7 +187,7 @@ test('player, allied and enemy bullets are tagged by shooter in a live mission',
   );
 });
 
-test('a flying missile trails smoke and draws in the Canvas 2D fallback', () => {
+test('a flying missile trails smoke and draws in 3D', () => {
   const { app, state: s } = game();
   app.start(1, true);
   s.E = [];
@@ -307,5 +197,5 @@ test('a flying missile trails smoke and draws in the Canvas 2D fallback', () => 
   for (let i = 1; i <= 10; i++) app.loop(i * 16);
   assert.ok(s.SM.length >= 1);
   assert.ok(s.SM.every((p) => !p.dark));
-  assert.doesNotThrow(() => app.render2d.draw(app.view));
+  assert.doesNotThrow(() => app.draw3d.draw(app.view));
 });

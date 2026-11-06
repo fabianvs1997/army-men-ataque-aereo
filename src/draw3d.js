@@ -1,0 +1,60 @@
+/* Dibujo 3D (solo WebGL, sin respaldo Canvas 2D).
+
+Si WebGL renderiza, se muestra el canvas `world3d` y se oculta el
+mensaje de WebGL requerido. Si WebGL no inicia o se pierde, NO se
+dibuja nada en 2D: se muestra `#webglRequired`, un mensaje claro de
+que el juego necesita WebGL 3D. */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.ToyDraw3D = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  function create(scene) {
+    function draw(nextScene) {
+      if (nextScene) scene = nextScene;
+      scene.HY =
+        (scene.cameraCenterY ??
+          scene.H * 0.64 + 8 * Math.cos(scene.PITCH) * scene.F) +
+        (scene.shk > 0 && typeof scene.R === 'function' ? scene.R(-2, 2) : 0);
+      const message = scene.$ ? scene.$('webglRequired') : null;
+      if (
+        scene.renderer3d &&
+        scene.renderer3d.render({
+          pixelRatio: scene.lowQuality ? 1 : scene.pixelRatioCap || 1.75,
+          perfLevel: scene.perfLevel || 0,
+          W: scene.W,
+          H: scene.H,
+          F: scene.F,
+          HY: scene.HY,
+          cam: scene.cam,
+          PITCH: scene.PITCH,
+          P: scene.P,
+          E: scene.E,
+          DC: scene.DC,
+          BL: scene.BL,
+          EB: scene.EB,
+          MS: scene.MS,
+          FX: scene.FX,
+          SM: scene.SM,
+          DB: scene.DB,
+          PK: scene.PK,
+          rot: scene.rot,
+          t: scene.t,
+          allies: scene.mission
+            ? (scene.mission.guards || []).concat(scene.mission.allies)
+            : [],
+        })
+      ) {
+        scene.$('world3d').style.display = 'block';
+        if (message) message.style.display = 'none';
+        return true;
+      }
+      scene.$('world3d').style.display = 'none';
+      if (message) message.style.display = 'flex';
+      return false;
+    }
+    return { draw };
+  }
+  return { create };
+});

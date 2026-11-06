@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'regreso-a-1';
+  const VERSION = 'solo-3d-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -23,13 +23,14 @@
     'toy-world',
     'toy-helicopter',
     'toy-renderer',
+    'projection',
+    'draw3d',
     'collision',
     'prefs',
     'audio',
     'input',
     'debris',
     'combat',
-    'render2d',
     'ui',
     'perf',
     'logger',

@@ -49,7 +49,7 @@ const path = require('node:path');
         const g = window.fixtureGame;
         Object.assign(g.view.cam, { x: g.state.P.x, z: g.state.P.z, yaw: 1 });
         g.state.F = 12;
-        g.render2d.draw();
+        g.draw3d.draw();
       });
     await draw();
     assert.equal(
@@ -75,18 +75,17 @@ const path = require('node:path');
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
-      document.getElementById('world3d').style.display = 'none';
-      document.getElementById('c').style.opacity = '1';
+      // Sin WebGL no hay respaldo 2D: draw3d muestra el mensaje.
     });
     await draw();
     await page.screenshot({
-      path: '/tmp/pitch-canvas.png',
+      path: '/tmp/pitch-webgl-required.png',
       clip: { x: 250, y: 170, width: 340, height: 280 },
     });
     const level = await page.evaluate(() => {
       const g = window.fixtureGame;
       for (let i = 0; i < 180; i++) g.upd(1 / 60);
-      g.render2d.draw();
+      g.draw3d.draw();
       return g.state.P.pitch;
     });
     assert.ok(Math.abs(level) < 0.001);
@@ -94,7 +93,7 @@ const path = require('node:path');
     await draw();
     assert.deepEqual(errors, []);
     console.log(
-      'PASS pitch: keyboard movement nose-down, release nose-up, smooth return to level, WebGL and Canvas, both orientations; no JS errors',
+      'PASS pitch: keyboard movement nose-down, release nose-up, smooth return to level, WebGL, both orientations; no JS errors',
     );
   } finally {
     await browser.close();
