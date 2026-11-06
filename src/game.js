@@ -854,6 +854,25 @@
         for (const e of state.E) {
           if (e.dead) continue;
           e.fl = Math.max(0, e.fl - dt);
+          // Alcance de disparo por tipo: la línea de visión a un soldado
+          // solo se traza si el enemigo podría dispararle. Antes se
+          // trazaba a cualquier soldado más cercano que el jugador, sin
+          // límite de distancia: con el jugador lejos (vuelo a C y vuelta
+          // a A sin recoger heridos, o con heridos a bordo sin entregar
+          // en C) eran 50-90 traces/frame de hasta 370 u, con traces
+          // sueltos de hasta 50 ms en Node (misión 1). El enemigo solo
+          // dispara dentro de su alcance; más allá de él persigue al
+          // jugador, como ya hacen los aliados en defend().
+          const rg =
+            e.k === 'tur'
+              ? 65
+              : e.k === 'tank'
+                ? 75
+                : e.k === 'heli'
+                  ? 70
+                  : e.k === 'inf'
+                    ? 45
+                    : 0;
           let target = state.P,
             nearest = Math.hypot(state.P.x - e.x, state.P.z - e.z);
           // La lista de soldados activos es la misma para todos los
@@ -871,6 +890,7 @@
             const point = soldierPoints[i];
             if (
               d < nearest &&
+              d <= rg &&
               !cover.trace({ x: e.x, y: e.y + 2, z: e.z }, point)
             ) {
               target = point;
@@ -908,16 +928,6 @@
           e.x = solidPosition.x;
           e.z = solidPosition.z;
           if (e.k !== 'heli') e.y = groundAt(e.x, e.z);
-          const rg =
-            e.k === 'tur'
-              ? 65
-              : e.k === 'tank'
-                ? 75
-                : e.k === 'heli'
-                  ? 70
-                  : e.k === 'inf'
-                    ? 45
-                    : 0;
           e.cd -= dt;
           if (
             rg &&
