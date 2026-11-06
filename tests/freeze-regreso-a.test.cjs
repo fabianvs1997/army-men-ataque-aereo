@@ -236,11 +236,29 @@ function drive(app, state, frames = 30) {
   }
 }
 
+// Punto a `distance` unidades por la ruta desde `route[i]`, siguiendo
+// sus tramos: con el motor de mapas los tramos ya no miden lo mismo
+// en cada mapa, así que las distancias de prueba se caminan, no se
+// asumen desde los puntos de la ruta.
+function pointAlongRoute(route, i, distance) {
+  let [x, z] = route[i];
+  let left = distance;
+  for (let j = i + 1; j < route.length && left > 0; j++) {
+    const [bx, bz] = route[j],
+      len = Math.hypot(bx - x, bz - z);
+    if (len >= left) return [x + ((bx - x) / len) * left, z + ((bz - z) / len) * left];
+    x = bx;
+    z = bz;
+    left -= len;
+  }
+  return [x, z];
+}
+
 test('un tanque persigue al jugador, no a un soldado fuera de su alcance', () => {
   const { app, state, tank, soldier, routeAB } = targetingSetup();
-  // Soldado en el siguiente punto de la ruta, a ~83 u del tanque:
-  // fuera del alcance del tanque (75 u).
-  const [sx, sz] = routeAB[2];
+  // Soldado a 83 u del tanque por la ruta: fuera del alcance del
+  // tanque (75 u).
+  const [sx, sz] = pointAlongRoute(routeAB, 1, 83);
   soldier.x = sx;
   soldier.z = sz;
   // Jugador en dirección opuesta al soldado, a ~113 u del tanque.
@@ -269,15 +287,15 @@ test('un tanque persigue al jugador, no a un soldado fuera de su alcance', () =>
 
 test('un soldado dentro del alcance sigue siendo el objetivo', () => {
   const { app, state, tank, soldier, routeAB } = targetingSetup();
-  // Soldado a ~50 u del tanque por el mismo tramo de ruta: dentro de
-  // su alcance (75 u) y con línea de visión despejada.
+  // Soldado a 50 u del tanque por la ruta: dentro de su alcance
+  // (75 u) y con línea de visión despejada por el camino.
   const [ax, az] = routeAB[1];
-  const [bx, bz] = routeAB[2];
-  const dx = bx - ax,
-    dz = bz - az,
+  const [sx, sz] = pointAlongRoute(routeAB, 1, 50);
+  soldier.x = sx;
+  soldier.z = sz;
+  const dx = sx - ax,
+    dz = sz - az,
     d = Math.hypot(dx, dz);
-  soldier.x = ax + (dx / d) * 50;
-  soldier.z = az + (dz / d) * 50;
   // Jugador en dirección opuesta al soldado, a ~113 u del tanque.
   state.P.x = ax - (dx / d) * 113;
   state.P.z = az - (dz / d) * 113;

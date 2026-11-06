@@ -12,10 +12,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'solo-3d-1';
+  const VERSION = 'mapas-random-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
+    'mapgen',
     'mission-map',
     'escort-navigation',
     'escort-mission',

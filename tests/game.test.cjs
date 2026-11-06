@@ -58,6 +58,10 @@ test('chase flight advances, reverses and steers continuously with camera alignm
       s = g.state;
     g.app.start(1, true);
     s.E = [];
+    // La salida A ya no es fija en (0, 0): se mide el desplazamiento
+    // desde donde arranca el jugador, no desde el origen.
+    const startX = s.P.x,
+      startZ = s.P.z;
     key(g, k);
     for (let i = 0; i < 20; i++) {
       const before = s.P.yaw;
@@ -67,10 +71,10 @@ test('chase flight advances, reverses and steers continuously with camera alignm
     }
     if (k === 'w' || k === 's') {
       assert.equal(s.P.yaw, 0);
-      assert.ok(s.P.z * (k === 'w' ? 1 : -1) > 0);
+      assert.ok((s.P.z - startZ) * (k === 'w' ? 1 : -1) > 0);
     } else {
-      assert.equal(s.P.x, 0);
-      assert.equal(s.P.z, 0);
+      assert.equal(s.P.x, startX);
+      assert.equal(s.P.z, startZ);
       assert.ok(s.P.yaw * (k === 'a' ? 1 : -1) > 0);
     }
     g.app.input.clear();
@@ -84,11 +88,12 @@ test('joystick changes direction without release, keeps firing independent and c
     s = g.state;
   g.app.start(1, true);
   s.E = [];
+  const startZ = s.P.z;
   const c = g.element('world3d');
   c.emit('pointerdown', { pointerId: 1, clientX: 40, clientY: 200 });
   c.emit('pointermove', { pointerId: 1, clientX: 40, clientY: 130 });
   g.app.upd(0.03);
-  assert.ok(s.P.z > 0);
+  assert.ok(s.P.z > startZ);
   assert.equal(s.P.yaw, 0);
   const z = s.P.z;
   c.emit('pointermove', { pointerId: 1, clientX: 40, clientY: 270 });
@@ -191,16 +196,46 @@ test('seeded missions reproduce spawns and terrain heights; 3D draw without WebG
   assert.doesNotThrow(() => a.app.draw3d.draw(a.app.view));
 });
 test('assisted bullets hit offset infantry without turning the player', () => {
-  const g = game(),
+  // Semilla fija: el mapa (y con él la ruta) cambia con la semilla y
+  // la geometría del disparo depende de él.
+  const g = game(123),
     s = g.state;
   g.app.start(1, true);
   s.E = [];
   const target = g.app.spawnE('inf', -90, 100);
-  // Place a close target explicitly to isolate aim assistance from spawn policy.
-  target.x = 5;
-  target.z = 35;
-  target.y = require('../src/toy-world.js').height(5, 35);
+  // Objetivo junto a la ruta, 35 u desde A y 5 u a un lado: sobre el
+  // camino llano, como el (5, 35) original respecto a la ruta vieja.
+  // La salida A ya no es fija en (0, 0): en coordenadas absolutas la
+  // bala asistida cruzaría terreno elevado y chocaría antes de llegar.
+  const route = s.world.routes[0];
+  let [tx, tz] = route[0];
+  let left = 35;
+  for (let j = 1; j < route.length && left > 0; j++) {
+    const [bx, bz] = route[j],
+      len = Math.hypot(bx - tx, bz - tz);
+    if (len >= left) {
+      tx += ((bx - tx) / len) * left;
+      tz += ((bz - tz) / len) * left;
+      left = 0;
+    } else {
+      tx = bx;
+      tz = bz;
+      left -= len;
+    }
+  }
+  const rdx = route[1][0] - route[0][0],
+    rdz = route[1][1] - route[0][1],
+    rdl = Math.hypot(rdx, rdz);
+  target.x = tx + (-rdz / rdl) * 5;
+  target.z = tz + (rdx / rdl) * 5;
+  target.y = require('../src/toy-world.js').height(target.x, target.z);
   target.cd = 999;
+  // El jugador mira hacia la ruta antes de disparar: la asistencia
+  // solo actúa en un cono estrecho y el objetivo está junto al
+  // camino, no en línea recta hacia adelante. Lo que comprueba el
+  // test es que no gira durante el disparo.
+  const yaw0 = Math.atan2(rdx, rdz);
+  s.P.yaw = yaw0;
   g.element('fu').emit('pointerdown', { pointerId: 1 });
   g.app.upd(0.01);
   g.element('fu').emit('pointerup', { pointerId: 1 });
@@ -210,7 +245,7 @@ test('assisted bullets hit offset infantry without turning the player', () => {
   s.BL = s.BL.filter((b) => b.vy < 0);
   for (let i = 0; i < 8; i++) g.app.upd(0.04);
   assert.equal(target.hp, 1);
-  assert.equal(s.P.yaw, 0);
+  assert.equal(s.P.yaw, yaw0);
 });
 test('result panels preserve retry/next actions and Escape navigates without losing state', () => {
   for (const [state, expected] of [

@@ -110,8 +110,15 @@
       for (const [cx, cz, radius] of clearings)
         distance = Math.min(distance, Math.hypot(x - cx, z - cz) - radius);
       const t = Math.max(0, Math.min(1, distance / 16));
-      const ridge =
-        22 + 4 * Math.sin(x / 31 + (map?.seed || 0)) * Math.cos(z / 37);
+      // Relieve del motor de mapas (src/mapgen.js): cada mapa tiene
+      // su amplitud y frecuencias; sin mapa, el relieve clásico.
+      const terrain = map?.terrain;
+      const ridge = terrain
+        ? terrain.amp +
+          4 *
+            Math.sin(x / terrain.freqX + terrain.phase) *
+            Math.cos(z / terrain.freqZ + terrain.phase)
+        : 22 + 4 * Math.sin(x / 31 + (map?.seed || 0)) * Math.cos(z / 37);
       return t * t * (3 - 2 * t) * ridge;
     }
     const heights = new Float32Array(COUNT * COUNT);
@@ -199,14 +206,27 @@
       );
     }
     // Household props share footprints and geometry between both renderers.
-    const landmarks = [
+    // El motor de mapas puede mover los puntos de interés; sin mapa,
+    // quedan en su sitio clásico.
+    const landmarks = (map?.landmarks || [
       { kind: 'planter', x: 34, z: 26, radius: 21, yaw: 0 },
       { kind: 'watering', x: -45, z: -33, radius: 10, yaw: 0 },
       { kind: 'bench', x: 70, z: -48, radius: 12, yaw: 0 },
-    ];
+    ]).map((p) => ({ ...p }));
     const yard = [];
     let offset = { x: 0, y: 0, z: 0 };
     const placements = new Map();
+    // Las piezas del patio se dibujan en estas coordenadas fijas y
+    // `placeLandmark` las desplaza con `offset`. El motor de mapas
+    // puede proponer otra posición inicial, pero el desplazamiento
+    // siempre se mide contra la base fija: si se midiera contra la
+    // posición propuesta, un punto ya libre quedaría con offset 0 y
+    // las piezas se dibujarían en el sitio viejo, sobre la ruta.
+    const landmarkHome = [
+      { x: 34, z: 26 },
+      { x: -45, z: -33 },
+      { x: 70, z: -48 },
+    ];
     function placeLandmark(index) {
       if (!map) return;
       if (placements.has(index)) {
@@ -214,6 +234,7 @@
         return;
       }
       const p = landmarks[index],
+        home = landmarkHome[index],
         original = { ...p };
       const free = (x, z) =>
         Math.abs(x) < LIMIT - 65 &&
@@ -233,9 +254,9 @@
           }
         }
       offset = {
-        x: p.x - original.x,
-        z: p.z - original.z,
-        y: height(p.x, p.z) - height(original.x, original.z),
+        x: p.x - home.x,
+        z: p.z - home.z,
+        y: height(p.x, p.z) - height(home.x, home.z),
       };
       placements.set(index, offset);
     }
@@ -354,33 +375,39 @@
       );
     }
     // Deterministic natural shrubs replace the scattered toy building blocks.
-    const shrubs = [];
-    for (let i = 0; i < (map ? 230 : 90); i++) {
-      const x = Math.sin(i * 7.12 + (map?.seed || 0)) * (LIMIT - 18),
-        z = Math.cos(i * 11.79 + (map?.seed || 0)) * (LIMIT - 20);
-      if (
-        Math.hypot(x, z) < 24 ||
-        clearings.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 7) ||
-        !clearOfLandmarks(x, z, 7) ||
-        trailDistance(x, z) < 18 ||
-        z > LIMIT - 44
-      )
-        continue;
-      shrubs.push({ t: 'shrub', x, z, s: 2 + (i % 4) * 0.6 });
-    }
-    const rocks = [];
-    for (let i = 0; i < (map ? 165 : 65); i++) {
-      const x = Math.sin(i * 12.989 + (map?.seed || 0)) * (LIMIT - 19),
-        z = Math.cos(i * 7.713 + (map?.seed || 0)) * (LIMIT - 19);
-      if (
-        Math.hypot(x, z) < 24 ||
-        trailDistance(x, z) < 18 ||
-        clearings.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 5) ||
-        landmarks.some((p) => Math.hypot(x - p.x, z - p.z) < p.radius + 5)
-      )
-        continue;
-      rocks.push({ x, z, s: 1.1 + (i % 4) * 0.4 });
-    }
+    // Con mapa del motor, la vegetación viene ya generada (posiciones
+    // con semilla, fuera de pads y rutas); sin mapa, la clásica.
+    const shrubs = map?.scenery
+      ? map.scenery.shrubs.map((s) => ({ ...s }))
+      : [];
+    if (!map?.scenery)
+      for (let i = 0; i < (map ? 230 : 90); i++) {
+        const x = Math.sin(i * 7.12 + (map?.seed || 0)) * (LIMIT - 18),
+          z = Math.cos(i * 11.79 + (map?.seed || 0)) * (LIMIT - 20);
+        if (
+          Math.hypot(x, z) < 24 ||
+          clearings.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 7) ||
+          !clearOfLandmarks(x, z, 7) ||
+          trailDistance(x, z) < 18 ||
+          z > LIMIT - 44
+        )
+          continue;
+        shrubs.push({ t: 'shrub', x, z, s: 2 + (i % 4) * 0.6 });
+      }
+    const rocks = map?.scenery ? map.scenery.rocks.map((r) => ({ ...r })) : [];
+    if (!map?.scenery)
+      for (let i = 0; i < (map ? 165 : 65); i++) {
+        const x = Math.sin(i * 12.989 + (map?.seed || 0)) * (LIMIT - 19),
+          z = Math.cos(i * 7.713 + (map?.seed || 0)) * (LIMIT - 19);
+        if (
+          Math.hypot(x, z) < 24 ||
+          trailDistance(x, z) < 18 ||
+          clearings.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 5) ||
+          landmarks.some((p) => Math.hypot(x - p.x, z - p.z) < p.radius + 5)
+        )
+          continue;
+        rocks.push({ x, z, s: 1.1 + (i % 4) * 0.4 });
+      }
     function clearOfLandmarks(x, z, margin = 8) {
       return (
         z < LIMIT - 44 - margin &&

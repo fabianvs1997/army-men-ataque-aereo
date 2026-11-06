@@ -13,7 +13,11 @@ test('mission start and retry preload the entire air squadron outside the depart
         for (const e of air) {
           assert.equal(e.y, 8);
           assert.ok(
-            Math.hypot(e.x - layout.start.x, e.z - layout.start.z) - e.r >=
+            Math.hypot(
+              e.x - state.mission.start.x,
+              e.z - state.mission.start.z,
+            ) -
+              e.r >=
               layout.minEnemyDistance,
           );
         }
