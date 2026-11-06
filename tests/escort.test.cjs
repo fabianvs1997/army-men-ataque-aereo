@@ -134,9 +134,9 @@ test('ground escort reaches C through real terrain without exceeding speed or cr
   assert.ok(
     m.allies.filter((a) => !a.wounded).every((a) => a.state === 'SEGURO_EN_C'),
   );
-  assert.equal(m.delivered, m.rules.healthy);
+  assert.equal(m.delivered, m.rules.healthy + m.rules.wounded);
   tick(m, m.finish, 2, env);
-  assert.equal(m.delivered, m.rules.healthy);
+  assert.equal(m.delivered, m.rules.healthy + m.rules.wounded);
 });
 test('blocked soldiers become explicit casualties after timeout instead of teleporting', () => {
   const c = require('../src/escort-config.js'),
@@ -156,5 +156,64 @@ test('blocked soldiers become explicit casualties after timeout instead of telep
   assert.equal(
     m.drainEvents().filter((e) => e.reason === 'atasco').length,
     c.healthy,
+  );
+});
+test('helicopter-only arrival cannot win; delivery is stable and counts each soldier once', () => {
+  const m = escorted();
+  tick(m, m.finish, 3, { cover: { trace: () => null, move: (a) => a } });
+  assert.equal(m.stage, 'ENTREGA_C');
+  assert.equal(m.complete, false);
+  assert.equal(m.delivered, m.rules.wounded);
+  assert.ok(
+    m.allies.filter((a) => !a.wounded).every((a) => a.state !== 'SEGURO_EN_C'),
+  );
+  tick(m, m.finish, 90);
+  assert.equal(m.complete, true);
+  assert.equal(m.delivered, m.allies.length);
+  assert.equal(m.stars, 3);
+  tick(m, m.finish, 10);
+  assert.equal(m.delivered, m.allies.length);
+});
+test('total squad loss fails, while surviving wounded can be delivered after ground casualties', () => {
+  const m = escorted();
+  for (const a of m.allies) {
+    a.state = 'MARCHANDO_A_C';
+    a.wounded = false;
+    m.damageSoldier(a, 100);
+  }
+  tick(m, m.finish, 0.1);
+  assert.equal(m.failed, true);
+  assert.equal(m.complete, false);
+  const survivor = escorted();
+  for (const a of survivor.allies.filter((a) => !a.wounded))
+    survivor.damageSoldier(a, 100);
+  tick(survivor, survivor.finish, 3);
+  assert.equal(survivor.complete, true);
+  assert.equal(survivor.stars, 1);
+});
+test('versioned progress keeps best results and tolerates missing or corrupt storage', () => {
+  const Progress = require('../src/escort-progress.js');
+  let saved = null;
+  const store = Progress.create(() => ({
+    getItem: () => saved,
+    setItem: (_, v) => (saved = v),
+  }));
+  assert.deepEqual(store.read().missions, {});
+  assert.equal(store.record(1, { complete: false }), false);
+  assert.equal(
+    store.record(1, { complete: true, stars: 3, delivered: 7 }),
+    true,
+  );
+  store.record(1, { complete: true, stars: 1, delivered: 2 });
+  assert.deepEqual(store.read().missions[1], { stars: 3, saved: 7 });
+  saved = '{broken';
+  assert.deepEqual(store.read().missions, {});
+  const missing = Progress.create(() => {
+    throw Error('blocked');
+  });
+  assert.deepEqual(missing.read().missions, {});
+  assert.equal(
+    missing.record(1, { complete: true, stars: 1, delivered: 1 }),
+    false,
   );
 });

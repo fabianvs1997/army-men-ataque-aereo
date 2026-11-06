@@ -327,6 +327,39 @@
             if (!a.wounded && a.state !== 'CAIDO') a.state = 'MARCHANDO_A_C';
         }
       }
+      const atC =
+        Math.hypot(player.x - this.finish.x, player.z - this.finish.z) <=
+        this.rules.deliveryRadius;
+      const walking = this.allies.filter(
+        (a) => !a.wounded && a.state !== 'CAIDO',
+      );
+      if (
+        this.stage === 'ESCOLTAR_BC' &&
+        (atC || walking.every((a) => a.state === 'SEGURO_EN_C'))
+      )
+        this.transition('ENTREGA_C');
+      if (this.stage === 'ENTREGA_C') {
+        const stable = atC && !env.moving && !env.firing && !env.damaged;
+        this.deliveryHold = stable ? this.deliveryHold + dt : 0;
+        if (this.deliveryHold >= this.rules.deliverySeconds - 1e-9) {
+          for (const a of this.allies)
+            if (a.state === 'A_BORDO') {
+              a.state = 'SEGURO_EN_C';
+              this.delivered++;
+              this.events.push({ type: 'delivered', id: a.id });
+            }
+        }
+        const survivors = this.allies.filter((a) => a.state !== 'CAIDO');
+        if (
+          survivors.length &&
+          survivors.every((a) => a.state === 'SEGURO_EN_C')
+        ) {
+          const ratio = survivors.length / this.allies.length;
+          this.stars = ratio >= 0.85 ? 3 : ratio >= 0.5 ? 2 : 1;
+          this.transition('COMPLETADA');
+          return 'complete';
+        }
+      }
       const marching = this.allies.filter(
         (a) => !a.wounded && !['CAIDO', 'SEGURO_EN_C'].includes(a.state),
       );
