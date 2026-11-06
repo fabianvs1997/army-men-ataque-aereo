@@ -66,7 +66,8 @@ test('campaign enemies spawn on the valley floor across deterministic seeds', ()
       app.start(n, true);
       for (const e of state.E)
         assert.ok(World.canTravel(e.x, e.z), `${e.k} spawned on ridge`);
-      assert.equal(state.E.filter((e) => e.k === 'base').length, n);
+      assert.equal(state.E.length, state.mission.enemyPlan.length);
+      assert.equal(state.mission.guards.length, 4);
     }
   }
 });

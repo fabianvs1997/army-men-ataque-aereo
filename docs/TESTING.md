@@ -24,6 +24,7 @@ BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-helicopter.cjs
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-trails.cjs
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-route.cjs
 BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-initial-air.cjs
+BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-escort.cjs
 ```
 
 Abre file://, inicia, dispara, pausa, navega ayuda/ajustes, silencia, continúa,
@@ -100,3 +101,9 @@ fuego y liberación final. Espera la entrega de cada evento antes de simular fra
 Las pruebas Node cubren zona muerta, teclas opuestas, velocidad diagonal, consistencia
 entre 30/120 Hz, cancelación táctil y pausa. Este esquema sustituye el rumbo fijo
 por gesto de la primera cámara de seguimiento.
+
+## Aceptación de #27
+
+`escort.test.cjs` cubre estados, bloqueo de B, capacidad, abordaje selectivo, fuego aliado con visibilidad, marcha, atascos, entrega y guardado. `escort-integration.test.cjs` verifica daño real a soldados, combate autónomo, cinco reinicios con listeners y progreso intactos, y navegación entre restos con varias semillas.
+
+`smoke-escort.cjs` ejecuta A→B→C en Chromium desde file://, verifica que llegar antes que la columna no gana, revisa estrellas guardadas y reinicios, y captura WebGL vertical y Canvas horizontal. Los enemigos de B y de la emboscada se eliminan mediante el API de combate para aislar el flujo de misión; la marcha del pelotón se simula fotograma a fotograma con colisiones reales.

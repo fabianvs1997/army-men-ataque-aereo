@@ -11,10 +11,27 @@
   const { start, finish, camps, route } = missions.layout;
   // One open route: safe departure, distant camps, then a separate extraction pad.
   const routes = [route];
+  const escortConfig =
+    typeof module === 'object' && module.exports
+      ? require('./escort-config.js')
+      : root.ToyEscortConfig;
   const pads = [
-    { ...start, final: false },
-    { ...finish, final: true },
+    { ...escortConfig.B, final: false, rescue: true, label: 'B' },
+    { ...start, final: false, label: 'A' },
+    { ...finish, final: true, label: 'C' },
   ];
+  const glyphs = {
+    A: ['01110', '10001', '11111', '10001', '10001'],
+    B: ['11110', '10001', '11110', '10001', '11110'],
+    C: ['01111', '10000', '10000', '10000', '01111'],
+  };
+  const padMarks = pads.flatMap((p) =>
+    glyphs[p.label].flatMap((row, j) =>
+      [...row].flatMap((bit, i) =>
+        bit === '1' ? [{ x: p.x + (i - 2) * 1.2, z: p.z + (2 - j) * 1.2 }] : [],
+      ),
+    ),
+  );
   const clearings = [
     [start.x, start.z, 23],
     [finish.x, finish.z, 23],
@@ -343,7 +360,7 @@
           [8, 8],
           [-8, 8],
         ],
-        site.final ? '#93e29b' : '#dfd39e',
+        site.rescue ? '#f5ad40' : site.final ? '#93e29b' : '#dfd39e',
         0.24,
       );
       pad(
@@ -356,28 +373,17 @@
         site.final ? '#2a6547' : '#566449',
         0.27,
       );
-      for (const side of [-1, 1])
-        pad(
-          [
-            [side * 2 - 0.35, -3],
-            [side * 2 + 0.35, -3],
-            [side * 2 + 0.35, 3],
-            [side * 2 - 0.35, 3],
-          ],
-          '#dfd39e',
-          0.36,
-        );
-      pad(
+    }
+    for (const p of padMarks)
+      add(
         [
-          [-2, -0.35],
-          [2, -0.35],
-          [2, 0.35],
-          [-2, 0.35],
+          [p.x - 0.55, 0.36, p.z - 0.55],
+          [p.x + 0.55, 0.36, p.z - 0.55],
+          [p.x + 0.55, 0.36, p.z + 0.55],
+          [p.x - 0.55, 0.36, p.z + 0.55],
         ],
         '#dfd39e',
-        0.36,
       );
-    }
     faces.sort((a, b) => b.depth - a.depth);
     if (ctx.save) ctx.save();
     for (const f of faces) {
@@ -399,6 +405,7 @@
   const api = {
     height,
     pads,
+    padMarks,
     routes,
     clearings,
     trailDistance,

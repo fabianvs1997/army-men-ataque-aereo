@@ -507,7 +507,9 @@
             PK: scene.PK,
             rot: scene.rot,
             t: scene.t,
-            allies: scene.mission ? scene.mission.allies : [],
+            allies: scene.mission
+              ? (scene.mission.guards || []).concat(scene.mission.allies)
+              : [],
           })
         ) {
           scene.$('world3d').style.display = 'block';
@@ -667,10 +669,12 @@
             add(o.x, o.y, o.z, () => yardPart(o));
         }
         if (scene.mission)
-          for (const a of scene.mission.allies)
-            if (a.state !== 'rescued')
+          for (const a of (scene.mission.guards || []).concat(
+            scene.mission.allies,
+          ))
+            if (!['rescued', 'A_BORDO', 'CAIDO'].includes(a.state))
               add(a.x, scene.groundAt(a.x, a.z), a.z, (p) =>
-                soldier2d(p, true, a.state === 'waiting'),
+                soldier2d(p, true, a.wounded || a.state === 'waiting'),
               );
         for (const d of scene.DB || []) add(d.x, d.y, d.z, () => yardPart(d));
         for (const e of scene.E)

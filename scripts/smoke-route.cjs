@@ -92,10 +92,10 @@ const path = require('node:path');
         };
         stand(s.mission.finish, 50);
         const early = s.st;
-        for (const a of s.mission.allies) stand(a, 30);
+        for (const a of s.mission.allies.filter((a) => a.wounded)) stand(a, 35);
         stand(s.mission.start, 50);
         const atStart = s.st;
-        stand(s.mission.finish, 40);
+        stand(s.mission.finish, 1800);
         result.push({ early, atStart, end: s.st });
       }
       return result;

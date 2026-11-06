@@ -1,9 +1,13 @@
 /* Three short rescue missions. No renderer or browser dependencies. */
 (function (root) {
   'use strict';
+  const EscortConfig =
+    typeof module === 'object' && module.exports
+      ? require('./escort-config.js')
+      : root.ToyEscortConfig;
   const layout = {
-    start: { x: 0, z: 0 },
-    finish: { x: 155, z: 125 },
+    start: EscortConfig.A,
+    finish: EscortConfig.C,
     camps: [
       [-90, 100],
       [0, 125],
@@ -23,7 +27,7 @@
       [155, 125],
     ],
     minRescueDistance: 100,
-    minEnemyDistance: 90,
+    minEnemyDistance: EscortConfig.safeRadius,
   };
   const configs = [
     {

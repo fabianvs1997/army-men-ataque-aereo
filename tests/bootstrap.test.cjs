@@ -63,6 +63,6 @@ test('bootstrap stops on failed asset instead of initializing a partial game', a
       },
     },
   };
-  await assert.rejects(bootstrap.start(host), /Could not load toy-missions/);
+  await assert.rejects(bootstrap.start(host), /Could not load escort-config/);
   assert.equal(created, false);
 });
