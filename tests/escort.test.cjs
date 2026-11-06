@@ -37,3 +37,66 @@ test('A guards and B squad are distinct and all enemies are predeclared outside 
     }
   }
 });
+const tick = (m, p, seconds, env = {}) => {
+  for (let i = 0; i < Math.ceil(seconds / 0.05); i++) m.update(0.05, p, env);
+};
+test('B boarding requires local clearance, accepts only wounded and resets interrupted holds', () => {
+  const m = new Mission(),
+    b = m.rules.B,
+    a = m.allies.find((a) => a.wounded),
+    threat = { id: 'blocker', x: b.x + 20, z: b.z, y: 0, k: 'tank', hp: 10 };
+  tick(m, a, 2, { enemies: [threat] });
+  assert.equal(m.stage, 'DESPEJAR_B');
+  assert.equal(m.rescued, 0);
+  m.damageSoldier(a, 100);
+  assert.ok(a.hp > 0, 'wounded are protected during clearance');
+  tick(m, a, 1, { enemies: [] });
+  assert.equal(a.state, 'ABORDANDO');
+  tick(m, a, 0.1, { enemies: [threat] });
+  assert.equal(a.hold, 0);
+  const distant = { ...threat, x: 0, z: 0 };
+  tick(m, a, 2, { enemies: [distant] });
+  assert.equal(a.state, 'A_BORDO');
+  for (const soldier of m.allies.filter((a) => a.wounded))
+    tick(m, soldier, 2, { enemies: [] });
+  assert.equal(m.rescued, 3);
+  assert.equal(m.stage, 'ESCOLTAR_BC');
+  assert.ok(
+    m.allies
+      .filter((a) => !a.wounded)
+      .every((a) => a.state === 'MARCHANDO_A_C'),
+  );
+});
+test('healthy soldiers fire autonomously only with line of sight; losses emit once', () => {
+  const m = new Mission(),
+    a = m.allies[0];
+  let shots = 0;
+  const env = {
+    groundAt: () => 0,
+    enemies: [{ x: a.x + 10, z: a.z, y: 0, hp: 10, k: 'inf' }],
+    fireAlly: () => shots++,
+    cover: { trace: () => ({ t: 0.5 }) },
+  };
+  m.defend(a, 1, env);
+  assert.equal(shots, 0);
+  env.cover.trace = () => null;
+  m.defend(a, 1, env);
+  assert.equal(shots, 1);
+  assert.equal(m.damageSoldier(a, 100), true);
+  assert.equal(m.damageSoldier(a, 100), false);
+  assert.equal(
+    m.drainEvents().filter((e) => e.type === 'soldier-fallen').length,
+    1,
+  );
+});
+test('no waiting wounded explicitly starts escort and configured capacity limits generation', () => {
+  const c = require('../src/escort-config.js');
+  const m = new Mission(1, { ...c, wounded: 0 });
+  tick(m, c.B, 0.1);
+  assert.equal(m.stage, 'ESCOLTAR_BC');
+  assert.equal(
+    new Mission(1, { ...c, wounded: 20 }).allies.filter((a) => a.wounded)
+      .length,
+    c.capacity,
+  );
+});
