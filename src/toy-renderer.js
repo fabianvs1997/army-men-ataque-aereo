@@ -292,10 +292,11 @@ void main(){
           dz = z - r.z,
           c = Math.cos(r.yaw),
           s = Math.sin(r.yaw),
-          // Coordenadas locales del camino (ancho 5, medio largo r.length).
+          // Coordenadas locales del camino (medio ancho r.halfWidth,
+          // 15 en el mundo; 5 en mundos viejos sin ese campo).
           lx = dx * c - dz * s,
           lz = dx * s + dz * c;
-        if (Math.abs(lx) <= 5 && Math.abs(lz) <= r.length) {
+        if (Math.abs(lx) <= (r.halfWidth || 5) && Math.abs(lz) <= r.length) {
           top = Math.max(top, r.y + 0.04);
           break;
         }
@@ -562,7 +563,7 @@ void main(){
               r.x,
               r.y,
               r.z,
-              5,
+              r.halfWidth || 5,
               0.04,
               r.length,
               [0.63, 0.51, 0.32],

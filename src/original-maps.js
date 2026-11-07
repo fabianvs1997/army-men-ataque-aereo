@@ -56,6 +56,15 @@
   'use strict';
   const LIMIT = 320;
   const MISSIONS = 3;
+  // El camino del original es ANCHO: medio ancho 15 u (30 u en total,
+  // 3x el anterior de 10 u). Debe coincidir con el del mundo
+  // (src/toy-world.js, ROAD_HALF_WIDTH): hay un test que lo comprueba.
+  // La vegetación se mantiene fuera del camino con 13 u de margen
+  // sobre el medio ancho: las patrullas flanquean a ±19 u y un
+  // arbusto (radio ~3,8 u) no debe solaparlas (radio de patrulla
+  // hasta 4,8 u), así que el despeje mínimo es 19 + 9 = 28 u.
+  const ROAD_HALF_WIDTH = 15;
+  const ROUTE_CLEARANCE = ROAD_HALF_WIDTH + 13;
 
   // RNG con semilla (mulberry32) solo para el relleno determinista de
   // vegetación: la misma semilla da siempre la misma secuencia, así
@@ -321,7 +330,9 @@
         const [px, pz] = pointOnRoute(route, Math.min(0.75, t));
         const [ax, az] = pointOnRoute(route, Math.max(0, t - 0.01));
         const length = Math.hypot(px - ax, pz - az) || 1;
-        const side = i % 2 ? 9 : -9;
+        // Fuera del camino ensanchado: antes bastaba ±9 porque el
+        // camino tenía 5 u de medio ancho; ahora flanquean a ±19.
+        const side = i % 2 ? ROAD_HALF_WIDTH + 4 : -(ROAD_HALF_WIDTH + 4);
         enemies.push({
           id: `patrol-${zone.toLowerCase()}-${i}`,
           zone,
@@ -360,13 +371,13 @@
       }
       return out;
     };
-    const shrubs = scatter(spec.shrubs, 18, 7, LIMIT - 44).map((p, i) => ({
+    const shrubs = scatter(spec.shrubs, ROUTE_CLEARANCE, 7, LIMIT - 44).map((p, i) => ({
       t: 'shrub',
       x: p.x,
       z: p.z,
       s: 2 + (i % 4) * 0.6,
     }));
-    const rocks = scatter(spec.rocks, 18, 5, LIMIT - 19).map((p, i) => ({
+    const rocks = scatter(spec.rocks, ROUTE_CLEARANCE, 5, LIMIT - 19).map((p, i) => ({
       x: p.x,
       z: p.z,
       s: 1.1 + (i % 4) * 0.4,
@@ -480,10 +491,10 @@
       }
     }
     for (const s of map.scenery?.shrubs || [])
-      if (routeDistance(s.x, s.z, map.routes || []) < 18)
+      if (routeDistance(s.x, s.z, map.routes || []) < ROUTE_CLEARANCE)
         errors.push('arbusto sobre la ruta');
     for (const s of map.scenery?.rocks || [])
-      if (routeDistance(s.x, s.z, map.routes || []) < 18)
+      if (routeDistance(s.x, s.z, map.routes || []) < ROUTE_CLEARANCE)
         errors.push('roca sobre la ruta');
     return errors;
   }
@@ -512,5 +523,7 @@
     generate,
     generateCampaign,
     LIMIT,
+    ROAD_HALF_WIDTH,
+    ROUTE_CLEARANCE,
   };
 });

@@ -282,6 +282,26 @@ test('WebGL draws one tracer per bullet kind without falling back', () => {
   assert.ok(f.counts.draw - before >= 24, 'all kinded tracers drawn');
 });
 
+test('la sombra reconoce el camino ancho: surfaceTop hasta 15 u del centro', () => {
+  const f = fixture(),
+    r = new Renderer(f.canvas, () => {}, () => {});
+  // Camino ancho del original: medio ancho 15 u (30 u en total).
+  r.world = {
+    height: () => 0,
+    roads: [{ x: 0, z: 0, y: 0.1, yaw: 0, length: 10, halfWidth: 15 }],
+    pads: [],
+  };
+  assert.equal(r.surfaceTop(0, 0), 0.14);
+  assert.equal(r.surfaceTop(14, 0), 0.14);
+  assert.equal(r.surfaceTop(-14, 5), 0.14);
+  // Fuera del camino ancho, vuelve el terreno.
+  assert.equal(r.surfaceTop(16, 0), 0);
+  // Sin halfWidth (mundos viejos), se conserva el ancho clásico de 5 u.
+  r.world.roads[0].halfWidth = undefined;
+  assert.equal(r.surfaceTop(0, 0), 0.14);
+  assert.equal(r.surfaceTop(6, 0), 0);
+});
+
 test('helicopter shadow sits on the visible surface: road top, not terrain', () => {
   const f = fixture(),
     r = new Renderer(f.canvas, () => {}, () => {});

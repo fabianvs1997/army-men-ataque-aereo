@@ -49,6 +49,13 @@ semilla 101») y en el registro de errores, para reportarlo.
   (con sus puntos intermedios), los enemigos (base, patrullas y
   aire extra por misión) y los puntos de interés están en `SPECS`,
   en `src/original-maps.js`.
+- **Camino ancho, como en el original:** el camino de tierra mide
+  30 u en total (medio ancho 15 u, 3x el anterior de 10 u), en los
+  3 mapas. La única fuente de verdad es `ToyWorld.roadHalfWidth`
+  (`src/toy-world.js`); el terreno es llano bajo el camino y 10 u
+  más de arcén a cada lado, la vegetación queda a 28 u de la ruta y
+  las patrullas flanquean a ±19 u, fuera del camino. Los enemigos
+  que guardan la ruta siguen sobre ella, como un bloqueo.
 - **Vegetación determinista:** arbustos y rocas se rellenan con un
   RNG de semilla fija por misión (mulberry32, sin `Math.random`),
   fuera de helipuertos y rutas; el mapa resultante es idéntico en

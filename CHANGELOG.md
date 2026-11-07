@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — camino mucho más ancho, como en el original
+
+- Reporte de Fabian (captura del Army Men: Air Attack original, 1999): el camino de tierra del original es ANCHO y oscuro y cruza el mapa en diagonal; en el juego era una franja estrecha de 10 u de ancho total (medio ancho 5 u). Ahora mide 30 u en total (medio ancho 15 u, 3x), en los 3 mapas fijos, con el mismo color de tierra oscura.
+- La única fuente de verdad del ancho es `ToyWorld.roadHalfWidth` (`src/toy-world.js`): el renderizador dibuja la caja del camino con ese medio ancho (`src/toy-renderer.js`) y la sombra del helicóptero lo usa en `surfaceTop` para apoyarse sobre el camino ancho; los mundos viejos sin ese campo conservan el ancho clásico de 5 u.
+- Además del dibujo: el terreno es llano bajo todo el camino y 10 u más de arcén a cada lado (25 u desde la línea central), para que la caja no flote ni se hunda en las colinas y las patrullas que flanquean la ruta tengan suelo llano; la vegetación se mantiene a 28 u de la ruta (15 + 13) para no invadir el camino ni solapar a las patrullas; y las patrullas pasan de flanquear a ±9 u a ±19 u, fuera del camino ensanchado. Los enemigos que guardan la ruta (tanque, infantería, torreta) siguen sobre ella, como un bloqueo del camino, igual que la valla del original.
+- Sin cambios de reglas: A → B → C, quién debe recogerse y la entrega en C quedan intactos; tampoco cambia el balance de armas ni la dificultad.
+- Pruebas nuevas en `tests/road-width.test.cjs` (3) y una en `tests/renderer.test.cjs`: el camino mide 30 u (3x), el terreno es llano bajo el camino y el arcén, la vegetación y las patrullas quedan fuera del camino, y `surfaceTop` reconoce el camino ancho hasta 15 u del centro. `VERSION` pasa a `camino-ancho-1`.
+
 ## Sin publicar — mapas fijos del original (en vez de mapas random)
 
 - El motor procedural de mapas queda eliminado y sustituido por tres mapas fijos que recrean los escenarios del Army Men: Air Attack original (PlayStation, 1999, 3DO), documentados en `docs/MAPAS-ORIGINALES.md`: misión 1, «El jardín» (Backyard, semilla 101); misión 2, «El picnic» (Picnic, semilla 202); misión 3, «La playa» (Beach, semilla 303). El PR #41 (motor random) queda superseded: se fusionó antes de esta decisión, pero su motor ya no existe en el repo.
