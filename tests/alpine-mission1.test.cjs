@@ -21,13 +21,20 @@ test('la Misión 1 es alpina: nombre, escenario y puntos alpinos, sin props de j
       !m1.landmarks.some((p) => p.kind === kind),
       `la Misión 1 aún tiene ${kind}`,
     );
-  // Las misiones 2 y 3 no se tocan: siguen con sus puntos de jardín.
+  // Las misiones 2 y 3 también tienen sus puntos propios del
+  // original (torres y portal, sin props de jardín): el circuito de
+  // carretera y el patio de vías.
   for (const mission of [2, 3]) {
     const map = Maps.generate(mission);
     assert.deepEqual(
       map.landmarks.map((p) => p.kind),
-      ['planter', 'watering', 'bench'],
+      ['tower', 'portal', 'tower'],
     );
+    for (const kind of ['planter', 'watering', 'bench'])
+      assert.ok(
+        !map.landmarks.some((p) => p.kind === kind),
+        `la Misión ${mission} aún tiene ${kind}`,
+      );
     assert.equal(map.scenery.mountains.length, 0);
   }
 });
@@ -73,12 +80,23 @@ test('el mundo alpino no tiene valla ni casa, y sus puntos están junto a A, B y
   assert.equal(world.alpine, true);
   assert.equal(World.create(Maps.generate(2)).alpine, false);
   assert.equal(World.create(Maps.generate(3)).alpine, false);
-  // Sin valla ni casa: el patio alpino tiene muchas menos piezas que
-  // el jardín (valla + casa + macetero + regadera + banco + manguera).
-  assert.ok(
-    world.yard.length < World.create(Maps.generate(2)).yard.length,
-    `patio alpino con ${world.yard.length} piezas`,
-  );
+  // Sin valla ni casa en ningún mapa fijo: el patio alpino, el
+  // circuito y las vías no tienen jardín que vallar ni casa al fondo
+  // (la valla vive en el borde, a |x| o |z| ≥ 470, y la casa es la
+  // pieza color [0.76, 0.7, 0.58]).
+  const hasFenceOrHouse = (world) =>
+    world.yard.some(
+      (p) =>
+        Math.abs(p.x) >= 470 ||
+        Math.abs(p.z) >= 470 ||
+        (p.color &&
+          p.color[0] === 0.76 &&
+          p.color[1] === 0.7 &&
+          p.color[2] === 0.58),
+    );
+  assert.equal(hasFenceOrHouse(world), false, 'el valle alpino tiene valla o casa');
+  assert.equal(hasFenceOrHouse(World.create(Maps.generate(2))), false);
+  assert.equal(hasFenceOrHouse(World.create(Maps.generate(3))), false);
   // La caja de suministros junto al puesto (B), el portal pasado C
   // y la torre junto a la base (A).
   const [crate, portal, tower] = world.landmarks;
@@ -141,9 +159,14 @@ test('pulido: valle con laderas suaves y bordes altos, portal brillante y torres
     yard.some((p) => p.sy >= 15 && color([1, 0.9, 0.55])(p)),
     'sin columna de luz del portal',
   );
+  // La caja grande de suministros ya no va en el patio: es la carga del
+  // winch y la dibuja el renderizador desde `cargoCrate` (su dibujo se
+  // comprueba en tests/defensas-winch-m1.test.cjs). En el patio queda
+  // la segunda caja pequeña junto al puesto.
+  assert.deepEqual(world.cargoCrate, { x: -170, z: 140 });
   assert.ok(
-    yard.some((p) => p.sx === 6 && color([0.13, 0.42, 0.14])(p)),
-    'sin caja grande de suministros',
+    yard.some((p) => p.sx === 3.5 && color([0.11, 0.36, 0.12])(p)),
+    'sin segunda caja de suministros',
   );
   // Las 4 torres llevan bandera verde y están a ~50 u de A, sin
   // rodear ni tapar el helipuerto desde la cámara.

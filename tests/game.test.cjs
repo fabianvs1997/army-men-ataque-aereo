@@ -16,6 +16,50 @@ function completeMission(g) {
   s.P.x = s.mission.finish.x;
   s.P.z = s.mission.finish.z;
   for (let i = 0; i < 1800 && s.st === 'play'; i++) app.upd(0.05);
+  // Misión 1: tras la entrega en C queda la caja y el portal.
+  if (s.mission.stage === 'CARGA_PORTAL') {
+    s.P.x = s.mission.cargo.x;
+    s.P.z = s.mission.cargo.z;
+    for (let i = 0; i < 200 && s.mission.cargo.state === 'waiting'; i++)
+      app.upd(0.05);
+    s.P.x = s.mission.portal.x;
+    s.P.z = s.mission.portal.z;
+    for (let i = 0; i < 600 && s.st === 'play'; i++) app.upd(0.05);
+  }
+  // Misión 2: si queda algún garaje tras la entrega en C, destruirlo
+  // (aquí ya murieron todos al principio, pero el helper cubre la fase).
+  if (s.mission.stage === 'GARAJES') {
+    for (const g of s.mission.garages)
+      s.mission.enemyEliminated({ id: g.id, k: 'garage' });
+    for (let i = 0; i < 600 && s.st === 'play'; i++) app.upd(0.05);
+  }
+  // Misión 3: tras la entrega en C queda la batería, el tren y el
+  // portal. El helicóptero Tan ya murió al principio (la batería
+  // cayó donde murió); levantarla con el winch, dejarla en la
+  // plataforma y esperar al tren en C.
+  if (s.mission.stage === 'ENTREGA_C' && s.mission.train) {
+    if (s.mission.cargo.state === 'waiting') {
+      s.P.x = s.mission.cargo.x;
+      s.P.z = s.mission.cargo.z;
+      for (let i = 0; i < 200 && s.mission.cargo.state === 'waiting'; i++)
+        app.upd(0.05);
+    }
+    if (s.mission.cargo.state === 'carried') {
+      s.P.x = s.mission.batteryPad.x;
+      s.P.z = s.mission.batteryPad.z;
+      for (let i = 0; i < 200 && s.mission.cargo.state === 'carried'; i++)
+        app.upd(0.05);
+    }
+    // Esperar al tren en C (llega en ~67 s desde que arranca).
+    s.P.x = s.mission.finish.x;
+    s.P.z = s.mission.finish.z;
+    for (let i = 0; i < 1800 && s.st === 'play'; i++) app.upd(0.05);
+    if (s.mission.stage === 'PORTAL') {
+      s.P.x = s.mission.portal.x;
+      s.P.z = s.mission.portal.z;
+      for (let i = 0; i < 600 && s.st === 'play'; i++) app.upd(0.05);
+    }
+  }
 }
 test('campaign integrates rescue, extraction, next mission and play again', () => {
   const g = game();

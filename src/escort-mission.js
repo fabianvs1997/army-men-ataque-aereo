@@ -17,7 +17,17 @@
     DESPEJAR_B: ['EMBARCAR_HERIDOS'],
     EMBARCAR_HERIDOS: ['ESCOLTAR_BC'],
     ESCOLTAR_BC: ['ENTREGA_C'],
-    ENTREGA_C: ['COMPLETADA'],
+    // Misiones con carga (Misión 1): la entrega en C no cierra la
+    // misión; abre la fase de la carga. Las demás cierran en C.
+    // Misión 2: si quedan garajes Tan al entregar en C, abre la fase
+    // de los garajes. Misión 3: si el tren no ha llegado o la
+    // batería no está en el tren al entregar en C, la misión se
+    // queda esperando en ENTREGA_C hasta que el tren llegue; al
+    // completarse, abre la salida por el portal.
+    ENTREGA_C: ['COMPLETADA', 'CARGA_PORTAL', 'GARAJES', 'PORTAL'],
+    CARGA_PORTAL: ['COMPLETADA'],
+    GARAJES: ['COMPLETADA'],
+    PORTAL: ['COMPLETADA'],
     COMPLETADA: [],
     FRACASADA: [],
   };
@@ -28,6 +38,9 @@
     EMBARCAR_HERIDOS: 'Recoge a los heridos',
     ESCOLTAR_BC: 'Protege al pelotón hasta la base C',
     ENTREGA_C: 'Entrega a los heridos y espera al pelotón en C',
+    CARGA_PORTAL: 'Levanta la caja de plástico y llévala por el portal',
+    GARAJES: 'Destruye los garajes Tan',
+    PORTAL: 'Sal por el portal',
     COMPLETADA: 'Pelotón a salvo en C',
     FRACASADA: 'Misión fallida',
   };
@@ -46,13 +59,103 @@
         .concat(config.extraAir.slice(0, number - 1))
         .map((e) => ({ ...e }));
       this.config = {
-        name: 'Rescate A → B → C',
+        // El nombre del mapa fijo (Misión 1: «Pandemonio de
+        // Plástico»); sin él, el nombre clásico del rescate.
+        name: config.missionName || 'Rescate A → B → C',
         bases: [],
-        air: number,
+        // Aire: los helicópteros del plan (el de B, los de escolta y,
+        // en la Misión 3, el Tan que robó la batería).
+        air: this.enemyPlan.filter((e) => e.k === 'heli').length,
         tanks: this.enemyPlan.filter((e) => e.k === 'tank').length,
         turrets: this.enemyPlan.filter((e) => e.k === 'tur').length,
         infantry: this.enemyPlan.filter((e) => e.k === 'inf').length,
+        // Garajes: los edificios Tan de la Misión 2.
+        garages: this.enemyPlan.filter((e) => e.k === 'garage').length,
       };
+      // Carga del original: la caja verde de la Misión 1 junto a B y
+      // el portal al final del camino; la batería robada de la
+      // Misión 3, escondida en el helicóptero Tan hasta que este
+      // cae. Sin `cargo` en la configuración, la misión es el
+      // rescate clásico (Misión 2: garajes y coches en vez de
+      // carga). `kind` es 'crate' o 'battery'; `winchFrom` dice en
+      // qué fases se puede levantar ('ESCOLTAR_BC' en la Misión 1,
+      // 'any' en la 3: la batería se levanta cuando cae, sea cual sea
+      // la fase); `deliverAt` es la plataforma donde se entrega
+      // (Misión 3); sin `deliverAt`, la entrega es en el portal
+      // (Misión 1). `hidden` significa que la carga aún no existe
+      // en el mapa: aparece al morir el helicóptero Tan.
+      this.cargo = config.cargo
+        ? {
+            kind: config.cargo.kind || 'crate',
+            x: config.cargo.x,
+            z: config.cargo.z,
+            state: config.cargo.hidden ? 'hidden' : 'waiting',
+            hold: 0,
+            winchFrom: config.cargo.winchFrom || 'ESCOLTAR_BC',
+            deliverAt: config.cargo.deliverAt
+              ? { ...config.cargo.deliverAt }
+              : null,
+          }
+        : null;
+      this.portal = config.portal
+        ? {
+            x: config.portal.x,
+            z: config.portal.z,
+            radius: config.portal.radius || 12,
+          }
+        : null;
+      // Garajes y coches (Misión 2): cada garaje vivo suelta un
+      // coche de suministros cada `carSpawnInterval` segundos (el
+      // primero, a los `firstIn` segundos de empezar la misión: el
+      // temporizador arranca en `firstIn`). Los coches recorren el
+      // circuito hasta el portal de los coches; si pasan `carsLimit`
+      // (15, como en el original), la misión fracasa. El contador y
+      // el límite se muestran en el HUD en todas las fases, para que
+      // el jugador siempre sepa dónde está.
+      this.garages = (config.garages || []).map((g) => ({
+        id: g.id,
+        x: g.x,
+        z: g.z,
+        route: g.route.map((p) => [...p]),
+        destroyed: false,
+        timer: g.firstIn || 0,
+      }));
+      this.carsEscaped = 0;
+      this.carsDestroyed = 0;
+      this.carsLimit = config.carsLimit || 15;
+      this.carSpawnInterval = config.carSpawnInterval || 20;
+      // Tren y batería (Misión 3): el tren Prego espera en su base
+      // (inicio de la vía) hasta que la batería llega a su
+      // plataforma; entonces arranca a 6 u/s —más lento que los
+      // soldados (7 u/s), para no adelantar al pelotón— y para en
+      // la base verde de C. El tren es invulnerable y ningún enemigo
+      // lo ataca (la escolta es proteger al pelotón y despejar las
+      // vías); el tren no bloquea al pelotón porque la vía corre 8 u
+      // al sur del camino. `tanHeliId` es el helicóptero Tan que
+      // robó la batería; su posición se anota en cada update para
+      // que la brújula pueda apuntar a él.
+      this.train = config.train
+        ? {
+            route: config.train.route.map((p) => [...p]),
+            speed: config.train.speed || 6,
+            s: 0,
+            state: 'waiting',
+            ...positionAlong(
+              config.train.route,
+              0,
+            ),
+          }
+        : null;
+      this.batteryPad = config.batteryPad
+        ? { ...config.batteryPad }
+        : null;
+      this.tanHeliId = config.tanHeliId || null;
+      this.tanHeliPos = null;
+      // Winch: hay que quedarse quieto sobre la caja 1,5 s (como el
+      // embarque de heridos) y a menos de 8 u de ella. El cable es
+      // visual: el helicóptero vuela siempre a 8 u de altura.
+      this.winchRadius = config.winchRadius || 8;
+      this.winchSeconds = config.winchSeconds || 1.5;
       const soldier = (id, x, z, group, wounded = false) => ({
         id,
         x,
@@ -132,10 +235,15 @@
       return false;
     }
     threats(enemies = []) {
+      // Los coches de la Misión 2 no cuentan como amenaza: son
+      // vehículos de suministros sin armas que pasan por el circuito
+      // hacia el portal; si bloquearan el embarque, el jugador
+      // tendría que cazar cada coche que pasa para poder embarcar.
       return enemies.filter(
         (e) =>
           !e.dead &&
           e.hp > 0 &&
+          e.k !== 'car' &&
           Math.hypot(e.x - this.rules.B.x, e.z - this.rules.B.z) <=
             this.rules.perimeter,
       );
@@ -334,6 +442,54 @@
         this.transition('FRACASADA');
         return 'failed';
       }
+      // Garajes y coches (Misión 2): cada garaje vivo suelta un
+      // coche cada 20 s; el evento 'spawn-car' lo crea el juego con
+      // la ruta del garaje. Si han pasado 15 coches por el portal
+      // (como en el original), la misión fracasa. El fallo se
+      // comprueba aquí, una vez por frame, para que no dependa de
+      // que el juego drene los eventos en ese mismo frame.
+      for (const g of this.garages) {
+        if (g.destroyed) continue;
+        g.timer -= dt;
+        if (g.timer <= 0) {
+          g.timer += this.carSpawnInterval;
+          this.events.push({
+            type: 'spawn-car',
+            garage: g.id,
+            x: g.x,
+            z: g.z,
+            route: g.route.map((p) => [...p]),
+          });
+        }
+      }
+      if (this.carsEscaped >= this.carsLimit) {
+        this.reason =
+          'Demasiados coches pasaron por el portal (' +
+          this.carsEscaped +
+          '/' +
+          this.carsLimit +
+          ')';
+        this.transition('FRACASADA');
+        return 'failed';
+      }
+      // Helicóptero Tan (Misión 3): anotar dónde está para que la
+      // brújula apunte a él mientras la batería sigue escondida.
+      if (this.tanHeliId) {
+        const heli = (env.enemies || []).find(
+          (e) => e.id === this.tanHeliId && !e.dead && e.hp > 0,
+        );
+        this.tanHeliPos = heli ? { x: heli.x, z: heli.z } : null;
+      }
+      // Tren (Misión 3): en marcha, avanza por la vía a 6 u/s y se
+      // detiene al llegar a la base verde de C.
+      if (this.train && this.train.state === 'moving') {
+        this.train.s = Math.min(
+          this.train.length,
+          this.train.s + this.train.speed * dt,
+        );
+        Object.assign(this.train, positionAlong(this.train.route, this.train.s));
+        if (this.train.s >= this.train.length) this.train.state = 'arrived';
+      }
       if (
         this.stage === 'INICIO_A' &&
         Math.hypot(player.x - this.start.x, player.z - this.start.z) > 12
@@ -433,8 +589,136 @@
           survivors.length &&
           survivors.every((a) => a.state === 'SEGURO_EN_C')
         ) {
-          const ratio = survivors.length / this.allies.length;
-          this.stars = ratio >= 0.85 ? 3 : ratio >= 0.5 ? 2 : 1;
+          // Misión 3: el tren aún no ha llegado a C; la misión se
+          // queda esperando en ENTREGA_C (el mensaje dice qué falta:
+          // la batería o el tren).
+          if (this.train && this.train.state !== 'arrived') {
+            // Sigue en ENTREGA_C.
+          } else if (this.cargo && this.cargo.state !== 'delivered') {
+            // Misión con carga (Misión 1): la entrega en C no
+            // cierra la misión; queda la caja y el portal.
+            this.transition('CARGA_PORTAL');
+          } else if (this.garages.some((g) => !g.destroyed)) {
+            // Misión 2: quedan garajes Tan por destruir.
+            this.transition('GARAJES');
+          } else if (this.train) {
+            // Misión 3: tren en C y batería entregada; queda salir
+            // por el portal.
+            this.transition('PORTAL');
+          } else {
+            this.stars = this.computeStars();
+            this.transition('COMPLETADA');
+            return 'complete';
+          }
+        }
+      }
+      // Winch de la carga: la caja de la Misión 1 se puede levantar
+      // desde que el pelotón empieza a marchar (y en la fase final,
+      // por si no se levantó antes); la batería de la Misión 3, en
+      // cualquier fase una vez caída. Como el embarque de heridos:
+      // quieto, sin disparar y sin daño, 1,5 s sobre la carga. La
+      // carga colgando no impide escoltar ni entregar en C; el
+      // portal de la Misión 1 solo cierra la misión en CARGA_PORTAL,
+      // tras la entrega en C; la batería se entrega en la plataforma
+      // del tren, en cualquier fase, y al entregarla el tren arranca.
+      if (
+        this.cargo &&
+        (this.cargo.winchFrom === 'any' ||
+          ['ESCOLTAR_BC', 'ENTREGA_C', 'CARGA_PORTAL'].includes(
+            this.stage,
+          ))
+      ) {
+        const c = this.cargo;
+        const label =
+          c.kind === 'battery' ? 'la batería' : 'la caja de plástico';
+        if (c.state === 'waiting') {
+          const distance = Math.hypot(player.x - c.x, player.z - c.z),
+            stable = !env.moving && !env.firing && !env.damaged,
+            // El consejo del winch se muestra en la fase final de la
+            // Misión 1 (la caja es el objetivo) y siempre que el
+            // jugador esté sobre la carga (sea cual sea la fase).
+            showWinch =
+              this.stage === 'CARGA_PORTAL' ||
+              distance <= this.winchRadius;
+          if (distance <= this.winchRadius && stable) {
+            c.hold += dt;
+            if (showWinch)
+              this.message =
+                'Levanta ' +
+                label +
+                ' con el cable · ' +
+                Math.min(
+                  100,
+                  Math.round((c.hold / this.winchSeconds) * 100),
+                ) +
+                '%';
+            if (c.hold >= this.winchSeconds - 1e-9) {
+              c.state = 'carried';
+              c.hold = 0;
+              this.events.push({ type: 'cargo-lifted' });
+              if (this.stage === 'CARGA_PORTAL')
+                this.message = 'Lleva la caja por el portal';
+            }
+          } else {
+            c.hold = 0;
+            if (showWinch)
+              this.message =
+                distance <= this.winchRadius
+                  ? 'Quédate quieto para enganchar ' + label
+                  : 'Vuela hasta ' + label;
+          }
+        } else if (c.state === 'carried') {
+          if (c.deliverAt) {
+            // Misión 3: la batería se entrega en la plataforma del
+            // tren; al entregarla, el tren arranca.
+            const distance = Math.hypot(
+              player.x - c.deliverAt.x,
+              player.z - c.deliverAt.z,
+            );
+            if (distance <= c.deliverAt.radius) {
+              c.state = 'delivered';
+              this.events.push({ type: 'cargo-delivered' });
+              if (this.train && this.train.state === 'waiting') {
+                this.train.state = 'moving';
+                this.events.push({ type: 'train-started' });
+              }
+            }
+          } else if (this.stage === 'CARGA_PORTAL') {
+            // Misión 1: la caja se entrega en el portal, en la fase
+            // final; al pasar por él, la misión se completa.
+            const distance = Math.hypot(
+              player.x - this.portal.x,
+              player.z - this.portal.z,
+            );
+            this.message = 'Lleva la caja por el portal';
+            if (distance <= this.portal.radius) {
+              c.state = 'delivered';
+              this.events.push({ type: 'cargo-delivered' });
+              this.stars = this.computeStars();
+              this.transition('COMPLETADA');
+              this.message =
+                'Caja entregada por el portal · Misión completa';
+              return 'complete';
+            }
+          }
+        }
+      }
+      // Fase de los garajes (Misión 2): al destruir el último
+      // garaje, la misión se completa (el rescate ya está hecho).
+      if (this.stage === 'GARAJES' && !this.garages.some((g) => !g.destroyed)) {
+        this.stars = this.computeStars();
+        this.transition('COMPLETADA');
+        return 'complete';
+      }
+      // Salida por el portal (Misión 3): al volar por el portal, la
+      // misión se completa (el tren ya está en C).
+      if (this.stage === 'PORTAL' && this.portal) {
+        const distance = Math.hypot(
+          player.x - this.portal.x,
+          player.z - this.portal.z,
+        );
+        if (distance <= this.portal.radius) {
+          this.stars = this.computeStars();
           this.transition('COMPLETADA');
           return 'complete';
         }
@@ -449,15 +733,67 @@
           ...marching.map((a) => Math.hypot(a.x - player.x, a.z - player.z)),
         ),
       );
-      if (['ESCOLTAR_BC', 'ENTREGA_C'].includes(this.stage))
+      if (['ESCOLTAR_BC', 'ENTREGA_C'].includes(this.stage)) {
         this.message +=
           ' · En camino: ' +
           this.remaining +
           ' · Distancia: ' +
           this.lagDistance;
+        // La caja sigue pendiente: que el HUD recuerde que hay que
+        // levantarla en B (se puede hacer ya, el jugador está allí).
+        // Solo la caja de la Misión 1: la batería de la Misión 3 va
+        // con su propio sufijo, más abajo.
+        if (this.cargo && this.cargo.kind === 'crate') {
+          if (this.cargo.state === 'waiting')
+            this.message += ' · Caja en B por levantar';
+          else if (this.cargo.state === 'carried')
+            this.message += ' · Caja colgando';
+        }
+      }
+      // Misión 2: garajes y coches en el HUD en todas las fases (los
+      // coches empiezan a salir desde el principio y el jugador
+      // siempre debe saber cuántos han pasado del portal).
+      if (this.garages.length) {
+        const destroyed = this.garages.filter((g) => g.destroyed).length;
+        this.message +=
+          ' · Garajes ' +
+          destroyed +
+          '/' +
+          this.garages.length +
+          ' · Coches ' +
+          this.carsEscaped +
+          '/' +
+          this.carsLimit;
+      }
+      // Misión 3: batería y tren en el HUD en todas las fases.
+      if (this.train && this.cargo) {
+        const batteryWord =
+          this.cargo.state === 'hidden'
+            ? 'en el helicóptero'
+            : this.cargo.state === 'waiting'
+              ? 'caída'
+              : this.cargo.state === 'carried'
+                ? 'colgando'
+                : 'en el tren';
+        const trainWord =
+          this.train.state === 'waiting'
+            ? 'en la base'
+            : this.train.state === 'moving'
+              ? 'en camino'
+              : 'en C';
+        this.message +=
+          ' · Batería ' + batteryWord + ' · Tren ' + trainWord;
+      }
       const blocked = this.allies.filter((a) => a.cause === 'atasco').length;
       if (blocked) this.message += ' · Bajas por bloqueo: ' + blocked;
       return null;
+    }
+    // Estrellas por supervivientes del pelotón (3 si sobrevive al
+    // menos el 85 %, 2 si al menos la mitad, 1 en otro caso).
+    computeStars() {
+      const survivors = this.allies.filter((a) => a.state !== 'CAIDO');
+      const ratio = survivors.length / this.allies.length;
+      return ratio >= 0.85 ? 3 : ratio >= 0.5 ? 2 : 1;
     }
     transition(next) {
       if (this.complete || this.failed || next === this.stage) return false;
@@ -476,8 +812,82 @@
     }
     enemyEliminated(enemy) {
       this.events.push({ type: 'enemy-eliminated', id: enemy.id });
+      // Garaje Tan (Misión 2): deja de soltar coches.
+      const garage = this.garages.find((g) => g.id === enemy.id);
+      if (garage && !garage.destroyed) {
+        garage.destroyed = true;
+        this.events.push({ type: 'garage-destroyed', id: garage.id });
+      }
+      // Coche de suministros (Misión 2): abatido antes del portal.
+      if (enemy.k === 'car') {
+        this.carsDestroyed++;
+        this.events.push({ type: 'car-destroyed', id: enemy.id });
+      }
+      // Helicóptero Tan (Misión 3): al morir, suelta la batería
+      // donde cae; el juego puede acercarla a un punto volable.
+      if (
+        this.tanHeliId &&
+        enemy.id === this.tanHeliId &&
+        this.cargo &&
+        this.cargo.state === 'hidden'
+      ) {
+        this.cargo.x = enemy.x;
+        this.cargo.z = enemy.z;
+        this.cargo.state = 'waiting';
+        this.events.push({ type: 'battery-dropped', x: enemy.x, z: enemy.z });
+      }
+    }
+    // Un coche llegó al portal de los coches (Misión 2): cuenta para
+    // el límite de 15; el fallo se detecta en el siguiente update.
+    carEscaped(car) {
+      this.carsEscaped++;
+      this.events.push({ type: 'car-escaped', id: car.id });
+    }
+    // La batería, caída donde murió el helicóptero Tan, se acerca a
+    // un punto volable (Misión 3): el juego la coloca donde el
+    // helicóptero puede llegar con el winch.
+    placeBattery(x, z) {
+      if (this.cargo && this.cargo.state === 'waiting') {
+        this.cargo.x = x;
+        this.cargo.z = z;
+      }
     }
     target(player = this.rules.B) {
+      // Fase de la carga: la brújula apunta a la caja y luego al
+      // portal. Antes, la escolta manda: el objetivo sigue siendo C
+      // (la caja se menciona en el mensaje, sin desviar la brújula).
+      if (this.stage === 'CARGA_PORTAL' && this.cargo) {
+        return this.cargo.state === 'carried'
+          ? this.portal
+          : { x: this.cargo.x, z: this.cargo.z };
+      }
+      // Fase de los garajes (Misión 2): la brújula apunta al garaje
+      // vivo más cercano.
+      if (this.stage === 'GARAJES') {
+        const alive = this.garages.filter((g) => !g.destroyed);
+        if (alive.length)
+          return alive.reduce((a, b) =>
+            Math.hypot(a.x - player.x, a.z - player.z) <
+            Math.hypot(b.x - player.x, b.z - player.z)
+              ? a
+              : b,
+          );
+      }
+      // Salida por el portal (Misión 3): la brújula apunta al portal.
+      if (this.stage === 'PORTAL' && this.portal) return this.portal;
+      // Misión 3, esperando al tren en C: la brújula apunta a lo que
+      // falta —la batería caída, la plataforma si la llevas colgando,
+      // el helicóptero Tan si aún la tiene, o el tren si va en camino.
+      if (this.stage === 'ENTREGA_C' && this.train) {
+        if (this.cargo && this.cargo.state === 'waiting')
+          return { x: this.cargo.x, z: this.cargo.z };
+        if (this.cargo && this.cargo.state === 'carried' && this.batteryPad)
+          return this.batteryPad;
+        if (this.cargo && this.cargo.state === 'hidden' && this.tanHeliPos)
+          return this.tanHeliPos;
+        if (this.train.state === 'moving')
+          return { x: this.train.x, z: this.train.z };
+      }
       if (this.stage === 'EMBARCAR_HERIDOS') {
         const waiting = this.allies.filter(
           (a) =>
@@ -498,6 +908,127 @@
         ? this.rules.B
         : this.finish;
     }
+    // Resumen de estado para el HUD (línea #inf). Hoy es el rescate
+    // A → B → C; las misiones con objetivos nuevos (caja de plástico
+    // y portal en la Misión 1, garajes y coches en la 2, tren y
+    // batería en la 3) lo redefinen con sus propios contadores, sin
+    // tocar ui.js. El texto de objetivo (`message`) y la marca de la
+    // brújula (`target(jugador)`) ya vienen del estado de la misión.
+    hudSummary() {
+      const base =
+        'Misión ' +
+        this.number +
+        '/3 · Heridos ' +
+        this.rescued +
+        '/' +
+        this.allies.filter((a) => a.wounded).length +
+        ' · A salvo ' +
+        this.delivered +
+        '/' +
+        this.allies.length +
+        ' · Bajas ' +
+        this.allies.filter((a) => a.state === 'CAIDO').length;
+      // Misión 2: garajes destruidos y coches que pasaron del portal.
+      if (this.garages.length) {
+        const destroyed = this.garages.filter((g) => g.destroyed).length;
+        return (
+          base +
+          ' · Garajes ' +
+          destroyed +
+          '/' +
+          this.garages.length +
+          ' · Coches ' +
+          this.carsEscaped +
+          '/' +
+          this.carsLimit
+        );
+      }
+      // Misión 3: batería y tren.
+      if (this.train && this.cargo) {
+        const batteryWord =
+          this.cargo.state === 'hidden'
+            ? 'en el helicóptero'
+            : this.cargo.state === 'waiting'
+              ? 'caída'
+              : this.cargo.state === 'carried'
+                ? 'colgando'
+                : 'en el tren';
+        const trainWord =
+          this.train.state === 'waiting'
+            ? 'en la base'
+            : this.train.state === 'moving'
+              ? 'en camino'
+              : 'en C';
+        return base + ' · Batería ' + batteryWord + ' · Tren ' + trainWord;
+      }
+      // Misión 1: el estado de la caja y el portal, junto al rescate.
+      if (!this.cargo) return base;
+      const cargoLabel =
+        this.cargo.state === 'carried'
+          ? 'colgando'
+          : this.cargo.state === 'delivered'
+            ? 'entregada'
+            : 'en tierra';
+      return base + ' · Caja ' + cargoLabel + ' · Portal';
+    }
+    // Vista de la carga para el renderizador (cable y caja colgando):
+    // null en misiones sin carga. `progress` es 0–1 mientras el cable
+    // engancha la carga; el estado es hidden/waiting/carried/
+    // delivered; `kind` es 'crate' o 'battery'.
+    cargoView() {
+      if (!this.cargo) return null;
+      return {
+        kind: this.cargo.kind,
+        state: this.cargo.state,
+        x: this.cargo.x,
+        z: this.cargo.z,
+        progress: Math.min(1, this.cargo.hold / this.winchSeconds),
+      };
+    }
+    // Vista del tren para el renderizador: null en misiones sin
+    // tren. `x`, `z` e `yaw` son la posición actual sobre la vía;
+    // `state` es waiting/moving/arrived.
+    trainView() {
+      if (!this.train) return null;
+      return {
+        x: this.train.x,
+        z: this.train.z,
+        yaw: this.train.yaw,
+        state: this.train.state,
+      };
+    }
   }
-  return { Mission, transitions, objectives };
+  // Posición sobre una polilínea a la distancia `s` del inicio:
+  // devuelve {x, z, yaw, s, length} (yaw, hacia dónde apunta el
+  // tramo; `length`, la longitud total de la polilínea). Se usa para
+  // el tren de la Misión 3, que avanza por la vía a velocidad
+  // constante sin depender de los vértices.
+  function positionAlong(route, s) {
+    const segments = [];
+    let length = 0;
+    for (let i = 1; i < route.length; i++) {
+      const [ax, az] = route[i - 1],
+        [bx, bz] = route[i],
+        len = Math.hypot(bx - ax, bz - az);
+      segments.push({ ax, az, bx, bz, len, start: length });
+      length += len;
+    }
+    s = Math.max(0, Math.min(length, s));
+    let seg = segments[segments.length - 1];
+    for (const candidate of segments) {
+      if (s <= candidate.start + candidate.len) {
+        seg = candidate;
+        break;
+      }
+    }
+    const t = seg.len ? (s - seg.start) / seg.len : 0;
+    return {
+      x: seg.ax + (seg.bx - seg.ax) * t,
+      z: seg.az + (seg.bz - seg.az) * t,
+      yaw: Math.atan2(seg.bx - seg.ax, seg.bz - seg.az),
+      s,
+      length,
+    };
+  }
+  return { Mission, transitions, objectives, positionAlong };
 });

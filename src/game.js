@@ -445,9 +445,11 @@
       const combat = ToyCombat.create(env),
         { mk, boom, hit, kill, gunVelocity, bulletKindFor, stepProjectiles, stepDebris } =
           combat;
-      // Solo 3D: la proyección de cámara (para la brújula del HUD) vive
-      // en ToyProjection y el dibujo, en ToyDraw3D (WebGL). Sin WebGL no
-      // hay respaldo 2D: se muestra el mensaje de WebGL requerido.
+      // Solo 3D: la proyección de cámara vive en ToyProjection y el
+      // dibujo, en ToyDraw3D (WebGL). La brújula del HUD ya no usa
+      // P3: ToyCompass calcula rumbo y objetivo en coordenadas del
+      // mundo. Sin WebGL no hay respaldo 2D: se muestra el mensaje
+      // de WebGL requerido.
       const projection = ToyProjection.create(env);
       const { P3 } = projection;
       const draw3d = ToyDraw3D.create(env);
@@ -608,7 +610,17 @@
       state.DC = typeof ToyWorld === 'undefined' ? [] : ToyWorld.shrubs;
 
       function spawnE(k, x, z) {
-        const radius = { base: 6, tank: 3.5, tur: 2.5, inf: 0.7, heli: 1.8 }[k];
+        // Garaje Tan (Misión 2): edificio de 10 HP, como una base;
+        // coche de suministros (Misión 2): 3 HP, pequeño y rápido.
+        const radius = {
+          base: 6,
+          tank: 3.5,
+          tur: 2.5,
+          inf: 0.7,
+          heli: 1.8,
+          garage: 6,
+          car: 2.5,
+        }[k];
         const start = state.mission?.start || ToyMissions.layout.start;
         const safeDistance =
           ToyMissions.layout.minEnemyDistance +
@@ -664,14 +676,43 @@
           x,
           y: k === 'heli' ? 8 : groundAt(x, z),
           z,
-          hp: { heli: 4, tank: 6, tur: 5, base: 10, inf: 2 }[k],
-          r: { heli: 3, tank: 3.5, tur: 2.5, base: 6, inf: 1.5 }[k],
+          hp: { heli: 4, tank: 6, tur: 5, base: 10, inf: 2, garage: 10, car: 3 }[k],
+          r: { heli: 3, tank: 3.5, tur: 2.5, base: 6, inf: 1.5, garage: 6, car: 2.5 }[k],
           cd: R(1, 3),
-          p: { heli: 50, tank: 30, tur: 20, base: 100, inf: 10 }[k],
+          p: { heli: 50, tank: 30, tur: 20, base: 100, inf: 10, garage: 100, car: 10 }[k],
           fl: 0,
         };
         state.E.push(enemy);
         return enemy;
+      }
+      // Punto volable más cercano a (x, z) (Misión 3): la batería cae
+      // donde muere el helicóptero Tan, que puede ser sobre el camino
+      // o junto a un obstáculo; el helicóptero necesita un punto
+      // llano para bajar con el winch. Se buscan anillos de 0 a 30 u
+      // (paso 3 u, 16 ángulos por anillo); si no hay ninguno, se
+      // devuelve el punto original.
+      function nearestFlyable(x, z) {
+        const radius = 1.8;
+        for (let distance = 0; distance <= 30; distance += 3)
+          for (let i = 0; i < 16; i++) {
+            const nx = clamp(
+                x + Math.cos((i * Math.PI) / 8) * distance,
+                -ToyWorld.limit + 15,
+                ToyWorld.limit - 15,
+              ),
+              nz = clamp(
+                z + Math.sin((i * Math.PI) / 8) * distance,
+                -ToyWorld.limit + 15,
+                ToyWorld.limit - 15,
+              );
+            if (
+              typeof ToyWorld === 'undefined' ||
+              !ToyWorld.canTravel ||
+              ToyWorld.canTravel(nx, nz, radius)
+            )
+              return { x: nx, z: nz };
+          }
+        return { x, z };
       }
       function start(n, full, retry = false) {
         clearInput();
@@ -724,6 +765,9 @@
           e.id = placement.id;
           e.zone = placement.zone;
           e.hp = placement.hp;
+          // Los garajes traen su `yaw` del mapa (hacia el circuito);
+          // el renderizador lo usa para orientar la puerta.
+          if (placement.yaw !== undefined) e.yaw = placement.yaw;
         }
         cam.x = state.P.x;
         cam.z = state.P.z;
@@ -855,6 +899,38 @@
         for (const e of state.E) {
           if (e.dead) continue;
           e.fl = Math.max(0, e.fl - dt);
+          // Coches de suministros (Misión 2): avanzan por el circuito
+          // hacia el portal a 10 u/s, sin disparar. Al llegar al
+          // último punto de su ruta (el portal), desaparecen sin
+          // explosión ni puntos: el contador de coches lo lleva la
+          // misión (`carEscaped`). Su ruta es la del garaje que los
+          // soltó, empezando por el vértice al que se incorporan.
+          if (e.k === 'car') {
+            const wp = e.route?.[e.wp || 0];
+            if (!wp) {
+              e.dead = 1;
+              state.mission.carEscaped(e);
+              continue;
+            }
+            const dx = wp[0] - e.x,
+              dz = wp[1] - e.z,
+              d = Math.hypot(dx, dz),
+              step = Math.min(d, 10 * dt);
+            if (d > 0.01) {
+              e.x += (dx / d) * step;
+              e.z += (dz / d) * step;
+              e.yaw = Math.atan2(dx, dz);
+            }
+            if (d <= 3) {
+              e.wp = (e.wp || 0) + 1;
+              if (e.wp >= e.route.length) {
+                e.dead = 1;
+                state.mission.carEscaped(e);
+              }
+            }
+            e.y = groundAt(e.x, e.z);
+            continue;
+          }
           // Alcance de disparo por tipo: la línea de visión a un soldado
           // solo se traza si el enemigo podría dispararle. Antes se
           // trazaba a cualquier soldado más cercano que el jugador, sin
@@ -1006,6 +1082,32 @@
             state.P.sc += 50;
             sfx.pick();
             buzz(20);
+          }
+          // Winch de la carga: levantar la caja (Misión 1) o la
+          // batería (Misión 3) vale como un rescate.
+          if (change.type === 'cargo-lifted') {
+            state.P.sc += 50;
+            sfx.pick();
+            buzz(20);
+          }
+          // Coches de suministros (Misión 2): un garaje vivo suelta
+          // un coche en su puerta; el coche recorre la ruta del
+          // garaje (del vértice de incorporación al portal).
+          if (change.type === 'spawn-car') {
+            const car = spawnE('car', change.x, change.z);
+            if (car) {
+              car.id = 'car-' + change.garage + '-' + Math.round(state.t * 10);
+              car.route = change.route.map((p) => [...p]);
+              car.wp = 0;
+              car.garage = change.garage;
+            }
+          }
+          // Batería caída (Misión 3): el helicóptero Tan murió y la
+          // batería quedó donde cayó; se acerca a un punto volable
+          // para que el jugador pueda bajar con el winch.
+          if (change.type === 'battery-dropped') {
+            const spot = nearestFlyable(change.x, change.z);
+            state.mission.placeBattery(spot.x, spot.z);
           }
           if (change.type === 'soldier-fallen') {
             const a = state.mission.guards

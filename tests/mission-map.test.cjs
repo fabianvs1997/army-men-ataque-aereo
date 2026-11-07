@@ -92,9 +92,46 @@ test('las rutas fijas están conectadas, los objetivos distantes y la escolta co
     const env = { groundAt: world.height, cover, enemies: [] };
     for (const a of m.allies.filter((a) => a.wounded))
       for (let i = 0; i < 40; i++) m.update(0.05, a, env);
-    for (let i = 0; i < 2000 && m.stage !== 'COMPLETADA'; i++) {
+    // Fases finales por misión: la caja y el portal (Misión 1), los
+    // garajes Tan (Misión 2) y la batería, el tren y el portal
+    // (Misión 3). El tren tarda ~67 s en llegar a C, así que el tope
+    // es generoso (150 s de juego).
+    const player = { ...m.finish };
+    const tanHeli = map.rules.enemies.find((e) => e.id === 'tan-heli');
+    for (let i = 0; i < 3000 && m.stage !== 'COMPLETADA'; i++) {
+      if (m.stage === 'CARGA_PORTAL' && m.cargo) {
+        const target =
+          m.cargo.state === 'carried' ? m.portal : m.cargo;
+        player.x = target.x;
+        player.z = target.z;
+      } else if (m.stage === 'GARAJES') {
+        for (const g of m.garages)
+          m.enemyEliminated({ id: g.id, k: 'garage' });
+      } else if (m.stage === 'ENTREGA_C' && m.train) {
+        if (m.cargo.state === 'hidden' && tanHeli)
+          m.enemyEliminated({
+            id: 'tan-heli',
+            k: 'heli',
+            x: tanHeli.x,
+            z: tanHeli.z,
+          });
+        else if (m.cargo.state === 'waiting') {
+          player.x = m.cargo.x;
+          player.z = m.cargo.z;
+        } else if (m.cargo.state === 'carried' && m.batteryPad) {
+          player.x = m.batteryPad.x;
+          player.z = m.batteryPad.z;
+        }
+        if (m.train.state !== 'waiting') {
+          player.x = m.finish.x;
+          player.z = m.finish.z;
+        }
+      } else if (m.stage === 'PORTAL' && m.portal) {
+        player.x = m.portal.x;
+        player.z = m.portal.z;
+      }
       const before = m.allies.map((a) => ({ ...a }));
-      m.update(0.05, m.finish, env);
+      m.update(0.05, player, env);
       m.allies.forEach((a, j) => {
         if (!a.wounded)
           assert.ok(
@@ -126,12 +163,12 @@ test('reintentar conserva el mapa; otra misión cambia de mapa fijo; otra partid
   assert.equal(a.state.mapSeed, seed);
   assert.equal(JSON.stringify(a.state.world.roads), roads);
   a.app.start(2, false);
-  assert.equal(a.state.mapName, 'El picnic');
+  assert.equal(a.state.mapName, 'Locura de coches');
   assert.notEqual(a.state.mapSeed, seed);
   assert.notEqual(JSON.stringify(a.state.world.roads), roads);
   const next = a.state.mapSeed;
   a.app.start(3, false);
-  assert.equal(a.state.mapName, 'La playa');
+  assert.equal(a.state.mapName, 'El tren que pudo');
   assert.notEqual(a.state.mapSeed, next);
   // Volver a empezar la campaña vuelve al mismo mapa fijo de la 1.
   a.app.start(1, true);

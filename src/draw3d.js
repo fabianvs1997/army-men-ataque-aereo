@@ -44,6 +44,19 @@ que el juego necesita WebGL 3D. */
           allies: scene.mission
             ? (scene.mission.guards || []).concat(scene.mission.allies)
             : [],
+          // Winch de la carga: el renderizador dibuja el cable y la
+          // carga colgando desde esta vista (null sin carga); la
+          // batería de la Misión 3 va con `kind: 'battery'`.
+          cargo:
+            scene.mission && typeof scene.mission.cargoView === 'function'
+              ? scene.mission.cargoView()
+              : null,
+          // Tren Prego (Misión 3): el renderizador lo dibuja sobre la
+          // vía desde esta vista (null sin tren).
+          train:
+            scene.mission && typeof scene.mission.trainView === 'function'
+              ? scene.mission.trainView()
+              : null,
         })
       ) {
         scene.$('world3d').style.display = 'block';

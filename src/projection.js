@@ -1,8 +1,10 @@
 /* Proyección de cámara ortográfica oblicua (solo 3D).
 
 Extraída del antiguo renderizador Canvas 2D: la proyección no dibuja
-nada, solo convierte coordenadas del mundo a pantalla, y la siguen
-usando el juego (env.P3, para la brújula del HUD) y las pruebas.
+nada, solo convierte coordenadas del mundo a pantalla. La brújula del
+HUD ya no la usa: ToyCompass calcula el rumbo y la dirección del
+objetivo directamente en coordenadas del mundo. P3 se conserva para
+las pruebas y por compatibilidad.
 No hay dibujo 2D aquí: el único renderizador es WebGL. */
 (function (root, factory) {
   const api = factory();

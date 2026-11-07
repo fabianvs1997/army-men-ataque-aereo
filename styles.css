@@ -125,7 +125,7 @@ h1 {
   display: block;
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #d69742, #e5dc83);
+  background: linear-gradient(90deg, #e8a13a, #ffe066);
 }
 
 .b {
@@ -153,6 +153,9 @@ h1 {
 
 /* Separate mobile HUD rows: health/mode, mission, then actions. */
 
+/* Barra de salud amarilla como la del original: a la derecha, bajo
+   el modo de render. La ametralladora no gasta munición: la salud
+   (P.arm, 10) es lo que baja al recibir daño. */
 #arm {
   position: absolute;
   background: rgba(0, 0, 0, 0.45);
@@ -160,9 +163,10 @@ h1 {
   overflow: hidden;
   border: 2px solid #e7e9cc88;
   box-shadow: 0 2px 12px #0006;
-  top: 12px;
-  left: 12px;
-  width: 108px;
+  top: 36px;
+  right: 12px;
+  left: auto;
+  width: 140px;
   height: 12px;
 }
 
@@ -182,17 +186,79 @@ h1 {
   padding: 7px 8px;
 }
 
-#cmp {
+/* Contador de munición del original: número amarillo grande abajo a
+   la izquierda, por encima del botón de gráficos. Son los misiles
+   (el arma secundaria); en vacío el número se pone rojo. */
+#ammo {
+  position: absolute;
+  left: 12px;
+  bottom: 92px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  pointer-events: none;
+}
+
+#ammoNum {
+  font-size: 30px;
+  font-weight: 700;
+  color: #ffe066;
+  line-height: 1;
+  text-shadow: 0 2px 0 var(--ink);
+}
+
+#ammoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #e9e7cc;
+}
+
+/* Brújula del original: tira inferior centrada, como la del video
+   (puntos en verde apagado, rumbo actual resaltado en amarillo y
+   marca morada ◆ hacia el objetivo). Va por encima de los botones
+   Fuego/Misil para no taparlos, y la flecha amarilla de antes queda
+   integrada como aguja central (▲). */
+#compass {
   position: absolute;
   left: 50%;
-  margin-left: -16px;
-  width: 32px;
-  height: 32px;
-  line-height: 32px;
+  transform: translateX(-50%);
+  bottom: 132px;
+  width: min(200px, 46vw);
+  height: 34px;
+  overflow: hidden;
+  background: rgba(10, 20, 12, 0.72);
+  border: 1px solid #d8e4b330;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+#compass .cl {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  width: 28px;
   text-align: center;
+  color: #9fbf7a;
+}
+
+#compassTarget {
+  position: absolute;
+  top: 17px;
+  transform: translateX(-50%);
+  color: #c77dff;
+  font-size: 11px;
+}
+
+#compassNeedle {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
   color: var(--accent);
-  top: 79px;
-  font-size: 25px;
+  font-size: 9px;
 }
 
 #renderMode {
@@ -345,8 +411,14 @@ h1 {
   #sound {
     top: 44px;
   }
-  #cmp {
-    top: 92px;
+  #arm {
+    top: 12px;
+    left: 12px;
+    right: auto;
+    width: 108px;
+  }
+  #compass {
+    bottom: 104px;
   }
   #fu {
     width: 76px;

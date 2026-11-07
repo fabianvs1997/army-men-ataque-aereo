@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'terreno-video-1';
+  const VERSION = 'parecido-original-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -32,6 +32,7 @@
     'input',
     'debris',
     'combat',
+    'compass',
     'ui',
     'perf',
     'logger',

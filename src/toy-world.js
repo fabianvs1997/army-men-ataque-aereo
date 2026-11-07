@@ -10,6 +10,12 @@
     // mapa son las montañas y los puntos de interés son la caja de
     // suministros, el portal y las torres de guardia.
     const alpine = map?.scenario === 'Alpine';
+    // Valla y casa del jardín clásico: solo sin mapa o en mapas que
+    // no sean el valle alpino, el circuito de carretera ni el patio
+    // de vías. En el circuito y en las vías no hay jardín que vallar
+    // ni casa al fondo.
+    const houseAndFence =
+      !map || !['Alpine', 'Road', 'Rail'].includes(map.scenario);
     // El camino del original es ANCHO y oscuro y cruza el mapa: medio
     // ancho 15 u (30 u en total, 3x el anterior de 10 u). Es la única
     // fuente de verdad del ancho: el renderizador dibuja la caja con
@@ -303,9 +309,17 @@
         Math.abs(x) < LIMIT - 65 &&
         Math.abs(z) < LIMIT - 65 &&
         trailDistance(x, z) > p.radius + 20 &&
-        clearings.every(
-          ([cx, cz, r]) => Math.hypot(x - cx, z - cz) > r + p.radius + 8,
-        );
+        clearings.every(([cx, cz, r]) => {
+          // El portal es un halo en el suelo, no un obstáculo: basta
+          // con que su centro quede a 24 u del centro del pad (su
+          // radio 4 + 20), en vez de 35 u (pad 23 + portal 4 + 8).
+          // Así el portal de la Misión 1 (25 u de C) y el de la
+          // Misión 3 (25 u de C) quedan donde dice el mapa, y el
+          // portal dibujado coincide con el funcional.
+          const margin =
+            p.kind === 'portal' ? p.radius + 20 : r + p.radius + 8;
+          return Math.hypot(x - cx, z - cz) > margin;
+        });
       search: for (let radius = 0; radius <= 240; radius += 12)
         for (let i = 0; i < 16; i++) {
           const x = original.x + Math.cos((i * Math.PI) / 8) * radius,
@@ -340,8 +354,9 @@
       clay = [0.65, 0.29, 0.16],
       leaf = [0.24, 0.39, 0.12];
     // Individual weathered fence boards and horizontal rails surround the lawn.
-    // En el valle alpino no hay valla de jardín: el borde son las montañas.
-    if (!alpine) {
+    // En el valle alpino, en el circuito y en las vías no hay valla
+    // de jardín: el borde son las montañas o el propio circuito.
+    if (houseAndFence) {
     for (let q = -LIMIT + 4; q <= LIMIT - 4; q += 8)
       for (const side of [-1, 1]) {
         if (side < 0 || Math.abs(q) > 112)
@@ -371,7 +386,7 @@
       }
     }
     // House wall, back door, windows and a paved terrace at the far end.
-    if (!alpine) {
+    if (houseAndFence) {
     const houseStart = yard.length;
     part('box', 0, 24, 214, 110, 24, 12, [0.76, 0.7, 0.58]);
     part('box', 0, 2, 180, 104, 2, 18, [0.6, 0.59, 0.53]);
@@ -418,18 +433,30 @@
       yard.push({ kind, x, y, z, sx, sy, sz, color, yaw });
     }
     // Rectangular terracotta planter: rim, soil and low leafy plants.
-    // En el valle alpino, la caja verde de suministros de plástico:
-    // más grande y con una segunda caja al lado, para que destaque
-    // junto al puesto (B) sin tapar la ruta.
+    // El punto de interés 0 es la caja verde de suministros en el
+    // valle alpino (Misión 1) y una torre de guardia en el circuito
+    // (Misión 2) y en las vías (Misión 3); sin mapa, el macetero
+    // clásico. Con carga (Misión 1, la caja se levanta con el winch)
+    // la caja grande NO va en el patio: la dibuja el renderizador
+    // desde `cargoCrate`, para poder esconderla del suelo cuando
+    // cuelga del helicóptero; la segunda caja pequeña sí queda como
+    // decoración fija.
     placeLandmark(0);
+    let cargoCrate = null;
     let h = height(34, 26);
-    if (alpine) {
-      part('box', 34, h + 1.8, 26, 6, 3.6, 6, [0.13, 0.42, 0.14]);
-      part('box', 34, h + 3.9, 26, 6.5, 0.7, 6.5, [0.18, 0.52, 0.18]);
-      part('box', 34, h + 4.3, 26, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1]);
-      part('box', 34, h + 4.3, 26, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1]);
+    if (landmarks[0].kind === 'crate') {
+      if (map?.cargo) {
+        cargoCrate = { x: landmarks[0].x, z: landmarks[0].z };
+      } else {
+        part('box', 34, h + 1.8, 26, 6, 3.6, 6, [0.13, 0.42, 0.14]);
+        part('box', 34, h + 3.9, 26, 6.5, 0.7, 6.5, [0.18, 0.52, 0.18]);
+        part('box', 34, h + 4.3, 26, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1]);
+        part('box', 34, h + 4.3, 26, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1]);
+      }
       part('box', 41, h + 1.2, 31, 3.5, 2.4, 3.5, [0.11, 0.36, 0.12]);
       part('box', 41, h + 2.6, 31, 3.8, 0.5, 3.8, [0.16, 0.48, 0.16]);
+    } else if (landmarks[0].kind === 'tower') {
+      towerAt(part, 34, 26);
     } else {
     part('box', 34, h + 3, 26, 15, 3, 7, clay);
     part('box', 34, h + 6, 26, 16, 0.8, 8, [0.73, 0.37, 0.22]);
@@ -441,14 +468,17 @@
     }
     }
     // Galvanized watering can with raised loop handle and a long spout.
-    // En el valle alpino, el portal brillante: halo en el suelo,
-    // círculo luminoso, orbe en 3 capas (exterior, medio y núcleo
-    // casi blanco) y una columna de luz alta, para que brille de
-    // verdad y se vea desde lejos como faro al final del camino.
-    // Solo decoración: no cambia las reglas (la entrega sigue en C).
+    // El punto de interés 1 es el portal brillante en los tres mapas
+    // fijos (Misión 1: la caja; Misión 2: los coches; Misión 3: la
+    // salida): halo en el suelo, círculo luminoso, orbe en 3 capas
+    // (exterior, medio y núcleo casi blanco) y una columna de luz
+    // alta, para que brille de verdad y se vea desde lejos como faro
+    // al final del camino. En la Misión 1 el portal ya no es solo
+    // decoración: pasar con la caja por él cierra la misión (ver
+    // src/escort-mission.js); en la Misión 3, salir por él también.
     placeLandmark(1);
     h = height(-45, -33);
-    if (alpine) {
+    if (landmarks[1].kind === 'portal') {
       part('sphere', -45, h + 0.4, -33, 14, 0.3, 14, [0.98, 0.88, 0.55]);
       part('sphere', -45, h + 0.4, -33, 7, 0.35, 7, [0.95, 0.8, 0.35]);
       part('sphere', -45, h + 9, -33, 6.5, 7.5, 6.5, [1.0, 0.55, 0.1]);
@@ -463,25 +493,7 @@
     part('box', -45, h + 14, -33, 4, 0.45, 0.45, [0.38, 0.46, 0.4]);
     part('box', -39, h + 4, -29, 0.65, 0.65, 5, [0.48, 0.56, 0.48], 0.8);
     part('sphere', -35, h + 4, -25, 1.6, 1, 1.6, [0.61, 0.64, 0.54]);
-    }
-    // Garden bench with separate wooden slats and dark metal legs.
-    // En el valle alpino, una torre de guardia junto a la base.
-    placeLandmark(2);
-    h = height(70, -48);
-    if (alpine) {
-      towerAt(part, 70, -48);
-    } else {
-    for (const x of [62, 78])
-      for (const z of [-51, -45])
-        part('box', x, h + 3, z, 0.6, 3, 0.6, [0.19, 0.23, 0.2]);
-    for (const z of [-51, -48, -45])
-      part('box', 70, h + 6.4, z, 11, 0.6, 1.2, [0.55, 0.37, 0.2]);
-    for (const y of [9, 12])
-      part('box', 70, h + y, -52, 11, 1, 0.5, [0.52, 0.34, 0.18]);
-    }
     // A hose winds beside the can; stone slabs break up the dirt path.
-    if (!alpine) {
-    placeLandmark(1);
     for (let i = 0; i < 36; i++) {
       const a = i * 0.18,
         b = (i + 1) * 0.18,
@@ -502,6 +514,22 @@
       );
     }
     }
+    // Garden bench with separate wooden slats and dark metal legs.
+    // El punto de interés 2 es una torre de guardia en los tres
+    // mapas fijos; sin mapa, el banco clásico.
+    placeLandmark(2);
+    h = height(70, -48);
+    if (landmarks[2].kind === 'tower') {
+      towerAt(part, 70, -48);
+    } else {
+    for (const x of [62, 78])
+      for (const z of [-51, -45])
+        part('box', x, h + 3, z, 0.6, 3, 0.6, [0.19, 0.23, 0.2]);
+    for (const z of [-51, -48, -45])
+      part('box', 70, h + 6.4, z, 11, 0.6, 1.2, [0.55, 0.37, 0.2]);
+    for (const y of [9, 12])
+      part('box', 70, h + y, -52, 11, 1, 0.5, [0.52, 0.34, 0.18]);
+    }
     if (alpine) {
       // Las otras 3 torres de guardia de la base de salida (la 4ª es
       // el punto de interés `tower`): a ~50 u de A, fuera del camino
@@ -512,6 +540,169 @@
         [-46, -22],
       ])
         towerAt(fixedPart, tx, tz);
+      // Defensas de la base verde (solo la Misión 1, del mapa fijo):
+      // van directas al patio con `fixedPart`, sin el offset de los
+      // puntos de interés, así que quedan donde dice el mapa y son
+      // cobertura real: el patio (`yard`) es lo que revisan las
+      // colisiones para parar balas y movimiento.
+      const sandbag = [0.62, 0.55, 0.38],
+        sandbagDark = [0.52, 0.46, 0.32],
+        tentGreen = [0.2, 0.45, 0.18],
+        tentLight = [0.26, 0.55, 0.22],
+        wire = [0.28, 0.28, 0.26];
+      for (const d of map?.defenses || []) {
+        const gy = height(d.x, d.z);
+        if (d.kind === 'sandbags') {
+          const count = d.count || 5;
+          for (let i = 0; i < count; i++) {
+            const at = (i - (count - 1) / 2) * 3.2,
+              bx = d.x + Math.cos(d.yaw || 0) * at,
+              bz = d.z + Math.sin(d.yaw || 0) * at,
+              by = height(bx, bz);
+            fixedPart(
+              'rounded',
+              bx,
+              by + 0.55,
+              bz,
+              1.6,
+              0.55,
+              1,
+              i % 2 ? sandbagDark : sandbag,
+              d.yaw || 0,
+            );
+            if (i % 2 === 0)
+              fixedPart(
+                'rounded',
+                bx,
+                by + 1.45,
+                bz,
+                1.3,
+                0.45,
+                0.85,
+                sandbagDark,
+                d.yaw || 0,
+              );
+          }
+        } else if (d.kind === 'fence') {
+          const dx = d.x2 - d.x1,
+            dz = d.z2 - d.z1,
+            length = Math.hypot(dx, dz),
+            yaw = Math.atan2(dx, dz),
+            count = Math.max(2, Math.floor(length / 7.5) + 1),
+            posts = [];
+          for (let i = 0; i < count; i++) {
+            const t = count === 1 ? 0 : i / (count - 1),
+              px = d.x1 + dx * t,
+              pz = d.z1 + dz * t;
+            posts.push([px, pz]);
+            fixedPart('box', px, height(px, pz) + 2, pz, 0.35, 2, 0.35, wood);
+          }
+          // Raíles por tramos, a la altura local de cada par de postes:
+          // la valla sube por la ladera y un raíl largo a altura única
+          // flotaría en un extremo y se enterraría en el otro.
+          for (let i = 1; i < posts.length; i++) {
+            const [ax, az] = posts[i - 1],
+              [bx, bz] = posts[i],
+              seg = Math.hypot(bx - ax, bz - az),
+              mx = (ax + bx) / 2,
+              mz = (az + bz) / 2,
+              my = (height(ax, az) + height(bx, bz)) / 2;
+            for (const ry of [1.3, 3.3])
+              fixedPart(
+                'box',
+                mx,
+                my + ry,
+                mz,
+                0.12,
+                0.12,
+                seg / 2,
+                wire,
+                yaw,
+              );
+          }
+        } else if (d.kind === 'tent') {
+          // Tienda de campaña verde en 3 cuerpos escalonados (sin
+          // inclinación: las piezas solo giran en yaw) con mástil.
+          fixedPart('box', d.x, gy + 0.8, d.z, 3.5, 0.8, 2.5, tentGreen, d.yaw || 0);
+          fixedPart('box', d.x, gy + 2.2, d.z, 2.6, 0.8, 1.9, tentLight, d.yaw || 0);
+          fixedPart('box', d.x, gy + 3.3, d.z, 1.5, 0.7, 1.1, tentGreen, d.yaw || 0);
+          fixedPart('box', d.x, gy + 4.4, d.z, 0.15, 0.8, 0.15, wood);
+        } else if (d.kind === 'tower') {
+          towerAt(fixedPart, d.x, d.z);
+        } else if (d.kind === 'crate') {
+          fixedPart('box', d.x, gy + 1.5, d.z, 2, 1.5, 2, [0.13, 0.42, 0.14], d.yaw || 0);
+          fixedPart('box', d.x, gy + 3.1, d.z, 2.2, 0.3, 2.2, [0.18, 0.52, 0.18], d.yaw || 0);
+          fixedPart('box', d.x, gy + 3.3, d.z, 0.25, 0.25, 2.2, [0.1, 0.1, 0.1], d.yaw || 0);
+        }
+      }
+    }
+    // Vías del tren (Misión 3): traviesas y raíles sobre el terreno,
+    // sin colisión (van en `rails`, no en `yard`): el tren y el
+    // pelotón pasan por encima sin chocar. La vía corre 8 u al sur
+    // del camino, en llano (el camino aplana el terreno 25 u a cada
+    // lado), así que los raíles, rectos por tramo, no se entierran ni
+    // flotan. Los raíles van sobre las traviesas (su centro, a 0,3 u
+    // del suelo: traviesa de 0,24 u de alto + raíl de 0,12 u).
+    const rails = [];
+    if (map?.tracks) {
+      const railColor = [0.38, 0.38, 0.36],
+        sleeperColor = [0.3, 0.22, 0.14];
+      for (let i = 1; i < map.tracks.length; i++) {
+        const [ax, az] = map.tracks[i - 1],
+          [bx, bz] = map.tracks[i],
+          dx = bx - ax,
+          dz = bz - az,
+          len = Math.hypot(dx, dz),
+          yaw = Math.atan2(dx, dz),
+          // Perpendicular a la vía: los raíles van a ±0,9 u del eje.
+          px = -dz / len,
+          pz = dx / len,
+          mx = (ax + bx) / 2,
+          mz = (az + bz) / 2;
+        for (const side of [-0.9, 0.9])
+          rails.push({
+            kind: 'box',
+            x: mx + px * side,
+            y: height(mx + px * side, mz + pz * side) + 0.3,
+            z: mz + pz * side,
+            sx: 0.07,
+            sy: 0.06,
+            sz: len / 2,
+            color: railColor,
+            yaw,
+          });
+        // Traviesas cada 4 u, cruzando la vía.
+        for (let d = 2; d < len; d += 4) {
+          const t = d / len,
+            x = ax + dx * t,
+            z = az + dz * t;
+          rails.push({
+            kind: 'box',
+            x,
+            y: height(x, z) + 0.12,
+            z,
+            sx: 2,
+            sy: 0.12,
+            sz: 0.5,
+            color: sleeperColor,
+            yaw,
+          });
+        }
+      }
+    }
+    // Plataforma de energía (Misión 3): base baja y placa con dos
+    // bornes, detrás del tren; tan baja (0,4 u como mucho) que ni
+    // los soldados (cápsula desde 0,6 u) ni los tanques (desde 0,2 u)
+    // chocan con ella: el pelotón pasa por encima sin atascarse.
+    let batteryPad = null;
+    if (map?.batteryPad) {
+      const { x, z } = map.batteryPad,
+        gy = height(x, z);
+      batteryPad = { x, z };
+      fixedPart('box', x, gy + 0.07, z, 3, 0.07, 3, [0.45, 0.45, 0.42]);
+      fixedPart('box', x, gy + 0.12, z, 2, 0.05, 2, [0.25, 0.28, 0.35]);
+      fixedPart('box', x - 0.8, gy + 0.25, z, 0.25, 0.18, 0.25, [0.95, 0.8, 0.2]);
+      fixedPart('box', x + 0.8, gy + 0.25, z, 0.25, 0.18, 0.25, [0.95, 0.8, 0.2]);
     }
     // Deterministic natural shrubs replace the scattered toy building blocks.
     // Con mapa del motor, la vegetación viene ya generada (posiciones
@@ -577,6 +768,15 @@
       landmarks,
       yard,
       shrubs,
+      // Defensas de la Misión 1 (del mapa fijo) y posición de la caja
+      // de la carga, que el renderizador dibuja aparte para poder
+      // levantarla con el winch.
+      defenses: (map?.defenses || []).map((d) => ({ ...d })),
+      cargoCrate,
+      // Vías del tren (Misión 3, sin colisión) y plataforma de la
+      // batería (Misión 3, en el patio como cobertura baja).
+      rails,
+      batteryPad,
       clearOfLandmarks,
     };
     return api;

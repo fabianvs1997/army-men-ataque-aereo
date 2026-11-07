@@ -13,13 +13,13 @@
  *   tierra, pinos altos y montañas— con suministros de plástico y un
  *   portal al final. Homenaje fiel solo en el mapa: las reglas del
  *   juego (A → B → C) no cambian.
- * - Misión 2, «El picnic»: el mantel del picnic, con la mesa y la
- *   comida como puntos de interés y hormigas (infantería) por todas
- *   partes. Homenaje a «Picnic Panic», el picnic del original.
- * - Misión 3, «La playa»: arena abierta y llana, castillos de arena
- *   (rocas) junto a C y libélulas (helicópteros enemigos) patrullando.
- *   Homenaje a «Don't Feed The Crabs» y «Tide Pool Terror», los
- *   rescates de la playa del original.
+ * - Misión 2, «Locura de coches»: el circuito de carretera del
+ *   original («Going Car-razy»), con garajes Tan y coches que
+ *   llevan los suministros por el portal. Sin mesa de picnic.
+ * - Misión 3, «El tren que pudo»: las vías del tren del original
+ *   («The Train That Could»), con el tren Prego, la batería robada
+ *   por el helicóptero Tan y el portal de salida. Sin playa ni
+ *   castillos de arena.
  *
  * Honestidad sobre la recreación: no hay un plano exacto público de
  * los mapas del original para copiarlos 1:1, y sus tres primeras
@@ -138,6 +138,41 @@
   }
 
   const hpFor = (k) => ({ inf: 3, tank: 8, tur: 6, heli: 6 })[k];
+  // Huellas de las defensas (Misión 1) como puntos con radio: cada
+  // saco de una fila, cada poste de una valla, cada tienda, torre y
+  // caja. Sirven para despejar la vegetación en `buildMap` y para
+  // validar que nada bloquea rutas ni helipuertos.
+  function defensePoints(defenses) {
+    const points = [];
+    for (const d of defenses || []) {
+      if (d.kind === 'sandbags') {
+        const count = d.count || 5,
+          spacing = 3.2;
+        for (let i = 0; i < count; i++) {
+          const at = (i - (count - 1) / 2) * spacing;
+          points.push([
+            d.x + Math.cos(d.yaw || 0) * at,
+            d.z + Math.sin(d.yaw || 0) * at,
+            2,
+          ]);
+        }
+      } else if (d.kind === 'fence') {
+        const length = Math.hypot(d.x2 - d.x1, d.z2 - d.z1),
+          count = Math.max(2, Math.floor(length / 7.5) + 1);
+        for (let i = 0; i < count; i++) {
+          const t = count === 1 ? 0 : i / (count - 1);
+          points.push([
+            d.x1 + (d.x2 - d.x1) * t,
+            d.z1 + (d.z2 - d.z1) * t,
+            1,
+          ]);
+        }
+      } else if (d.kind === 'tent') points.push([d.x, d.z, 5]);
+      else if (d.kind === 'tower') points.push([d.x, d.z, 4]);
+      else if (d.kind === 'crate') points.push([d.x, d.z, 3]);
+    }
+    return points;
+  }
   // Enemigos de B con los desplazamientos clásicos respecto a B.
   const bZone = (B) => [
     { id: 'b-west', k: 'tank', x: B.x - 19, z: B.z, zone: 'B', hp: 16 },
@@ -229,11 +264,42 @@
         // `placeLandmark` la dejaba a 9 u de la patrulla `patrol-ab-4`
         // y su caja de colisión (6 u de medio lado) la solapaba.
         { kind: 'crate', x: -170, z: 140, radius: 8, yaw: 0 },
-        { kind: 'portal', x: 225, z: 200, radius: 12, yaw: 0 },
+        // Portal al final del camino, pasado C, pero en suelo llano
+        // (205, 192): el helicóptero no puede volar sobre terreno de
+        // más de 2 u (`canTravel`) y en su sitio anterior (225, 200)
+        // el suelo ya mide 13,5 u. A 25 u de C, sin solapar su radio
+        // de entrega (12 + 9). El radio del punto es 4: el orbe es
+        // decoración plana y el radio de disparo del portal (12) vive
+        // en `portal`, no aquí.
+        { kind: 'portal', x: 205, z: 192, radius: 4, yaw: 0 },
         // Torre de guardia junto a la base, a ~50 u de A: las torres
         // no deben rodear el helipuerto ni taparlo desde la cámara.
         { kind: 'tower', x: 48, z: -20, radius: 10, yaw: 0 },
       ],
+      // Defensas de la base verde (ver docs/PARECIDO-AL-ORIGINAL.md):
+      // 3 filas de sacos de arena (al sur de B, antes de C y al este
+      // de A), una valla de alambre al sur de A, 2 tiendas de campaña
+      // del puesto, 1 torre de vigilancia al este de B y 2 cajas de
+      // suministros. Todas fuera del camino (≥18 u de las rutas) y de
+      // los helipuertos (≥25 u de A/B/C); las comprueba `validate`.
+      // La caja verde de la lista es la de suministros (`crate` de
+      // arriba): es la carga que se levanta con el winch, no una
+      // defensa más.
+      defenses: [
+        { kind: 'sandbags', x: -157, z: 125, yaw: 0, count: 5 },
+        { kind: 'sandbags', x: 160, z: 163, yaw: 0, count: 5 },
+        { kind: 'sandbags', x: 40, z: 32, yaw: 0, count: 5 },
+        { kind: 'fence', x1: -45, z1: -35, x2: 45, z2: -35 },
+        { kind: 'tent', x: -100, z: 140, yaw: 0.3 },
+        { kind: 'tent', x: -185, z: 195, yaw: -0.4 },
+        { kind: 'tower', x: -115, z: 205 },
+        { kind: 'crate', x: -135, z: 200, yaw: 0.2 },
+        { kind: 'crate', x: 25, z: -30, yaw: -0.3 },
+      ],
+      // Carga y portal del original: la caja de plástico junto a B se
+      // levanta con el winch y se lleva por el portal, pasado C.
+      cargo: { x: -170, z: 140 },
+      portal: { x: 205, z: 192, radius: 12 },
       // Montañas y rocas grandes como borde del valle, sobre todo a
       // la derecha del camino cerca del portal (el desvío de la guía
       // del original) y en los bordes este y norte. Son decoración:
@@ -278,10 +344,10 @@
     {
       mission: 2,
       seed: 202,
-      name: 'El picnic',
-      scenario: 'Picnic',
+      name: 'Locura de coches',
+      scenario: 'Road',
       inspiration:
-        '«Picnic Panic», el picnic del original: comida por todas partes, hormigas (infantería) y la Máquina en el centro.',
+        '«Going Car-razy», segunda misión del original: circuito de carretera con garajes Tan; los coches llevan los suministros por el portal y hay que pararlos antes de que pasen 15. Sin mesa de picnic.',
       A: { x: -30, z: -80 },
       B: { x: 85, z: 175 },
       C: { x: 240, z: 40 },
@@ -301,13 +367,43 @@
         [230, 60],
         [240, 40],
       ],
+      // Circuito de carretera: la vuelta de C a A cierra el anillo
+      // A → B → C → A por el que corren los coches de suministros.
+      routeCA: [
+        [240, 40],
+        [190, -40],
+        [145, -80],
+        [100, -120],
+        [50, -115],
+        [0, -110],
+        [-30, -80],
+      ],
       terrain: { phase: 1.3, amp: 16, freqX: 34, freqZ: 40 },
-      // El mantel del picnic: banco, macetero y regadera juntos junto
-      // a la ruta B→C, como mesa y comida del picnic.
+      // El portal por el que escapan los coches: junto al circuito,
+      // 25 u al sur del vértice (100, -120), en llano y fuera del
+      // camino, para que los coches puedan llegar hasta él.
+      carPortal: { x: 100, z: -145, radius: 12 },
+      // Garajes Tan (ver docs/PARECIDO-AL-ORIGINAL.md): 3, junto al
+      // circuito y a 20 u del camino (en llano, fuera de la ruta y
+      // fuera del perímetro de B); cada uno suelta un coche cada
+      // 20 s que recorre el circuito hasta el portal. `joinIndex` es
+      // el vértice del circuito al que se incorporan sus coches y
+      // `firstIn` escalona la primera salida (0, 7 y 14 s). El más
+      // cercano al portal (garaje-este) deja a sus coches a 16 s del
+      // portal; el más lejano (garaje-oeste), a 64 s. Si no se
+      // destruye ningún garaje ni se dispara a ningún coche, el 15.º
+      // pasa por el portal a los ~135 s.
+      garages: [
+        { id: 'garage-east', x: 203, z: -55, joinIndex: 11, firstIn: 0 },
+        { id: 'garage-north', x: 88, z: 131, joinIndex: 4, firstIn: 7 },
+        { id: 'garage-west', x: 29, z: 3.7, joinIndex: 2, firstIn: 14 },
+      ],
+      // Torres verdes de guardia (puntos de interés): una junto a A
+      // y otra junto a C; el portal va en el hueco del medio.
       landmarks: [
-        { kind: 'planter', x: 180, z: 25, radius: 21, yaw: 0 },
-        { kind: 'watering', x: 110, z: 90, radius: 10, yaw: 0 },
-        { kind: 'bench', x: 150, z: 60, radius: 12, yaw: 0 },
+        { kind: 'tower', x: -70, z: -110, radius: 10, yaw: 0 },
+        { kind: 'portal', x: 100, z: -145, radius: 4, yaw: 0 },
+        { kind: 'tower', x: 280, z: 90, radius: 10, yaw: 0 },
       ],
       scenerySeed: 202,
       shrubs: 338,
@@ -318,17 +414,17 @@
         BC: ['tank', 'inf', 'tur', 'inf', 'tank', 'inf'],
       },
       bcKinds: { turret: 'tur', infantry: 'inf' },
-      // Una libélula patrullando el picnic (en el original, los
-      // insectos son la amenaza del picnic).
+      // Una libélula patrullando el circuito (en el original, los
+      // insectos son la amenaza del picnic; aquí, del circuito).
       extraAir: [{ id: 'escort-air-2', k: 'heli', x: 150, z: 135, zone: 'BC', hp: 6 }],
     },
     {
       mission: 3,
       seed: 303,
-      name: 'La playa',
-      scenario: 'Beach',
+      name: 'El tren que pudo',
+      scenario: 'Rail',
       inspiration:
-        '«Don\'t Feed The Crabs» y «Tide Pool Terror», los rescates de la playa del original: castillos de arena, cangrejos y libélulas.',
+        '«The Train That Could», tercera misión del original: el tren Prego lleva el tanque de batalla, un helicóptero Tan robó la batería y hay que devolverla al tren, escoltarlo a la base verde y salir por el portal. Sin playa ni castillos de arena.',
       A: { x: 60, z: -40 },
       B: { x: -180, z: 120 },
       C: { x: 120, z: 220 },
@@ -349,23 +445,68 @@
         [120, 220],
       ],
       terrain: { phase: 2.6, amp: 9, freqX: 40, freqZ: 44 },
-      // Arena abierta y llana: pocos pinos, muchas rocas (castillos
-      // de arena) y los puntos de interés lejos, en la orilla.
+      // La vía cruza el mapa de oeste a este: el tren sale de su
+      // base (al oeste de B) y llega a C. Corre 8 u al sur del
+      // camino, para que el pelotón marche por el camino sin
+      // cruzarse con el tren. `trackExtension` es el tramo de vía
+      // fuera de la ruta B→C: va en las rutas del mundo para que el
+      // terreno quede llano bajo la base del tren.
+      tracks: [
+        [-257.6, 92.4],
+        [-177.6, 112.4],
+        [-97.6, 152.4],
+        [-17.6, 182.4],
+        [52.4, 197.4],
+        [92.4, 207.4],
+        [122.4, 212.4],
+      ],
+      trackExtension: [
+        [-260, 100],
+        [-180, 120],
+      ],
+      // La plataforma de energía, detrás del tren (al oeste de su
+      // posición inicial): ahí se deja la batería con el winch.
+      batteryPad: { x: -272, z: 89, radius: 9 },
+      // El helicóptero Tan que robó la batería: huye por la ruta a
+      // B (junto al tanque de la ruta, a 15 u de él) y al morir
+      // suelta la batería donde cae.
+      tanHeli: { x: -52, z: 52, hp: 8 },
+      // Portal de salida, pasado C en la dirección del camino
+      // (25 u): en llano, para que el helicóptero pueda volar por
+      // él. El jugador sí vuela por este portal (playerPortal).
+      portal: { x: 145, z: 224, radius: 12 },
+      playerPortal: true,
+      // La batería robada: empieza escondida en el helicóptero Tan
+      // (su posición inicial es la del helicóptero) y solo se puede
+      // levantar con el winch cuando cae al morir este. Se entrega
+      // en la plataforma, no en el portal.
+      cargo: {
+        kind: 'battery',
+        hidden: true,
+        winchFrom: 'any',
+        x: -52,
+        z: 52,
+        deliverAt: { x: -272, z: 89, radius: 9 },
+      },
+      // Torres verdes de guardia (puntos de interés): una en la base
+      // del tren y otra en la base verde de C; el portal, en medio.
       landmarks: [
-        { kind: 'planter', x: -40, z: 250, radius: 21, yaw: 0 },
-        { kind: 'watering', x: 200, z: -120, radius: 10, yaw: 0 },
-        { kind: 'bench', x: 0, z: 240, radius: 12, yaw: 0 },
+        { kind: 'tower', x: -290, z: 60, radius: 10, yaw: 0 },
+        { kind: 'portal', x: 145, z: 224, radius: 4, yaw: 0 },
+        { kind: 'tower', x: 180, z: 180, radius: 10, yaw: 0 },
       ],
       scenerySeed: 303,
-      shrubs: 180,
-      rocks: 394,
+      // Patio de vías, no playa: menos rocas que antes (los
+      // castillos de arena) y vegetación moderada.
+      shrubs: 220,
+      rocks: 180,
       routeKinds: { inf: 'tur', tank: 'tank' },
       patrolKinds: {
         AB: ['tank', 'tur', 'tank', 'inf', 'tur', 'tank'],
         BC: ['tank', 'tur', 'tank', 'tur', 'inf', 'tank'],
       },
       bcKinds: { turret: 'tur', infantry: 'tank' },
-      // Dos libélulas sobre la playa, como en los rescates de
+      // Dos libélulas sobre las vías, como en los rescates de
       // «Tide Pool Terror».
       extraAir: [
         { id: 'escort-air-2', k: 'heli', x: -60, z: 175, zone: 'BC', hp: 6 },
@@ -376,6 +517,54 @@
 
   function buildMap(spec) {
     const { A, B, C, routeAB, routeBC } = spec;
+    // Rutas del mundo (carreteras y terreno llano): A→B, B→C y, si
+    // el mapa las trae, la vuelta C→A que cierra el circuito
+    // (Misión 2) y el tramo de vía a la base del tren (Misión 3).
+    const routes = [routeAB, routeBC];
+    if (spec.routeCA) routes.push(spec.routeCA);
+    if (spec.trackExtension) routes.push(spec.trackExtension);
+    // Circuito de la Misión 2: el anillo A → B → C → A por el que
+    // corren los coches. La última entrada repite A (cierra el
+    // anillo); los vértices únicos son todos menos esa última.
+    const circuit =
+      spec.routeCA && spec.carPortal
+        ? routeAB
+            .concat(routeBC.slice(1), spec.routeCA.slice(1))
+            .slice(0, -1)
+        : null;
+    // Ruta de un garaje hasta el portal: del vértice al que se
+    // incorporan sus coches, vuelta a vuelta por el circuito, y el
+    // portal como última parada (fuera del camino, 25 u al sur del
+    // último vértice). El índice del portal es el del vértice
+    // (100, -120) en el circuito.
+    const portalIndex = circuit
+      ? circuit.findIndex(
+          ([x, z]) =>
+            Math.hypot(x - 100, z - -120) < 1,
+        )
+      : -1;
+    const carRoute = (joinIndex) => {
+      const route = [];
+      let i = joinIndex;
+      for (let guard = 0; guard <= circuit.length; guard++) {
+        route.push([...circuit[i]]);
+        if (i === portalIndex) break;
+        i = (i + 1) % circuit.length;
+      }
+      route.push([spec.carPortal.x, spec.carPortal.z]);
+      return route;
+    };
+    // Garajes Tan (Misión 2): enemigos-edificio (10 HP, como una
+    // base) junto al circuito, con la puerta hacia el vértice al
+    // que se incorporan sus coches.
+    const garages = (spec.garages || []).map((g) => {
+      const [jx, jz] = circuit[g.joinIndex];
+      return {
+        ...g,
+        route: carRoute(g.joinIndex),
+        yaw: Math.atan2(jx - g.x, jz - g.z),
+      };
+    });
     const enemies = [
       {
         id: 'route-tank',
@@ -410,6 +599,32 @@
         zone: 'BC',
         hp: hpFor(spec.bcKinds.infantry),
       },
+      // Garajes Tan (Misión 2): edificios con 10 HP, como una base;
+      // su `zone` propia no altera los conteos de patrullas AB/BC.
+      ...garages.map((g) => ({
+        id: g.id,
+        k: 'garage',
+        x: g.x,
+        z: g.z,
+        zone: 'GARAGE',
+        hp: 10,
+        yaw: g.yaw,
+      })),
+      // El helicóptero Tan que robó la batería (Misión 3): un Huey
+      // más (8 HP, como el de B); su `zone` propia no altera los
+      // conteos de patrullas AB/BC.
+      ...(spec.tanHeli
+        ? [
+            {
+              id: 'tan-heli',
+              k: 'heli',
+              x: spec.tanHeli.x,
+              z: spec.tanHeli.z,
+              zone: 'AIR',
+              hp: spec.tanHeli.hp,
+            },
+          ]
+        : []),
     ];
     // Patrullas: mismo número de huecos que antes (6+6), con el tipo
     // fijo de cada mapa; la dificultad crece de la 1 a la 3.
@@ -436,11 +651,15 @@
       });
     }
     // Vegetación con la semilla fija del mapa, fuera de pads y rutas.
-    const routes = [routeAB, routeBC];
+    // `routes` ya trae las rutas extra (circuito y vía del tren):
+    // la vegetación también se mantiene fuera de ellas.
     const clearings = [
       [A.x, A.z, 23],
       [C.x, C.z, 23],
       [B.x, B.z + 5, 24],
+      // Las defensas también despejan vegetación: que ningún pino o
+      // roca nazca encima de un saco, una tienda o una valla.
+      ...defensePoints(spec.defenses || []).map(([x, z]) => [x, z, 10]),
     ];
     const rng = createRng(spec.scenerySeed);
     const pick = (a, b) => a + rng() * (b - a);
@@ -536,6 +755,42 @@
       routeBC: routeBC.map((p) => [...p]),
       enemies,
       extraAir: spec.extraAir.map((e) => ({ ...e })),
+      missionName: spec.name,
+      // Carga y portal: la Misión 1 trae la caja de plástico y el
+      // portal por el que se vuela (`cargo` + `portal`); la Misión
+      // 3 trae la batería robada (`cargo`, escondida en el
+      // helicóptero Tan) y el portal de salida (`portal`, con
+      // `playerPortal`); la Misión 2 no trae carga —su portal es el
+      // de los coches (`carPortal`, solo en el mapa) y sus garajes
+      // van en `garages`.
+      ...(spec.cargo
+        ? {
+            cargo: { ...spec.cargo },
+            ...(spec.portal && !spec.playerPortal
+              ? { portal: { ...spec.portal } }
+              : {}),
+          }
+        : {}),
+      ...(spec.playerPortal && spec.portal
+        ? { portal: { ...spec.portal } }
+        : {}),
+      ...(spec.garages
+        ? {
+            garages: garages.map((g) => ({ ...g })),
+            carsLimit: 15,
+            carSpawnInterval: 20,
+          }
+        : {}),
+      ...(spec.tracks
+        ? {
+            train: {
+              route: spec.tracks.map((p) => [...p]),
+              speed: 6,
+            },
+            batteryPad: { ...spec.batteryPad },
+            tanHeliId: 'tan-heli',
+          }
+        : {}),
     };
     return {
       seed: spec.seed,
@@ -545,13 +800,25 @@
       inspiration: spec.inspiration,
       limit: LIMIT,
       rules,
+      defenses: (spec.defenses || []).map((d) => ({ ...d })),
+      cargo: spec.cargo ? { ...spec.cargo } : null,
+      portal: spec.portal ? { ...spec.portal } : null,
+      carPortal: spec.carPortal ? { ...spec.carPortal } : null,
+      garages: garages.map((g) => ({ ...g })),
+      tracks: spec.tracks ? spec.tracks.map((p) => [...p]) : null,
+      batteryPad: spec.batteryPad ? { ...spec.batteryPad } : null,
       layout: {
         start: { ...A },
         finish: { ...C },
         camps: [[B.x, B.z]],
-        route: routeAB.concat(routeBC.slice(1)).map((p) => [...p]),
+        // Misión 2: la ruta es el circuito completo A → B → C → A.
+        // El tramo de vía de la Misión 3 no va aquí: es un ramal a
+        // la base del tren, no parte de la ruta del pelotón.
+        route: [routeAB, routeBC, ...(spec.routeCA ? [spec.routeCA] : [])]
+          .reduce((acc, r, i) => acc.concat(i ? r.slice(1) : r), [])
+          .map((p) => [...p]),
       },
-      routes: [routeAB.map((p) => [...p]), routeBC.map((p) => [...p])],
+      routes: routes.map((r) => r.map((p) => [...p])),
       terrain: { ...spec.terrain },
       scenery: {
         shrubs,
@@ -622,6 +889,117 @@
       if (Math.hypot(lastAB[0] - routeBC[0][0], lastAB[1] - routeBC[0][1]) > 1)
         errors.push('las rutas AB y BC no se conectan en B');
     }
+    // Rutas extra (índice ≥ 2): la vuelta C→A que cierra el circuito
+    // de la Misión 2 y el tramo de vía a la base del tren de la
+    // Misión 3. Mismas reglas de forma (tramos de 5–95 u, sin
+    // retrocesos, puntos en el patio) pero sin mínimo de longitud:
+    // el tramo de vía mide 82 u. El circuito empieza en C y termina
+    // en A; el tramo de vía termina en B.
+    const extraRoutes = (map.routes || []).slice(2);
+    for (const [ri, route] of extraRoutes.entries()) {
+      if (!route || route.length < 2) {
+        errors.push(`ruta extra ${ri} vacía`);
+        continue;
+      }
+      const overall = [
+        route[route.length - 1][0] - route[0][0],
+        route[route.length - 1][1] - route[0][1],
+      ];
+      let total = 0;
+      for (let i = 1; i < route.length; i++) {
+        const [ax, az] = route[i - 1],
+          [bx, bz] = route[i];
+        const len = Math.hypot(bx - ax, bz - az);
+        total += len;
+        if (len < 5) errors.push(`ruta extra ${ri}: tramo ${i} demasiado corto`);
+        if (len > 95) errors.push(`ruta extra ${ri}: tramo ${i} demasiado largo`);
+        if (Math.abs(bx) > LIMIT - 8 || Math.abs(bz) > LIMIT - 8)
+          errors.push(`ruta extra ${ri}: punto ${i} fuera del patio`);
+        if ((bx - ax) * overall[0] + (bz - az) * overall[1] < 0)
+          errors.push(`ruta extra ${ri}: tramo ${i} retrocede`);
+      }
+      if (total > 500) errors.push(`ruta extra ${ri} demasiado larga`);
+    }
+    if (extraRoutes[0] && (map.garages || []).length) {
+      const first = extraRoutes[0][0],
+        last = extraRoutes[0][extraRoutes[0].length - 1];
+      if (Math.hypot(first[0] - C.x, first[1] - C.z) > 1)
+        errors.push('el circuito no empieza en C');
+      if (Math.hypot(last[0] - A.x, last[1] - A.z) > 1)
+        errors.push('el circuito no termina en A');
+    }
+    if (extraRoutes[0] && map.tracks) {
+      const last = extraRoutes[0][extraRoutes[0].length - 1];
+      if (Math.hypot(last[0] - B.x, last[1] - B.z) > 1)
+        errors.push('el tramo de vía no termina en B');
+    }
+    // Garajes Tan (Misión 2): junto al circuito (18–25 u del
+    // camino: fuera del camino de 15 u de medio ancho, pero lo
+    // bastante cerca para que sus coches se incorporen), lejos de
+    // los helipuertos (≥94 u de A, ≥30 u de B, ≥20 u de C), sin
+    // solapar a ningún enemigo, y con una ruta de coches que
+    // termina en el portal de los coches.
+    for (const g of map.garages || []) {
+      if (Math.hypot(g.x - A.x, g.z - A.z) < defaults.safeRadius + 4)
+        errors.push(`garaje ${g.id} demasiado cerca de A`);
+      else if (Math.hypot(g.x - B.x, g.z - B.z) < 30)
+        errors.push(`garaje ${g.id} demasiado cerca de B`);
+      else if (Math.hypot(g.x - C.x, g.z - C.z) < 20)
+        errors.push(`garaje ${g.id} demasiado cerca de C`);
+      const rd = routeDistance(g.x, g.z, map.routes || []);
+      if (rd < 18 || rd > 25)
+        errors.push(`garaje ${g.id} ni junto ni fuera de la ruta`);
+      if (
+        (map.rules.enemies || []).some(
+          (e) => e.id !== g.id && Math.hypot(g.x - e.x, g.z - e.z) < 8,
+        )
+      )
+        errors.push(`garaje ${g.id} sobre un enemigo`);
+      const last = g.route?.[g.route.length - 1];
+      if (
+        !last ||
+        !map.carPortal ||
+        Math.hypot(last[0] - map.carPortal.x, last[1] - map.carPortal.z) > 1
+      )
+        errors.push(`garaje ${g.id} sin ruta al portal`);
+    }
+    // Portal de los coches (Misión 2): en el patio, junto al
+    // circuito (18–28 u del camino).
+    if (map.carPortal) {
+      const { x, z } = map.carPortal;
+      if (Math.abs(x) > LIMIT - 25 || Math.abs(z) > LIMIT - 25)
+        errors.push('portal de coches fuera del patio');
+      else {
+        const rd = routeDistance(x, z, map.routes || []);
+        if (rd < 18 || rd > 28)
+          errors.push('portal de coches ni junto ni fuera de la ruta');
+      }
+    }
+    // Vías (Misión 3): puntos en el patio, junto a las rutas (el
+    // tren corre al lado del camino) y el último junto a C.
+    if (map.tracks) {
+      map.tracks.forEach(([x, z], i) => {
+        if (Math.abs(x) > LIMIT - 8 || Math.abs(z) > LIMIT - 8)
+          errors.push(`vía ${i} fuera del patio`);
+        else if (routeDistance(x, z, map.routes || []) > 12)
+          errors.push(`vía ${i} demasiado lejos de la ruta`);
+      });
+      const last = map.tracks[map.tracks.length - 1];
+      if (last && Math.hypot(last[0] - C.x, last[1] - C.z) > 15)
+        errors.push('la vía no llega a C');
+    }
+    // Plataforma de batería (Misión 3): en el patio y detrás del
+    // tren (a ≤25 u del primer punto de la vía).
+    if (map.batteryPad) {
+      const { x, z } = map.batteryPad;
+      if (Math.abs(x) > LIMIT - 25 || Math.abs(z) > LIMIT - 25)
+        errors.push('plataforma de batería fuera del patio');
+      else if (
+        !map.tracks ||
+        Math.hypot(x - map.tracks[0][0], z - map.tracks[0][1]) > 25
+      )
+        errors.push('plataforma de batería lejos del tren');
+    }
     const enemies = map.rules.enemies || [];
     const ids = new Set();
     for (const e of enemies) {
@@ -676,6 +1054,53 @@
         )
           errors.push('cresta rocosa demasiado cerca de un helipuerto');
       }
+    // Defensas (solo la Misión 1): cada huella queda dentro del patio,
+    // fuera del camino (≥18 u de las rutas: el camino mide 15 u de
+    // medio ancho) y lejos de los helipuertos (≥25 u de A/B/C), sin
+    // solapar a ningún enemigo. La caja de la carga y el portal van
+    // con las mismas reglas; el portal además queda a ≥22 u de C para
+    // que su radio (12) no se solape con el de entrega (9).
+    for (const [x, z, r] of defensePoints(map.defenses || [])) {
+      if (Math.abs(x) > LIMIT - 25 || Math.abs(z) > LIMIT - 25)
+        errors.push('defensa fuera del patio');
+      else if (routeDistance(x, z, map.routes || []) < 18)
+        errors.push('defensa sobre la ruta');
+      else if (
+        [map.rules.A, map.rules.B, map.rules.C].some(
+          (p) => Math.hypot(x - p.x, z - p.z) < 25,
+        )
+      )
+        errors.push('defensa demasiado cerca de un helipuerto');
+      else if (
+        (map.rules.enemies || []).some(
+          (e) => Math.hypot(x - e.x, z - e.z) < r + 4,
+        )
+      )
+        errors.push('defensa sobre un enemigo');
+    }
+    if (map.cargo) {
+      const { x, z } = map.cargo;
+      if (Math.abs(x) > LIMIT - 25 || Math.abs(z) > LIMIT - 25)
+        errors.push('caja fuera del patio');
+      // Solo la caja de plástico de la Misión 1 va fuera del camino
+      // y junto al puesto B. La batería de la Misión 3 cae donde
+      // muere el helicóptero Tan: junto a la ruta y lejos de B.
+      else if (map.cargo.kind === 'crate') {
+        if (routeDistance(x, z, map.routes || []) < 18)
+          errors.push('caja sobre la ruta');
+        else if (Math.hypot(x - map.rules.B.x, z - map.rules.B.z) > 60)
+          errors.push('caja demasiado lejos del puesto B');
+      }
+    }
+    if (map.portal) {
+      const { x, z } = map.portal;
+      if (Math.abs(x) > LIMIT - 25 || Math.abs(z) > LIMIT - 25)
+        errors.push('portal fuera del patio');
+      else if (routeDistance(x, z, map.routes || []) < 18)
+        errors.push('portal sobre la ruta');
+      else if (Math.hypot(x - map.rules.C.x, z - map.rules.C.z) < 22)
+        errors.push('portal demasiado cerca de C');
+    }
     return errors;
   }
 
@@ -699,6 +1124,7 @@
     createRng,
     SPECS,
     buildMap,
+    defensePoints,
     validate,
     generate,
     generateCampaign,

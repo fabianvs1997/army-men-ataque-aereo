@@ -149,7 +149,19 @@ por gesto de la primera cámara de seguimiento.
 
 ### Mapas fijos del original
 
-`original-maps.test.cjs` verifica los tres mapas fijos: misma misión da siempre el mismo mapa, las tres misiones tienen mapas distintos (nombre, escenario, semilla, A/B/C, rutas y enemigos), la dificultad crece por misión (117, 132 y 156 HP; 3, 6 y 9 tanques), la validación rechaza mapas manipulados, la escolta completa las tres misiones y el mundo usa la vegetación, los puntos de interés y el relieve de cada mapa; además comprueba que no queda rastro del motor random eliminado (ni `mapgen`, ni botón Mapa nuevo, ni semillas de campaña). `mission-map.test.cjs` verifica que las rutas fijas están conectadas, las bases distantes y la escolta completa sin teletransporte, y que reintentar conserva el mapa, otra misión cambia de mapa fijo y otra partida tiene el mismo mapa. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
+`original-maps.test.cjs` verifica los tres mapas fijos: misma misión da siempre el mismo mapa, las tres misiones tienen mapas distintos (nombre, escenario, semilla, A/B/C, rutas y enemigos), la dificultad crece por misión (117, 162 y 164 HP; 3, 6 y 9 tanques), la validación rechaza mapas manipulados, la escolta completa las tres misiones y el mundo usa la vegetación, los puntos de interés y el relieve de cada mapa; además comprueba que no queda rastro del motor random eliminado (ni `mapgen`, ni botón Mapa nuevo, ni semillas de campaña). `mission-map.test.cjs` verifica que las rutas fijas están conectadas, las bases distantes y la escolta completa sin teletransporte, y que reintentar conserva el mapa, otra misión cambia de mapa fijo y otra partida tiene el mismo mapa. Las pruebas de apariciones consultan el terreno activo de cada partida. `smoke-escort.cjs` también comprueba que reintentar conserva la semilla y que otra misión actualiza tanto el mapa como el buffer WebGL.
+
+### Parecido al original (1/3): brújula, explosiones y tanques Tan
+
+`parecido-original.test.cjs` verifica la brújula (rumbo, tira de 8 puntos y marca del objetivo), el HUD con munición/salud en el juego real, el HUD genérico con una misión ficticia (resumen y marca distintos sin tocar `ui.js`), las explosiones por tipo con humo y daño sin cambiar, la paleta y el tamaño de la explosión en el renderer, el color y la silueta del tanque Tan frente a la torreta, el pecio amarillo del tanque, la presencia del HUD nuevo en HTML/CSS/bootstrap y la escolta llegando a C en las 3 misiones.
+
+### Parecido al original (2/3): defensas, winch y reglas de la Misión 1
+
+`defensas-winch-m1.test.cjs` verifica las defensas de la Misión 1 (sacos, valla, tiendas, torre, cajas) como cobertura real, el winch de la caja de plástico (bloqueos, reinicios y portal que cierra), la partida completa en el juego real y el renderer con la caja en el suelo, el cable y la caja colgando.
+
+### Parecido al original (3/3): misiones 2 y 3 fieles al original
+
+`misiones-2-3.test.cjs` verifica los mapas 2 y 3 con sus elementos (circuito y garajes con ruta al portal, vías y tren, plataforma, helicóptero Tan y portal), los coches (salidas escalonadas, ruta por el circuito, contador y fracaso a los 15, garaje destruido que deja de soltar), la batería (caída del helicóptero Tan, winch, entrega en la plataforma, tren que arranca y llega a C), las partidas completas de las misiones 2 y 3 en el juego real (con las fases `GARAJES` y `PORTAL`), la dificultad creciente y el renderer (garaje, coche, tren, vías y batería).
 
 ## Registro de errores y Supabase
 

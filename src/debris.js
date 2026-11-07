@@ -5,7 +5,12 @@
   'use strict';
   const MAX_PIECES = 320;
   const tan = [0.76, 0.61, 0.36],
-    dark = [0.39, 0.31, 0.17];
+    dark = [0.39, 0.31, 0.17],
+    // El pecio del tanque Tan es del mismo amarillo vivo/tostado que
+    // el tanque entero (ver ToyRenderer.TAN_TANK), no del caqui de
+    // la infantería.
+    tankBody = [0.95, 0.76, 0.2],
+    tankDark = [0.45, 0.32, 0.12];
   // [local x, y, z, half-width, half-height, half-depth, mesh, color]
   const parts = {
     inf: [
@@ -19,8 +24,8 @@
     tank: [
       [0, 1, 0, 2.5, 0.65, 2.4, 'rounded'],
       [0, 2.5, 0, 1.4, 0.7, 1.6, 'rounded'],
-      [-2.4, 0.65, 0, 0.4, 0.65, 3.1, 'rounded', dark],
-      [2.4, 0.65, 0, 0.4, 0.65, 3.1, 'rounded', dark],
+      [-2.4, 0.65, 0, 0.4, 0.65, 3.1, 'rounded', tankDark],
+      [2.4, 0.65, 0, 0.4, 0.65, 3.1, 'rounded', tankDark],
       [0, 2.7, 2, 0.22, 0.22, 2],
     ],
     turret: [
@@ -51,7 +56,9 @@
     const yaw = state.P
       ? Math.atan2(state.P.x - enemy.x, state.P.z - enemy.z)
       : 0;
-    const source = parts[enemy.k] || parts.turret;
+    const source = parts[enemy.k] || parts.turret,
+      // Color base del pecio: el tanque Tan deja piezas amarillas.
+      baseColor = enemy.k === 'tank' ? tankBody : tan;
     const detachable = enemy.k === 'base' ? 0 : enemy.k === 'heli' ? 1 : -1;
     let templates = broken
       ? source.filter((p, i) => !enemy.detached || i !== detachable)
@@ -107,7 +114,7 @@
         sy,
         sz,
         kind,
-        color,
+        color || baseColor,
         true,
       );
     const origin = point || {
@@ -125,7 +132,7 @@
         0.09 + random() * 0.12,
         size * (0.7 + random()),
         'box',
-        i % 3 === 0 ? [0.9, 0.77, 0.51] : tan,
+        i % 3 === 0 ? [0.9, 0.77, 0.51] : baseColor,
       );
     }
     // Keep recognizable wreckage preferentially; bounded memory and draw calls.
@@ -167,5 +174,5 @@
       }
     }
   }
-  return { emit, step, MAX_PIECES };
+  return { emit, step, MAX_PIECES, TANK_COLOR: tankBody, TANK_DARK: tankDark };
 });

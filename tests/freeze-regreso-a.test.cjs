@@ -190,6 +190,15 @@ test('la entrega en C sigue funcionando tras el arreglo', () => {
     app.upd(0.05);
     frames++;
   }
+  // Misión 1: tras la entrega en C queda la caja y el portal.
+  if (m.stage === 'CARGA_PORTAL') {
+    state.P.x = m.cargo.x;
+    state.P.z = m.cargo.z;
+    for (let i = 0; i < 200 && m.cargo.state === 'waiting'; i++) app.upd(0.05);
+    state.P.x = m.portal.x;
+    state.P.z = m.portal.z;
+    for (let i = 0; i < 600 && state.st === 'play'; i++) app.upd(0.05);
+  }
   assert.equal(state.st, 'win', `fase ${m.stage}, entregados ${m.delivered}`);
   assert.equal(m.delivered, 7);
 });

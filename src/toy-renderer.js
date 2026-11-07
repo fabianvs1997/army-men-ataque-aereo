@@ -50,6 +50,12 @@ void main(){
  float amb=gloss < -2.5 ? 0.68 : 0.48;
  gl_FragColor=vec4(base*(amb+(1.0-amb)*diffuse)+vec3(shine+rim),1.0);
 }`;
+  // Tanque Tan: amarillo vivo/tostado, distinto del verde del jugador
+  // y del caqui de la infantería Tan ([0.77, 0.62, 0.36]). Las orugas
+  // son marrón tostado oscuro y la banda de la torreta, rojiza.
+  const TAN_TANK_BODY = [0.95, 0.76, 0.2],
+    TAN_TANK_DARK = [0.45, 0.32, 0.12],
+    TAN_TANK_STRIPE = [0.55, 0.25, 0.1];
   function geometry(kind) {
     const data = [];
     const vertex = (p, n) => data.push(...p, ...n);
@@ -456,6 +462,50 @@ void main(){
         );
       }
     }
+    // Tren Prego (Misión 3): locomotora verde con chimenea, ténder
+    // con carbón, vagón plano con el tanque de batalla verde y vagón
+    // cerrado; ~21,5 u de largo (morro a +12, cola a −9,5), sobre la
+    // vía. El `yaw` es la dirección de marcha (el de la vía).
+    train(x, z, yaw = 0) {
+      const green = [0.24, 0.65, 0.16],
+        darkGreen = [0.18, 0.5, 0.12],
+        dark = [0.15, 0.15, 0.13];
+      this.groundOffset = this.world ? this.world.height(x, z) : 0;
+      const p = (kind, lx, ly, lz, sx, sy, sz, color, gloss = 0.6) =>
+        this.part(
+          kind,
+          x + lx * Math.cos(yaw) + lz * Math.sin(yaw),
+          ly,
+          z - lx * Math.sin(yaw) + lz * Math.cos(yaw),
+          sx,
+          sy,
+          sz,
+          color,
+          yaw,
+          gloss,
+        );
+      // Sombra alargada bajo todo el tren.
+      p('sphere', 0, 0.13, 1, 3, 0.16, 11, [0.25, 0.22, 0.18], 0);
+      // Locomotora: cuerpo, cabina y chimenea negra.
+      p('box', 0, 1.8, 8, 1.6, 1.8, 4, green);
+      p('box', 0, 2.2, 4.5, 1.8, 2.2, 2.5, darkGreen);
+      p('box', 0, 4.2, 11, 0.4, 1.2, 0.4, dark);
+      // Ténder con carbón.
+      p('box', 0, 1.2, 1, 1.6, 1.2, 3, darkGreen);
+      p('sphere', 0, 2, 1, 1.2, 0.5, 1.2, dark, 0);
+      // Vagón plano con el tanque de batalla verde encima.
+      p('box', 0, 0.5, -3.5, 1.7, 0.5, 4, [0.5, 0.38, 0.2]);
+      p('rounded', 0, 1.5, -3.5, 1.2, 0.8, 2, green);
+      p('sphere', 0, 2.4, -3.5, 0.7, 0.5, 0.7, green, 0);
+      p('box', 0, 2.4, -1.8, 0.15, 0.15, 1.2, dark);
+      // Vagón cerrado con techo.
+      p('box', 0, 1.8, -7.5, 1.7, 1.8, 3.5, [0.2, 0.55, 0.14]);
+      p('box', 0, 2.8, -7.5, 1.8, 0.3, 3.6, darkGreen);
+      // Ruedas a ambos lados.
+      for (const wz of [10, 6, 2, -1, -5, -8])
+        for (const side of [-1.5, 1.5])
+          p('box', side, 0.4, wz, 0.3, 0.4, 0.8, dark);
+    }
     landmark(prop, y) {
       const { x, z, yaw, kind } = prop,
         p = (mesh, lx, ly, lz, sx, sy, sz, color, gloss = 0.2) =>
@@ -746,6 +796,64 @@ void main(){
               0,
             );
       }
+      // Vías del tren (Misión 3): traviesas y raíles, sin colisión.
+      // Las piezas ya traen su altura absoluta (suelo + 0,12/0,3).
+      if (world) {
+        this.groundOffset = 0;
+        for (const p of world.rails || [])
+          if (
+            Math.hypot(p.x - cam.x, p.z - cam.z) <
+            radius + Math.max(p.sx, p.sz)
+          )
+            this.part(
+              p.kind,
+              p.x,
+              p.y,
+              p.z,
+              p.sx,
+              p.sy,
+              p.sz,
+              p.color,
+              p.yaw,
+              0,
+            );
+      }
+      // Tren Prego (Misión 3): en su base, en camino o en C, según
+      // la misión (`scene.train` viene de `mission.trainView()`).
+      if (scene.train && visible(scene.train)) this.train(scene.train.x, scene.train.z, scene.train.yaw);
+      // Carga en el suelo (ver src/toy-world.js): la caja verde de la
+      // Misión 1 o la batería de la Misión 3, en el suelo mientras
+      // espera el winch o mientras el cable la engancha; cuando
+      // cuelga del helicóptero o ya se entregó, no se dibuja aquí: va
+      // colgando bajo el helicóptero. La batería está escondida
+      // (`hidden`) hasta que cae el helicóptero Tan.
+      const cargo = scene.cargo || null;
+      const cargoSpot = cargo
+        ? { x: cargo.x, z: cargo.z }
+        : world.cargoCrate;
+      if (
+        cargoSpot &&
+        visible(cargoSpot) &&
+        (!cargo || cargo.state === 'waiting')
+      ) {
+        this.groundOffset = 0;
+        const cx = cargoSpot.x,
+          cz = cargoSpot.z,
+          cy = world.height(cx, cz);
+        if (cargo && cargo.kind === 'battery') {
+          // Batería robada: caja oscura con placa y dos bornes
+          // amarillos, para que se distinga de la caja verde.
+          this.part('box', cx, cy + 0.5, cz, 1.8, 1, 1.8, [0.25, 0.28, 0.35], 0, 0);
+          this.part('box', cx, cy + 1.05, cz, 1.9, 0.1, 1.9, [0.35, 0.38, 0.45], 0, 0);
+          this.part('box', cx - 0.6, cy + 1.3, cz, 0.3, 0.5, 0.3, [0.95, 0.8, 0.2], 0, 0);
+          this.part('box', cx + 0.6, cy + 1.3, cz, 0.3, 0.5, 0.3, [0.95, 0.8, 0.2], 0, 0);
+        } else {
+          this.part('box', cx, cy + 1.8, cz, 6, 3.6, 6, [0.13, 0.42, 0.14], 0, 0);
+          this.part('box', cx, cy + 3.9, cz, 6.5, 0.7, 6.5, [0.18, 0.52, 0.18], 0, 0);
+          this.part('box', cx, cy + 4.3, cz, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1], 0, 0);
+          this.part('box', cx, cy + 4.3, cz, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1], 0, 0);
+        }
+      }
       // Aliados activos una sola vez por frame: la comprobación por arbusto
       // antes creaba un cierre y recorría los aliados en cada arbusto.
       const allies = scene.allies || [];
@@ -959,9 +1067,21 @@ void main(){
             i * 0.9,
           );
         }
-        const col = e.fl > 0 ? [1, 1, 1] : [0.76, 0.61, 0.36],
-          dark = [0.39, 0.31, 0.17],
-          yaw = P ? Math.atan2(P.x - e.x, P.z - e.z) : 0;
+        // Color propio por tipo: el tanque Tan es amarillo vivo /
+        // tostado (TAN_TANK), bien distinto del verde del jugador y
+        // del caqui de la infantería y las torretas Tan. Su vida y
+        // su daño no cambian: solo el color y la silueta.
+        const isTank = e.k === 'tank',
+          col = e.fl > 0
+            ? [1, 1, 1]
+            : isTank
+              ? TAN_TANK_BODY
+              : [0.76, 0.61, 0.36],
+          dark = isTank ? TAN_TANK_DARK : [0.39, 0.31, 0.17],
+          // Los coches y los garajes traen su propio `yaw` (el coche,
+          // hacia dónde avanza; el garaje, hacia el circuito); los
+          // demás miran al jugador, como siempre.
+          yaw = e.yaw ?? (P ? Math.atan2(P.x - e.x, P.z - e.z) : 0);
         if (e.k === 'inf') {
           this.groundOffset = 0;
           this.soldier(e.x, e.y, e.z, false, yaw);
@@ -970,6 +1090,65 @@ void main(){
         if (e.k === 'heli') {
           this.groundOffset = 0;
           this.helicopter(e.x, e.y, e.z, yaw, rot, true, e.fl > 0, e.detached);
+          continue;
+        }
+        if (e.k === 'garage') {
+          // Garaje Tan (Misión 2): nave grande color ladrillo con
+          // puerta oscura hacia el circuito y dintel amarillo, para
+          // que se lea como garaje y no como base. El `yaw` apunta al
+          // vértice del circuito al que se incorporan sus coches.
+          this.groundOffset = world ? world.height(e.x, e.z) : 0;
+          this.part('sphere', e.x, 0.13, e.z, 7, 0.16, 5.5, [0.25, 0.22, 0.18], yaw);
+          const gp = (lx, lz) => ({
+            x: e.x + Math.sin(yaw) * lz + Math.cos(yaw) * lx,
+            z: e.z + Math.cos(yaw) * lz - Math.sin(yaw) * lx,
+          });
+          this.part('box', e.x, 3, e.z, 6, 3, 4, [0.62, 0.48, 0.25], yaw);
+          this.part('box', e.x, 6.4, e.z, 6.2, 0.4, 4.2, [0.45, 0.35, 0.18], yaw);
+          const door = gp(0, 4);
+          this.part('box', door.x, 2, door.z, 2, 2, 0.15, [0.2, 0.18, 0.12], yaw);
+          this.part('box', door.x, 4.5, door.z, 2.2, 0.4, 0.15, [0.85, 0.7, 0.3], yaw);
+          for (const side of [-3.5, 3.5]) {
+            const w = gp(side, 4);
+            this.part('box', w.x, 4, w.z, 0.8, 0.8, 0.15, [0.3, 0.35, 0.4], yaw);
+          }
+          continue;
+        }
+        if (e.k === 'car') {
+          // Coche de suministros Tan (Misión 2): carrocería amarilla
+          // Tan, cabina caqui y caja de suministros marrón; avanza
+          // por el circuito hacia el portal. Su `yaw` es la dirección
+          // de marcha.
+          this.groundOffset = world ? world.height(e.x, e.z) : 0;
+          this.part('sphere', e.x, 0.13, e.z, 2.6, 0.16, 1.9, [0.25, 0.22, 0.18], yaw);
+          this.part('rounded', e.x, 0.6, e.z, 1.1, 0.6, 2.2, [0.95, 0.76, 0.2], yaw);
+          const cab = {
+              x: e.x + Math.sin(yaw) * -0.3,
+              z: e.z + Math.cos(yaw) * -0.3,
+            },
+            box = {
+              x: e.x + Math.sin(yaw) * 0.9,
+              z: e.z + Math.cos(yaw) * 0.9,
+            };
+          this.part('box', cab.x, 1.4, cab.z, 0.9, 0.5, 1.0, [0.76, 0.61, 0.36], yaw);
+          this.part('box', box.x, 1.3, box.z, 1.0, 0.5, 1.0, [0.62, 0.48, 0.25], yaw);
+          for (const [lx, lz] of [
+            [-1.0, -1.2],
+            [1.0, -1.2],
+            [-1.0, 1.2],
+            [1.0, 1.2],
+          ])
+            this.part(
+              'box',
+              e.x + Math.sin(yaw) * lz + Math.cos(yaw) * lx,
+              0.3,
+              e.z + Math.cos(yaw) * lz - Math.sin(yaw) * lx,
+              0.25,
+              0.25,
+              0.4,
+              [0.15, 0.15, 0.13],
+              yaw,
+            );
           continue;
         }
         this.groundOffset = world ? world.height(e.x, e.z) : 0;
@@ -982,7 +1161,8 @@ void main(){
             e.k === 'base' ? 6.4 : 3.6,
             0.16,
             e.k === 'base' ? 5.6 : 4.1,
-            col,
+            // La base del tanque es su oruga oscura, no un charco amarillo.
+            isTank ? dark : col,
           );
         if (e.k === 'base') {
           this.part('rounded', e.x, 2.5, e.z, 5, 2.5, 4, col);
@@ -1003,17 +1183,70 @@ void main(){
             yaw,
           );
           this.part('sphere', e.x, 2.5, e.z, 1.4, 0.9, 1.6, col, yaw);
+          // Cañón del tanque: más largo y grueso que el de la torreta,
+          // con bocacha oscura en la punta. La torreta conserva el
+          // cañón corto de antes.
           this.part(
             'box',
-            e.x + Math.sin(yaw) * 2,
+            e.x + Math.sin(yaw) * (isTank ? 2.4 : 2),
             2.7,
-            e.z + Math.cos(yaw) * 2,
-            0.22,
-            0.22,
-            2,
+            e.z + Math.cos(yaw) * (isTank ? 2.4 : 2),
+            isTank ? 0.3 : 0.22,
+            isTank ? 0.3 : 0.22,
+            isTank ? 3.2 : 2,
             col,
             yaw,
           );
+          if (isTank) {
+            // Silueta propia del tanque Tan: cúpula del jefe sobre la
+            // torreta con banda rojiza, placa frontal inclinada y
+            // bocacha del cañón. Solo visual: el radio de colisión
+            // (e.r) y la vida no cambian.
+            this.part(
+              'sphere',
+              e.x,
+              3.15,
+              e.z,
+              0.85,
+              0.35,
+              0.85,
+              TAN_TANK_STRIPE,
+              yaw,
+            );
+            this.part(
+              'sphere',
+              e.x - Math.sin(yaw) * 0.4,
+              3.35,
+              e.z - Math.cos(yaw) * 0.4,
+              0.45,
+              0.3,
+              0.45,
+              dark,
+              yaw,
+            );
+            this.part(
+              'rounded',
+              e.x + Math.sin(yaw) * 2.9,
+              0.9,
+              e.z + Math.cos(yaw) * 2.9,
+              2.2,
+              0.75,
+              0.5,
+              dark,
+              yaw,
+            );
+            this.part(
+              'box',
+              e.x + Math.sin(yaw) * 4,
+              2.7,
+              e.z + Math.cos(yaw) * 4,
+              0.42,
+              0.42,
+              0.35,
+              dark,
+              yaw,
+            );
+          }
           if (e.k === 'tank')
             for (const side of [-1, 1]) {
               this.part(
@@ -1271,10 +1504,16 @@ void main(){
             0.4,
           );
         }
+      // Explosión del original: bola de fuego grande que crece y
+      // cambia de color con la edad —naranja, rosa, morado— con
+      // núcleo amarillo y humo gris al final. La vida la pone
+      // combat (EXPLOSION_LIFE, 0,9 s); escenas sin `max` usan 0,9.
+      // El tamaño es solo visual: el daño no depende de aquí.
       for (const f of FX)
         if (visible(f)) {
-          const age = 1 - f.l / 0.5,
-            sz = f.s * (0.2 + age * 0.6);
+          const life = f.max || 0.9,
+            age = Math.min(1, Math.max(0, 1 - f.l / life)),
+            sz = f.s * (0.55 + age * 1.05);
           this.part(
             'sphere',
             f.x,
@@ -1283,25 +1522,44 @@ void main(){
             sz,
             sz,
             sz,
-            age > 0.65 ? [0.36, 0.37, 0.29] : [1, 0.45, 0.08],
+            age > 0.65
+              ? [0.36, 0.37, 0.29]
+              : age > 0.4
+                ? [0.62, 0.3, 0.75]
+                : age > 0.2
+                  ? [0.95, 0.3, 0.45]
+                  : [1, 0.45, 0.08],
             0,
             0,
           );
-          if (age < 0.65)
+          if (age < 0.65) {
             this.part(
               'sphere',
               f.x,
               f.y + sz * 0.4,
               f.z,
-              sz * 0.7,
-              sz * 0.7,
-              sz * 0.7,
-              [1, 0.84, 0.27],
+              sz * 0.68,
+              sz * 0.68,
+              sz * 0.68,
+              [1, 0.35, 0.55],
               0,
               0,
             );
+            this.part(
+              'sphere',
+              f.x,
+              f.y + sz * 0.5,
+              f.z,
+              sz * 0.42,
+              sz * 0.42,
+              sz * 0.42,
+              [1, 0.85, 0.3],
+              0,
+              0,
+            );
+          }
         }
-      if (P)
+      if (P) {
         this.helicopter(
           P.x,
           P.y,
@@ -1313,9 +1571,121 @@ void main(){
           false,
           P.pitch || 0,
         );
+        // Winch de la carga (Misión 1: la caja; Misión 3: la
+        // batería): cable colgando del helicóptero. Mientras engancha
+        // la carga (`waiting` con progreso), el cable baja vertical
+        // hasta el suelo bajo el helicóptero; con la carga levantada
+        // (`carried`), el cable baja 2,5 u y la carga va colgando
+        // bajo la panza, como en el original. La carga en el suelo se
+        // dibuja arriba (no aquí) y desaparece al levantarla.
+        if (cargo && P) {
+          const ground = world ? world.height(P.x, P.z) : 0;
+          if (cargo.state === 'waiting' && cargo.progress > 0) {
+            const len = Math.max(0.5, P.y - 1 - ground);
+            this.part(
+              'box',
+              P.x,
+              P.y - 1 - len / 2,
+              P.z,
+              0.12,
+              len / 2,
+              0.12,
+              [0.12, 0.12, 0.1],
+              0,
+              0,
+            );
+          } else if (cargo.state === 'carried') {
+            // Cable corto (2,5 u) y carga pegada a la panza: el
+            // helicóptero vuela a 8 u y una caja a 8,3 u rozaría el
+            // suelo; así queda a ~1,6 u del suelo en llano. La
+            // batería es más pequeña y oscura que la caja verde.
+            this.part(
+              'box',
+              P.x,
+              P.y - 2.25,
+              P.z,
+              0.12,
+              1.25,
+              0.12,
+              [0.12, 0.12, 0.1],
+              0,
+              0,
+            );
+            if (cargo.kind === 'battery') {
+              this.part(
+                'box',
+                P.x,
+                P.y - 4.2,
+                P.z,
+                1.8,
+                1,
+                1.8,
+                [0.25, 0.28, 0.35],
+                0,
+                0,
+              );
+              this.part(
+                'box',
+                P.x,
+                P.y - 3.2,
+                P.z,
+                1.9,
+                0.1,
+                1.9,
+                [0.35, 0.38, 0.45],
+                0,
+                0,
+              );
+            } else {
+              this.part(
+                'box',
+                P.x,
+                P.y - 4.6,
+                P.z,
+                3,
+                1.8,
+                3,
+                [0.13, 0.42, 0.14],
+                0,
+                0,
+              );
+              this.part(
+                'box',
+                P.x,
+                P.y - 2.6,
+                P.z,
+                3.25,
+                0.35,
+                3.25,
+                [0.18, 0.52, 0.18],
+                0,
+                0,
+              );
+            }
+          }
+        }
+      }
       return true;
     }
   }
   ToyRenderer.geometry = geometry;
+  // Paleta de las explosiones (ver el bucle FX en render): naranja,
+  // rosa y morado del original, núcleo amarillo y humo gris final.
+  ToyRenderer.EXPLOSION_COLORS = Object.freeze({
+    orange: [1, 0.45, 0.08],
+    pink: [0.95, 0.3, 0.45],
+    purple: [0.62, 0.3, 0.75],
+    core: [1, 0.85, 0.3],
+    smoke: [0.36, 0.37, 0.29],
+  });
+  ToyRenderer.EXPLOSION_LIFE = 0.9;
+  // Tanque Tan: amarillo vivo/tostado, distinto del verde del jugador
+  // y del caqui de la infantería Tan ([0.77, 0.62, 0.36]). Las
+  // orugas son marrón tostado oscuro.
+  ToyRenderer.TAN_TANK = Object.freeze({
+    body: TAN_TANK_BODY,
+    dark: TAN_TANK_DARK,
+    stripe: TAN_TANK_STRIPE,
+  });
   return ToyRenderer;
 });
