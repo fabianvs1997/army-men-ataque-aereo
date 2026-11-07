@@ -2,10 +2,14 @@
 # Army Men: Ataque Aéreo.
 #
 # Modelo original desde cero, con las proporciones y los colores del
-# tanque Tan que hoy dibuja el juego (src/toy-renderer.js y
-# src/debris.js): casco con orugas oscuras a los lados, torreta
-# giratoria con cañón largo y grueso con bocacha, cúpula del jefe con
-# banda rojiza y placa frontal inclinada. No hay tanque verde del
+# tanque Tan del VIDEO ORIGINAL (PS1, 1999) — no del tanque que hoy
+# dibuja el juego (src/toy-renderer.js), que es más ancho que largo,
+# con una cúpula alta, banda rojiza y antena que en el vídeo no se
+# ven. En el vídeo el tanque es largo y estrecho (largo/ancho ~1,5),
+# bajo, de amarillo paja pálido con orugas marrón oliva, torreta baja
+# y pequeña con escotilla plana, cañón largo y fino con bocacha en
+# forma de bloque, ruedas claras en el lateral de la oruga y una
+# cruceta en X sobre la cubierta trasera. No hay tanque verde del
 # jugador en el juego (el jugador es el helicóptero), así que solo se
 # modela la variante Tan.
 #
@@ -59,14 +63,15 @@ def make_material(name, color, roughness=0.45, metallic=0.0, emission=None):
     return mat
 
 
-# Amarillo vivo/tostado del tanque Tan, orugas marrón tostado oscuro y
-# banda rojiza de la torreta (TAN_TANK_BODY, TAN_TANK_DARK y
-# TAN_TANK_STRIPE en src/toy-renderer.js).
-AMARILLO = make_material("AmarilloTan", (0.95, 0.76, 0.2), 0.45)
-AMARILLO_OSCURO = make_material("AmarilloTanOscuro", (0.78, 0.58, 0.14), 0.5)
-MARRON = make_material("MarronOscuro", (0.45, 0.32, 0.12), 0.5)
-BANDA = make_material("BandaRojiza", (0.55, 0.25, 0.1), 0.45)
-MARFIL = make_material("Marfil", (0.9, 0.92, 0.73), 0.5)
+# Amarillo paja pálido del tanque Tan del vídeo original y marrón
+# oliva de las orugas. El amarillo vivo del juego (0.95, 0.76, 0.2)
+# es más naranja y saturado que el del vídeo, que es un mostaza paja
+# claro; el marrón del juego (0.45, 0.32, 0.12) es más claro que el
+# oliva oscuro de las orugas del vídeo. El modelo ya no usa la banda
+# rojiza del juego: en el vídeo la torreta no lleva banda roja.
+AMARILLO = make_material("AmarilloTan", (0.88, 0.74, 0.30), 0.45)
+AMARILLO_OSCURO = make_material("AmarilloTanOscuro", (0.66, 0.53, 0.16), 0.5)
+MARRON = make_material("MarronOscuro", (0.34, 0.29, 0.12), 0.5)
 OSCURO = make_material("MetalOscuro", (0.15, 0.15, 0.13), 0.55, 0.4)
 
 # ---------------------------------------------------------------------------
@@ -128,104 +133,111 @@ bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
 
 # ---------------------------------------------------------------------------
-# Orugas y ruedas (a cada lado, x = ±2.15)
+# Orugas y ruedas (a cada lado, x = ±1.55)
 # ---------------------------------------------------------------------------
-# El juego dibuja cada oruga como una pieza redondeada de 0,4 de ancho,
-# 0,65 de alto y 3,1 de largo a ±2,4; aquí la oruga es una caja más
-# ancha con ruedas visibles en la cara exterior, como un tanque de
-# juguete.
+# En el vídeo el tanque es largo y estrecho (largo/ancho ~1,5), no
+# casi cuadrado como antes (orugas de 3,7 de largo y 5,2 de ancho
+# total): orugas de 5,6 de largo y 3,85 de ancho total. La oruga se
+# ve desde arriba como una banda oscura con tacos rectangulares, y
+# desde el lado se ven las ruedas de rodaje claras (amarillas) sobre
+# la banda oscura. No hay guardabarros amarillos encima: en el vídeo
+# la parte superior de la oruga es la banda oscura con los tacos.
 for side in (-1, 1):
     tag = "Izq" if side < 0 else "Der"
-    add_box("Oruga_" + tag, (side * 2.15, 0, 0.55), (0.85, 3.7, 0.95), MARRON)
-    # Guardabarros sobre la oruga, amarillo.
-    add_box("Guardabarros_" + tag, (side * 2.15, 0, 1.12),
-            (0.95, 3.9, 0.1), AMARILLO)
-    # 5 ruedas de rodaje en la cara exterior de la oruga.
-    for i, y in enumerate((-1.45, -0.72, 0.0, 0.72, 1.45)):
-        add_cylinder("Rueda_%s_%d" % (tag, i), (side * 2.6, y, 0.55),
-                     0.34, 0.12, MARRON, rot=(0, math.radians(90), 0),
+    add_box("Oruga_" + tag, (side * 1.55, 0, 0.5), (0.75, 5.6, 0.8), MARRON)
+    # Tacos rectangulares sobre la oruga, visibles desde arriba.
+    for i, y in enumerate((-2.4, -1.8, -1.2, -0.6, 0.0, 0.6, 1.2, 1.8, 2.4)):
+        add_box("Taco_%s_%d" % (tag, i), (side * 1.55, y, 0.92),
+                (0.78, 0.42, 0.08), AMARILLO_OSCURO)
+    # 5 ruedas de rodaje claras en la cara exterior de la oruga.
+    for i, y in enumerate((-1.8, -0.9, 0.0, 0.9, 1.8)):
+        add_cylinder("Rueda_%s_%d" % (tag, i), (side * 1.96, y, 0.5),
+                     0.3, 0.12, AMARILLO, rot=(0, math.radians(90), 0),
                      vertices=12, smooth=False)
     # Rueda motriz trasera y tensora delantera, un poco más grandes.
-    add_cylinder("Motriz_" + tag, (side * 2.6, -1.85, 0.62), 0.4, 0.12,
-                 MARRON, rot=(0, math.radians(90), 0), vertices=12,
+    add_cylinder("Motriz_" + tag, (side * 1.96, -2.55, 0.55), 0.36, 0.12,
+                 AMARILLO_OSCURO, rot=(0, math.radians(90), 0), vertices=12,
                  smooth=False)
-    add_cylinder("Tensora_" + tag, (side * 2.6, 1.85, 0.62), 0.4, 0.12,
-                 MARRON, rot=(0, math.radians(90), 0), vertices=12,
+    add_cylinder("Tensora_" + tag, (side * 1.96, 2.55, 0.55), 0.36, 0.12,
+                 AMARILLO_OSCURO, rot=(0, math.radians(90), 0), vertices=12,
                  smooth=False)
 
 # ---------------------------------------------------------------------------
 # Casco
 # ---------------------------------------------------------------------------
-# Casco inferior y superior (el juego: caja redondeada de 2,5 de ancho,
-# 1 de alto y 3 de largo; aquí el casco es más ancho porque las orugas
-# van por fuera).
-add_box("CascoInferior", (0, 0, 1.05), (3.5, 3.3, 0.9), AMARILLO)
-add_box("CascoSuperior", (0, 0, 1.72), (3.1, 2.9, 0.55), AMARILLO)
-# Placa frontal inclinada (glacis), marrón oscuro como en el juego.
-add_box("PlacaFrontal", (0, 1.82, 1.32), (3.0, 0.1, 0.9), MARRON,
-        rot=(math.radians(-45), 0, 0))
-# Faros de marfil sobre los guardabarros delanteros.
-for side in (-1, 1):
-    add_sphere("Faro_%s" % ("Izq" if side < 0 else "Der"),
-               (side * 1.55, 1.85, 1.25), (0.16, 0.16, 0.16), MARFIL,
-               segments=8, rings=6)
+# Casco bajo y largo (el modelo anterior era alto y cuadrado: el
+# casco llegaba a 2,0 de alto y la torreta con cúpula a 3,5; el del
+# vídeo es chato, con la torreta baja: altura total ~2,6).
+add_box("CascoInferior", (0, 0, 1.15), (2.7, 5.0, 0.75), AMARILLO)
+add_box("CascoSuperior", (0, -0.1, 1.6), (2.5, 4.4, 0.3), AMARILLO)
+# Placa frontal inclinada (glacis): en el vídeo el morro es amarillo
+# tostado, no una plancha marrón oscura.
+add_box("PlacaFrontal", (0, 2.42, 1.15), (2.5, 0.1, 0.8), AMARILLO_OSCURO,
+        rot=(math.radians(-40), 0, 0))
+# Cruceta en X sobre la cubierta trasera, como se ve desde arriba en
+# el vídeo (dos tiras cruzadas sobre la cubierta, detrás de la torreta).
+for i, ang in enumerate((-0.62, 0.62)):
+    add_box("Cruceta_%d" % i, (0, -1.7, 1.78 + 0.03 * i), (0.14, 1.4, 0.05),
+            AMARILLO_OSCURO, rot=(0, 0, ang))
 # Ganchos de remolque en el glacis.
 for side in (-1, 1):
     add_box("Gancho_%s" % ("Izq" if side < 0 else "Der"),
-            (side * 0.9, 1.95, 1.05), (0.14, 0.1, 0.22), OSCURO)
+            (side * 0.8, 2.52, 0.95), (0.14, 0.1, 0.22), OSCURO)
 # Caja de pertrechos trasera y tubo de escape.
-add_box("CajaTrasera", (0, -1.85, 1.75), (2.3, 0.45, 0.5), AMARILLO_OSCURO)
-add_cylinder("Escape", (1.2, -1.75, 1.15), 0.14, 0.7, OSCURO,
+add_box("CajaTrasera", (0, -2.55, 1.15), (1.8, 0.45, 0.35), AMARILLO_OSCURO)
+add_cylinder("Escape", (1.0, -2.5, 1.0), 0.11, 0.5, OSCURO,
              rot=(math.radians(90), 0, 0), vertices=10)
 
 # ---------------------------------------------------------------------------
 # Torreta (bajo el vacío "Torreta", para poder girarla luego)
 # ---------------------------------------------------------------------------
-bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, -0.3, 2.1))
+bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0.35, 1.8))
 torreta = bpy.context.active_object
 torreta.name = "Torreta"
 bpy.context.view_layer.update()
 
 # Anillo de la torreta sobre el casco.
-anillo = add_cylinder("AnilloTorreta", (0, -0.3, 2.05), 1.35, 0.25, MARRON,
+anillo = add_cylinder("AnilloTorreta", (0, 0.35, 1.78), 0.88, 0.18, MARRON,
                       vertices=20)
 parent_keep(anillo, torreta)
-# Cuerpo de la torreta: esfera achatada (el juego: esfera de 1,4 x 0,9
-# x 1,6 a 2,5 de alto).
-torre = add_sphere("TorretaCuerpo", (0, -0.3, 2.5), (1.5, 1.7, 0.85),
+# Cuerpo de la torreta: elipsoide bajo y pequeño. En el vídeo la
+# torreta es baja y ocupa poco más de la mitad del ancho del casco
+# (antes era una cúpula grande, casi tan ancha como el casco, que lo
+# tapaba desde arriba); desde arriba se ve redondeada, más ancha por
+# detrás, con el cañón saliendo por el morro.
+torre = add_sphere("TorretaCuerpo", (0, 0.35, 2.05), (0.85, 1.05, 0.45),
                    AMARILLO, segments=20, rings=10)
 parent_keep(torre, torreta)
-# Cañón largo y grueso hacia el morro (+Y), con bocacha oscura en la
-# punta (el juego: caja de 0,3 x 0,3 x 3,2 a 2,4 del centro y bocacha
-# de 0,42 a 4,0).
-canon = add_cylinder("Canon", (0, 2.6, 2.55), 0.15, 3.6, AMARILLO,
-                     rot=(math.radians(90), 0, 0), vertices=16)
+# Mantelete en el morro de la torreta, de donde sale el cañón.
+mantelete = add_box("Mantelete", (0, 1.5, 2.05), (0.62, 0.3, 0.5),
+                    AMARILLO_OSCURO)
+parent_keep(mantelete, torreta)
+# Cañón largo y FINO hacia el morro (+Y): en el vídeo el cañón es
+# delgado y sobresale casi un largo de casco por delante, con una
+# bocacha en forma de bloque claro en la punta (antes era grueso,
+# radio 0,15, con bocacha cilíndrica oscura y grande).
+canon = add_cylinder("Canon", (0, 3.35, 2.1), 0.11, 4.2, AMARILLO,
+                     rot=(math.radians(90), 0, 0), vertices=12)
 parent_keep(canon, torreta)
-bocacha = add_cylinder("Bocacha", (0, 4.25, 2.55), 0.22, 0.4, OSCURO,
-                       rot=(math.radians(90), 0, 0), vertices=12,
-                       smooth=False)
+bocacha = add_box("Bocacha", (0, 5.3, 2.1), (0.3, 0.5, 0.3), AMARILLO)
 parent_keep(bocacha, torreta)
-# Cúpula del jefe sobre la torreta con banda rojiza y escotilla oscura
-# (el juego: esfera de 0,85 con banda a 3,15 y escotilla a 3,35).
-cupula = add_sphere("Cupula", (0, -0.9, 3.2), (0.55, 0.55, 0.32), AMARILLO,
-                    segments=12, rings=8)
+anillo_bocacha = add_cylinder("AnilloBocacha", (0, 5.0, 2.1), 0.145, 0.1,
+                              OSCURO, rot=(math.radians(90), 0, 0),
+                              vertices=10, smooth=False)
+parent_keep(anillo_bocacha, torreta)
+# Escotilla del jefe: en el vídeo no hay una cúpula alta con banda
+# rojiza ni antena (se quitaron las dos), solo una escotilla baja y
+# plana sobre la torreta, con su tapa oscura.
+cupula = add_sphere("Cupula", (0, 0.05, 2.48), (0.42, 0.42, 0.14), AMARILLO,
+                    segments=12, rings=6)
 parent_keep(cupula, torreta)
-banda = add_cylinder("BandaCupula", (0, -0.9, 3.08), 0.56, 0.12, BANDA,
-                     vertices=16)
-parent_keep(banda, torreta)
-escotilla = add_cylinder("Escotilla", (0, -0.9, 3.38), 0.38, 0.06, OSCURO,
+escotilla = add_cylinder("Escotilla", (0, 0.05, 2.6), 0.28, 0.05, OSCURO,
                          vertices=12)
 parent_keep(escotilla, torreta)
-# Periscopio delante de la cúpula, antena trasera y caja lateral.
-periscopio = add_box("Periscopio", (0, 0.15, 3.15), (0.5, 0.25, 0.18),
+# Periscopio bajo delante de la escotilla.
+periscopio = add_box("Periscopio", (0, 0.95, 2.32), (0.4, 0.2, 0.12),
                      OSCURO)
 parent_keep(periscopio, torreta)
-antena = add_cylinder("Antena", (1.05, -1.5, 3.4), 0.03, 1.2, OSCURO,
-                      rot=(math.radians(-8), 0, 0), vertices=8)
-parent_keep(antena, torreta)
-caja_torreta = add_box("CajaTorreta", (-1.35, -1.15, 2.6), (0.35, 0.9, 0.5),
-                       AMARILLO_OSCURO)
-parent_keep(caja_torreta, torreta)
 
 # ---------------------------------------------------------------------------
 # Conteo de triángulos

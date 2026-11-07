@@ -108,17 +108,45 @@ test('el modelo trae las piezas del tanque: casco, orugas, torreta y cañón', (
   }
 });
 
-test('el modelo usa los colores del tanque Tan del juego', () => {
+test('el modelo usa los colores del tanque Tan del vídeo original', () => {
   const gltf = readGltfJson();
   const colors = (gltf.materials || []).map((m) => m.pbrMetallicRoughness.baseColorFactor);
+  // Amarillo paja pálido del vídeo (PS1, 1999), no el amarillo vivo
+  // del juego (0.95, 0.76, 0.2): en el vídeo el tanque es un mostaza
+  // paja claro, menos naranja y saturado.
   const amarillo = colors.find(
-    (c) => c && Math.abs(c[0] - 0.95) < 0.01 && Math.abs(c[1] - 0.76) < 0.01,
+    (c) => c && Math.abs(c[0] - 0.88) < 0.01 && Math.abs(c[1] - 0.74) < 0.01,
   );
-  assert.ok(amarillo, 'falta el amarillo Tan del juego (0.95, 0.76, 0.2)');
+  assert.ok(amarillo, 'falta el amarillo paja del vídeo (0.88, 0.74, 0.30)');
   const marron = colors.find(
-    (c) => c && Math.abs(c[0] - 0.45) < 0.01 && Math.abs(c[1] - 0.32) < 0.01,
+    (c) => c && Math.abs(c[0] - 0.34) < 0.01 && Math.abs(c[1] - 0.29) < 0.01,
   );
-  assert.ok(marron, 'falta el marrón tostado de las orugas (0.45, 0.32, 0.12)');
+  assert.ok(marron, 'falta el marrón oliva de las orugas (0.34, 0.29, 0.12)');
+});
+
+test('correcciones del vídeo: sin antena ni banda ni faros, con tacos y torreta baja', () => {
+  const gltf = readGltfJson();
+  const names = (gltf.nodes || []).map((n) => n.name || '');
+  // En el vídeo no se ven: antena, banda rojiza en la torreta, faros
+  // de marfil ni guardabarros amarillos sobre las orugas.
+  for (const ausente of ['Antena', 'BandaCupula', 'Faro_Izq', 'Faro_Der',
+    'Guardabarros_Izq', 'Guardabarros_Der', 'CajaTorreta']) {
+    assert.ok(!names.includes(ausente), `sobra el nodo ${ausente}`);
+  }
+  // Tacos rectangulares sobre las orugas (9 por lado), visibles desde
+  // arriba como en el vídeo.
+  const tacos = names.filter((n) => n.startsWith('Taco_'));
+  assert.equal(tacos.length, 18, `tacos: ${tacos.length}`);
+  // Torreta baja y pequeña: elipsoide achatado (en glTF el eje plano
+  // es la Y, escala 0,45) y más estrecha que el casco (X 0,85).
+  const cuerpo = gltf.nodes.find((n) => n.name === 'TorretaCuerpo');
+  assert.ok(cuerpo && Array.isArray(cuerpo.scale));
+  assert.ok(cuerpo.scale[1] < 0.6, `torreta poco achatada: ${cuerpo.scale}`);
+  assert.ok(cuerpo.scale[0] <= 1.0, `torreta demasiado ancha: ${cuerpo.scale}`);
+  // Bocacha en forma de bloque y cruceta en X sobre la cubierta trasera.
+  assert.ok(names.includes('Bocacha'));
+  assert.ok(names.includes('Mantelete'));
+  assert.ok(names.includes('Cruceta_0') && names.includes('Cruceta_1'));
 });
 
 test('las 4 vistas previas existen y son PNG válidos', () => {
