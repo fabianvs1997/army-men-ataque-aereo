@@ -23,6 +23,14 @@ mismo mapa. Reintentar conserva el mapa, como siempre.
   a B y portal brillante al final del camino, pasado C. Sin casa, sin
   valla y sin props de jardín (macetero, regadera, banco). Casi toda
   infantería, 117 HP enemigos en total, 3 tanques.
+  - **Pulido (capturas de Fabian en iPhone):** el pasto es verde vivo
+    y saturado con manchas de tierra y barro, roca en las laderas y
+    nieve en lo alto; el camino alterna de tono y lleva una franja de
+    desgaste; los pinos forman bosquetes altos (hasta ~21 u); las
+    montañas varían en silueta y su nieve se ve; el portal tiene halo,
+    orbe en 3 capas y columna de luz; las torres son esbeltas, con
+    punta y bandera, a ~50 u de A; la caja de suministros es más
+    grande y está al oeste de B.
 - **Misión 2, El picnic** — A (-30, -80), B (85, 175), C (240, 40).
   El mantel del picnic: banco, macetero y regadera juntos junto a la
   ruta B→C, como mesa y comida del picnic; relieve más suave y

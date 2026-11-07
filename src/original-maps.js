@@ -185,9 +185,14 @@
       // fuera de la ruta y de los helipuertos; `placeLandmark` en el
       // mundo las reubica si hiciera falta.
       landmarks: [
-        { kind: 'crate', x: -110, z: 125, radius: 8, yaw: 0 },
+        // La caja va al oeste de B: en su sitio anterior (-110, 125)
+        // `placeLandmark` la dejaba a 9 u de la patrulla `patrol-ab-4`
+        // y su caja de colisión (6 u de medio lado) la solapaba.
+        { kind: 'crate', x: -170, z: 140, radius: 8, yaw: 0 },
         { kind: 'portal', x: 225, z: 200, radius: 12, yaw: 0 },
-        { kind: 'tower', x: 35, z: -28, radius: 10, yaw: 0 },
+        // Torre de guardia junto a la base, a ~50 u de A: las torres
+        // no deben rodear el helipuerto ni taparlo desde la cámara.
+        { kind: 'tower', x: 48, z: -20, radius: 10, yaw: 0 },
       ],
       // Montañas y rocas grandes como borde del valle, sobre todo a
       // la derecha del camino cerca del portal (el desvío de la guía
@@ -206,6 +211,11 @@
         { x: -380, z: -200, s: 20 },
         { x: 0, z: -380, s: 22 },
         { x: 300, z: -320, s: 18 },
+        // Afloramientos rocosos más cercanos, a la derecha del camino
+        // cerca del portal: que las montañas se lean también desde la
+        // ruta, no solo en el borde lejano del mapa.
+        { x: 300, z: 240, s: 18 },
+        { x: 360, z: 320, s: 16 },
       ],
       scenerySeed: 101,
       // Vegetación escalada con el terreno (2,25x de área): 190 → 428
@@ -413,11 +423,65 @@
       }
       return out;
     };
-    const shrubs = scatter(spec.shrubs, ROUTE_CLEARANCE, 7, LIMIT - 44).map((p, i) => ({
+    // Pinos en bosquetes, no sueltos y uniformes: ~26 grupos de 8–20
+    // pinos en los bordes y laderas del valle, como el bosque del
+    // original. Cada pino pasa los mismos despejes que el reparto
+    // uniforme (fuera de rutas y helipuertos); si los bosquetes no
+    // bastan, se completa con el reparto uniforme.
+    const scatterPines = (count, minRoute, minPad, maxZ) => {
+      const centers = [];
+      let ctries = 0;
+      while (centers.length < 26 && ctries < 600) {
+        ctries++;
+        const x = pick(-LIMIT + 40, LIMIT - 40),
+          z = pick(-LIMIT + 40, maxZ);
+        if (Math.hypot(x, z) < 24) continue;
+        if (routeDistance(x, z, routes) < minRoute + 22) continue;
+        if (
+          clearings.some(
+            ([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 22,
+          )
+        )
+          continue;
+        centers.push([x, z]);
+      }
+      const out = [];
+      let tries = 0;
+      while (out.length < count && tries < count * 40) {
+        tries++;
+        const [cx, cz] =
+          centers[Math.floor(rng() * centers.length)] || [0, 0];
+        const a = rng() * Math.PI * 2,
+          r = Math.sqrt(rng()) * 20,
+          x = cx + Math.cos(a) * r,
+          z = cz + Math.sin(a) * r;
+        if (Math.abs(x) > LIMIT - 18 || Math.abs(z) > maxZ) continue;
+        if (Math.hypot(x, z) < 24) continue;
+        if (routeDistance(x, z, routes) < minRoute) continue;
+        if (
+          clearings.some(
+            ([cx2, cz2, r2]) => Math.hypot(x - cx2, z - cz2) < r2 + minPad,
+          )
+        )
+          continue;
+        out.push({ x, z });
+      }
+      return out.concat(
+        scatter(count - out.length, minRoute, minPad, maxZ),
+      );
+    };
+    const shrubs = (spec.pineShrubs ? scatterPines : scatter)(
+      spec.shrubs,
+      ROUTE_CLEARANCE,
+      7,
+      LIMIT - 44,
+    ).map((p, i) => ({
       t: spec.pineShrubs ? 'pine' : 'shrub',
       x: p.x,
       z: p.z,
-      s: 2 + (i % 4) * 0.6,
+      // Pinos altos: 2,6–6,2 u de escala (~9–21 u de alto con las
+      // 4 copas del renderizador), varias veces el helicóptero.
+      s: spec.pineShrubs ? 2.6 + (i % 5) * 0.9 : 2 + (i % 4) * 0.6,
     }));
     const rocks = scatter(spec.rocks, ROUTE_CLEARANCE, 5, LIMIT - 19).map((p, i) => ({
       x: p.x,

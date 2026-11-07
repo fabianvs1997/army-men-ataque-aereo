@@ -86,8 +86,9 @@ test('el mundo alpino no tiene valla ni casa, y sus puntos están junto a A, B y
   assert.ok(Math.hypot(portal.x - 180, portal.z - 190) < 80, 'portal lejos de C');
   assert.ok(Math.hypot(tower.x - 0, tower.z - 0) < 60, 'torre lejos de A');
   // Las 4 torres de la base de salida: el punto `tower` más 3 fijas.
-  // Cada torre son 4 patas + plataforma + 2 barandillas + tejado.
-  assert.ok(world.yard.length >= 4 * 8, 'faltan torres de guardia');
+  // Cada torre son 4 patas + plataforma + 2 barandillas + tejado en
+  // punta + mástil + bandera (11 piezas).
+  assert.ok(world.yard.length >= 4 * 11, 'faltan torres de guardia');
   for (const p of world.landmarks) {
     assert.ok(world.trailDistance(p.x, p.z) > p.radius + 20, 'punto sobre la ruta');
     for (const pad of world.pads)
@@ -98,6 +99,71 @@ test('el mundo alpino no tiene valla ni casa, y sus puntos están junto a A, B y
   }
 });
 
+test('pulido: pinos altos y en bosquetes, no sueltos y diminutos', () => {
+  const m1 = Maps.generate(1);
+  const pines = m1.scenery.shrubs;
+  assert.equal(pines.length, 428);
+  const sizes = pines.map((p) => p.s);
+  assert.ok(Math.max(...sizes) >= 6, 'ningún pino alto');
+  assert.ok(
+    sizes.reduce((a, b) => a + b, 0) / sizes.length > 4,
+    'pinos demasiado pequeños de media',
+  );
+  // Bosque agrupado: casi todos los pinos tienen otro pino cerca.
+  let grouped = 0;
+  for (const p of pines) {
+    if (
+      pines.some(
+        (q) => q !== p && Math.hypot(q.x - p.x, q.z - p.z) < 25,
+      )
+    )
+      grouped++;
+  }
+  assert.ok(
+    grouped / pines.length >= 0.8,
+    `pinos sueltos: solo ${grouped}/${pines.length} agrupados`,
+  );
+  assert.deepEqual(Maps.validate(m1), []);
+});
+
+test('pulido: valle con laderas suaves y bordes altos, portal brillante y torres sin tapar A', () => {
+  const m1 = Maps.generate(1);
+  const world = World.create(m1);
+  // El terreno es llano en A y junto a la ruta, y sube en los bordes.
+  assert.ok(world.height(0, 0) < 1, 'A no está en llano');
+  assert.ok(world.height(420, 0) > 15, 'el borde este no sube como valle');
+  assert.ok(world.height(0, 420) > 20, 'el borde norte no sube como valle');
+  // Portal: halo en el suelo y columna de luz alta, visibles de lejos.
+  const yard = world.yard;
+  const color = (c) => (p) => JSON.stringify(p.color) === JSON.stringify(c);
+  assert.ok(yard.some(color([0.98, 0.88, 0.55])), 'sin halo del portal');
+  assert.ok(
+    yard.some((p) => p.sy >= 15 && color([1, 0.9, 0.55])(p)),
+    'sin columna de luz del portal',
+  );
+  assert.ok(
+    yard.some((p) => p.sx === 6 && color([0.13, 0.42, 0.14])(p)),
+    'sin caja grande de suministros',
+  );
+  // Las 4 torres llevan bandera verde y están a ~50 u de A, sin
+  // rodear ni tapar el helipuerto desde la cámara.
+  assert.ok(
+    yard.filter(color([0.2, 0.72, 0.2])).length >= 4,
+    'faltan banderas en las torres',
+  );
+  const [, , tower] = world.landmarks;
+  assert.ok(
+    Math.hypot(tower.x, tower.z) >= 45,
+    'la torre de la base sigue pegada a A',
+  );
+  // Montañas: 14 con afloramientos cerca del portal, todas fuera de
+  // las rutas y de los helipuertos.
+  assert.equal(m1.scenery.mountains.length, 14);
+  assert.ok(
+    m1.scenery.mountains.some((m) => m.x > 250 && m.z > 220 && m.s <= 18),
+    'sin afloramientos junto al portal',
+  );
+});
 test('la Misión 1 es un bosque de pinos con montañas de borde, fuera de las rutas', () => {
   const m1 = Maps.generate(1);
   assert.ok(m1.scenery.shrubs.length > 400, 'pocos pinos');

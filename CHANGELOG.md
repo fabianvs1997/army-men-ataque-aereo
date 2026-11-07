@@ -1,5 +1,19 @@
 # Changelog
 
+## Sin publicar — Misión 1 alpina pulida (capturas de Fabian)
+
+- Reporte de Fabian con 3 capturas de su iPhone (Misión 1/3, «3D · Plástico», «Gráficos: detalle»): el camino era una alfombra marrón plana y uniforme que dominaba la pantalla, el pasto un verde plano y oscuro, las colinas se veían como muros casi negros, los pinos diminutos y sueltos, las torres como mesas de techo plano que tapaban el helipuerto, y el portal no se veía en ninguna captura. Pulido solo de la Misión 1, a partir de esas capturas:
+  - **Pasto con luz y variación:** el terreno alpino usa una rama propia del shader (gloss -3): verde vivo y saturado, luz ambiental más alta (0,68 en vez de 0,48), manchas de tierra y barro, roca gris-marrón en las laderas altas y nieve por encima de ~20 u de altura. Las colinas ya no se oscurecen hasta casi negro.
+  - **Valle con relieve:** la ladera alpina sube más lejos y más suave (rampa de 28 u en vez de 16) y el borde del mapa sube hasta +20 u, como paredes del valle; el camino y los helipuertos siguen en llano.
+  - **Camino de tierra con textura:** el tono alterna cada dos tramos y una franja central marca el desgaste del paso, para que se lea como tierra pisada y no como una alfombra lisa. El ancho jugable sigue siendo 30 u.
+  - **Pinos grandes y en bosque:** 428 pinos en ~26 bosquetes (antes sueltos y uniformes), escala 2,6–6,2 (hasta ~21 u de alto, varias veces el helicóptero) y 4 copas cónicas con variación de tono por árbol.
+  - **Montañas que se leen como montañas:** roca gris-marrón clara con silueta variada (base + pico + cima nevada grande y blanca), 14 en total, con 2 afloramientos nuevos a la derecha del camino cerca del portal.
+  - **Portal visible y brillante:** halo en el suelo, orbe en 3 capas (exterior, medio y núcleo casi blanco) y una columna de luz de 18 u, para que se vea desde lejos como faro al final del camino. Sigue siendo solo decoración: la entrega es en C.
+  - **Base que no tapa:** las 4 torres son más esbeltas (patas finas, plataforma y tejado más pequeños, punta y bandera verde) y están a ~50 u de A en vez de rodear el helipuerto; la caja de suministros es más grande (6 u) con una segunda caja al lado, y se movió al oeste de B porque en su sitio anterior su colisión solapaba a la patrulla `patrol-ab-4`.
+  - **Aclaración:** el helipuerto con la «H» pixelada es del render general (igual en las 3 misiones), no del mapa 1, así que no se toca en este PR.
+- Sin cambios de reglas: A, B y C, las rutas, los enemigos (117 HP, 3 tanques) y la dificultad de la Misión 1 son los de antes; las misiones 2 y 3 no se tocan. La ruta del pelotón sigue despejada y la escolta llega a C.
+- Pruebas nuevas en `tests/alpine-mission1.test.cjs` (2): pinos altos y en bosquetes, y valle con laderas suaves y bordes altos, portal brillante y torres sin tapar A. `VERSION` pasa a `alpino-m1-2`.
+
 ## Sin publicar — Misión 1 alpina: «Pandemonio de Plástico», solo el mapa
 
 - Corrección investigada (2026-11-06): la Misión 1 del original es «Plastic Pandemonium», una base secreta alpina del mundo de plástico —no el patio de una casa—. La Misión 1 pasa de «El jardín» a valle alpino: pasto verde, camino de tierra, pinos altos, 12 montañas con cima nevada como borde (sobre todo a la derecha del camino, cerca del portal), base verde de salida con 4 torres de guardia, caja verde de suministros junto a B y portal brillante al final del camino, pasado C. Desaparecen de la Misión 1 la valla, la casa, el macetero, la regadera, el banco y la manguera. Las misiones 2 y 3 no se tocan.
