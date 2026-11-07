@@ -12,7 +12,7 @@ Las preferencias y los mejores resultados (estrellas y supervivientes por misió
 
 Cada misión sigue A → B → C: despega de A con guardias aliados, despeja el perímetro de B, recoge solo a los heridos y protege al pelotón que marcha por tierra. Entrega a los heridos en C y espera a los supervivientes para completar la misión.
 
-El patio mide 960 × 960 unidades. Cada misión tiene su mapa fijo, recreado de los escenarios del Army Men: Air Attack original (1999): el jardín, el picnic y la playa, con sus posiciones de A, B y C, veredas, cerros, vegetación, puntos de interés y composición enemiga. Reintentar conserva el mapa de esa misión. Enemigos y objetivos se colocan al comenzar; la ruta terrestre permanece conectada.
+El patio mide 960 × 960 unidades. Cada misión tiene su mapa fijo, recreado de los escenarios del Army Men: Air Attack original (1999): el valle alpino, el picnic y la playa, con sus posiciones de A, B y C, veredas, cerros, vegetación, puntos de interés y composición enemiga. Reintentar conserva el mapa de esa misión. Enemigos y objetivos se colocan al comenzar; la ruta terrestre permanece conectada.
 
 ## Desarrollar
 

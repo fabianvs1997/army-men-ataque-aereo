@@ -11,14 +11,18 @@ mismo mapa. Reintentar conserva el mapa, como siempre.
 
 | Misión | Mapa | Escenario | Semilla | Inspiración en el original |
 | --- | --- | --- | --- | --- |
-| 1 | El jardín | Backyard | 101 | «Plastic Pandemonium», primera misión del original: el patio trasero, base secreta y suministros de plástico |
+| 1 | Pandemonio de Plástico | Alpine | 101 | «Plastic Pandemonium», primera misión del original: base secreta alpina, suministros de plástico y un portal |
 | 2 | El picnic | Picnic | 202 | «Picnic Panic», el picnic del original: comida por todas partes y hormigas |
 | 3 | La playa | Beach | 303 | «Don't Feed The Crabs» y «Tide Pool Terror», los rescates de la playa del original: castillos de arena y libélulas |
 
-- **Misión 1, El jardín** — A (0, 0), B (-150, 170), C (180, 190).
-  El patio trasero clásico: pinos, camino de tierra y los puntos de
-  interés del patio en su sitio (macetero, regadera, banco). Casi
-  toda infantería, 117 HP enemigos en total, 3 tanques.
+- **Misión 1, Pandemonio de Plástico** — A (0, 0), B (-150, 170), C (180, 190).
+  Valle alpino del mundo de plástico, como el original: pasto verde,
+  camino de tierra, pinos altos, montañas con cima nevada como borde
+  (sobre todo a la derecha del camino, cerca del portal), base verde
+  de salida con 4 torres de guardia, caja verde de suministros junto
+  a B y portal brillante al final del camino, pasado C. Sin casa, sin
+  valla y sin props de jardín (macetero, regadera, banco). Casi toda
+  infantería, 117 HP enemigos en total, 3 tanques.
 - **Misión 2, El picnic** — A (-30, -80), B (85, 175), C (240, 40).
   El mantel del picnic: banco, macetero y regadera juntos junto a la
   ruta B→C, como mesa y comida del picnic; relieve más suave y
@@ -40,8 +44,26 @@ escoltarlo). Lo que se recrea fielmente en espíritu es el escenario
 de cada misión —su ambiente, sus puntos y su dificultad— dentro del
 sistema de rescate A → B → C de este juego, con assets propios: no
 se copia arte, música ni texto del original. El nombre y la semilla
-de cada mapa se muestran en el HUD con `?perf=1` («El jardín ·
+de cada mapa se muestran en el HUD con `?perf=1` («Pandemonio de Plástico ·
 semilla 101») y en el registro de errores, para reportarlo.
+
+## Corrección: la Misión 1 es alpina, no un jardín
+
+La Misión 1 del original es «Plastic Pandemonium»: el informe
+(«Green Intelligence reports… the Tan Army is closing in on our
+secret Alpine base») la sitúa en una base secreta alpina del mundo
+de plástico, y las guías reconstruyen su ruta —base verde de salida,
+puesto de suministros atacado por 2 tanques Tan, desvío a la derecha
+junto a las montañas y portal al final— sin casa, valla, macetero,
+regadera ni banco, que son de otras misiones. El mapa anterior («El
+jardín») era un error de ambientación, no del original. La recreación
+sigue sin plano público exacto: el trazado es una reconstrucción de
+las guías (GameFAQs, General Eric) y del gameplay (Jack's Arcade
+Vault, PS1, 3:34–6:55); las dimensiones exactas y la posición de
+cada pino y roca no se pudieron verificar. Solo cambia el mapa: las
+reglas A → B → C, los enemigos (117 HP, 3 tanques) y la dificultad
+son los de antes, y el portal es solo decoración —la entrega sigue
+siendo en C, no hay mecánica nueva de portal ni de suministros.
 
 ## Cómo está construido cada mapa
 

@@ -137,7 +137,7 @@
             d.s * 0.65,
             d.s * 0.6,
           );
-        } else if (d.t === 't') {
+        } else if (d.t === 't' || d.t === 'pine') {
           solids.push({
             kind: 'box',
             x: d.x,

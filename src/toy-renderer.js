@@ -616,6 +616,36 @@ void main(){
 
       // Rocas y objetos del patio cercanos.
       if (world) {
+        // Montañas del valle alpino (solo la Misión 1): roca grande
+        // gris-marrón con cima nevada, como borde del mapa.
+        for (const m of world.mountains || [])
+          if (visible(m)) {
+            const y = world.height(m.x, m.z);
+            this.part(
+              'sphere',
+              m.x,
+              y + m.s * 0.35,
+              m.z,
+              m.s,
+              m.s * 0.55,
+              m.s * 0.8,
+              [0.45, 0.42, 0.36],
+              m.x,
+              0,
+            );
+            this.part(
+              'sphere',
+              m.x,
+              y + m.s * 0.75,
+              m.z,
+              m.s * 0.45,
+              m.s * 0.25,
+              m.s * 0.4,
+              [0.93, 0.94, 0.96],
+              0,
+              0,
+            );
+          }
         for (const r of world.rocks)
           if (visible(r)) {
             const y = world.height(r.x, r.z);
@@ -682,7 +712,58 @@ void main(){
         )
           continue;
         this.groundOffset = world ? world.height(d.x, d.z) : 0;
-        if (d.t === 'shrub') {
+        if (d.t === 'pine') {
+          // Pino alpino alto: tronco y tres copas cónicas cada vez
+          // más estrechas, verde oscuro, como en el original.
+          this.part(
+            'box',
+            d.x,
+            d.s * 0.6,
+            d.z,
+            0.5,
+            d.s * 1.2,
+            0.5,
+            [0.33, 0.28, 0.12],
+            0,
+            0,
+          );
+          this.part(
+            'sphere',
+            d.x,
+            d.s * 1.5,
+            d.z,
+            d.s * 0.95,
+            d.s * 0.8,
+            d.s * 0.9,
+            [0.14, 0.3, 0.1],
+            0,
+            0,
+          );
+          this.part(
+            'sphere',
+            d.x,
+            d.s * 2.1,
+            d.z,
+            d.s * 0.7,
+            d.s * 0.7,
+            d.s * 0.65,
+            [0.18, 0.36, 0.12],
+            0,
+            0,
+          );
+          this.part(
+            'sphere',
+            d.x,
+            d.s * 2.6,
+            d.z,
+            d.s * 0.42,
+            d.s * 0.55,
+            d.s * 0.4,
+            [0.22, 0.42, 0.14],
+            0,
+            0,
+          );
+        } else if (d.t === 'shrub') {
           this.part(
             'sphere',
             d.x,

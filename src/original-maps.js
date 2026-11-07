@@ -6,10 +6,13 @@
  * misiones de rescate A → B → C, así que los mapas recrean los tres
  * escenarios más icónicos del original, adaptados a ese sistema:
  *
- * - Misión 1, «El jardín»: el patio trasero del original, con pinos,
- *   camino de tierra y los puntos de interés del patio (macetero,
- *   regadera, banco). Homenaje a «Plastic Pandemonium», la primera
- *   misión del original (base secreta, suministros de plástico).
+ * - Misión 1, «Pandemonio de Plástico»: el valle alpino del original,
+ *   no el patio de una casa. Corrección investigada (2026-11-06): la
+ *   primera misión del original, «Plastic Pandemonium», es una base
+ *   secreta alpina del mundo de plástico —pasto verde, camino de
+ *   tierra, pinos altos y montañas— con suministros de plástico y un
+ *   portal al final. Homenaje fiel solo en el mapa: las reglas del
+ *   juego (A → B → C) no cambian.
  * - Misión 2, «El picnic»: el mantel del picnic, con la mesa y la
  *   comida como puntos de interés y hormigas (infantería) por todas
  *   partes. Homenaje a «Picnic Panic», el picnic del original.
@@ -149,10 +152,10 @@
     {
       mission: 1,
       seed: 101,
-      name: 'El jardín',
-      scenario: 'Backyard',
+      name: 'Pandemonio de Plástico',
+      scenario: 'Alpine',
       inspiration:
-        '«Plastic Pandemonium», primera misión del original: el patio trasero, base secreta y suministros de plástico.',
+        '«Plastic Pandemonium», primera misión del original: base secreta alpina del mundo de plástico, suministros de plástico y un portal. El mapa es una reconstrucción (no hay plano público del original): valle alpino con pinos, montañas y camino de tierra; sin props de jardín de casa.',
       A: { x: 0, z: 0 },
       B: { x: -150, z: 170 },
       C: { x: 180, z: 190 },
@@ -174,18 +177,46 @@
         [180, 190],
       ],
       terrain: { phase: 0, amp: 22, freqX: 31, freqZ: 37 },
+      // Puntos alpinos del original, en vez de los del jardín de casa:
+      // la caja verde de suministros de plástico junto a B (el puesto),
+      // el portal brillante al final del camino, pasado C, y una torre
+      // de guardia junto a A (la base de salida tiene 4 torres: esta
+      // más 3 fijas que dibuja el mundo). Las posiciones se eligieron
+      // fuera de la ruta y de los helipuertos; `placeLandmark` en el
+      // mundo las reubica si hiciera falta.
       landmarks: [
-        { kind: 'planter', x: 34, z: 26, radius: 21, yaw: 0 },
-        { kind: 'watering', x: -45, z: -33, radius: 10, yaw: 0 },
-        { kind: 'bench', x: 70, z: -48, radius: 12, yaw: 0 },
+        { kind: 'crate', x: -110, z: 125, radius: 8, yaw: 0 },
+        { kind: 'portal', x: 225, z: 200, radius: 12, yaw: 0 },
+        { kind: 'tower', x: 35, z: -28, radius: 10, yaw: 0 },
+      ],
+      // Montañas y rocas grandes como borde del valle, sobre todo a
+      // la derecha del camino cerca del portal (el desvío de la guía
+      // del original) y en los bordes este y norte. Son decoración:
+      // quedan a ≥60 u de las rutas y no tocan A, B ni C.
+      mountains: [
+        { x: 260, z: 260, s: 22 },
+        { x: 330, z: 300, s: 26 },
+        { x: 180, z: 320, s: 20 },
+        { x: 60, z: 300, s: 18 },
+        { x: -40, z: 290, s: 20 },
+        { x: -140, z: 280, s: 16 },
+        { x: 400, z: 100, s: 24 },
+        { x: 420, z: 200, s: 20 },
+        { x: 390, z: -60, s: 22 },
+        { x: -380, z: -200, s: 20 },
+        { x: 0, z: -380, s: 22 },
+        { x: 300, z: -320, s: 18 },
       ],
       scenerySeed: 101,
       // Vegetación escalada con el terreno (2,25x de área): 190 → 428
       // arbustos y 130 → 293 rocas, para mantener la misma densidad
-      // y no dejar zonas vacías en el patio ampliado.
+      // y no dejar zonas vacías en el patio ampliado. En la Misión 1
+      // los arbustos son pinos altos (`pineShrubs`), como en el valle
+      // alpino del original.
+      pineShrubs: true,
       shrubs: 428,
       rocks: 293,
-      // Casi toda infantería: el jardín es la primera toma de contacto.
+      // Casi toda infantería: el valle alpino es la primera toma de contacto.
       routeKinds: { inf: 'inf', tank: 'tank' },
       patrolKinds: {
         AB: ['inf', 'inf', 'tank', 'inf', 'inf', 'tur'],
@@ -383,7 +414,7 @@
       return out;
     };
     const shrubs = scatter(spec.shrubs, ROUTE_CLEARANCE, 7, LIMIT - 44).map((p, i) => ({
-      t: 'shrub',
+      t: spec.pineShrubs ? 'pine' : 'shrub',
       x: p.x,
       z: p.z,
       s: 2 + (i % 4) * 0.6,
@@ -418,7 +449,11 @@
       },
       routes: [routeAB.map((p) => [...p]), routeBC.map((p) => [...p])],
       terrain: { ...spec.terrain },
-      scenery: { shrubs, rocks },
+      scenery: {
+        shrubs,
+        rocks,
+        mountains: (spec.mountains || []).map((m) => ({ ...m })),
+      },
       landmarks: spec.landmarks.map((p) => ({ ...p })),
       meta: { mission: spec.mission, fixed: true, validated: false },
     };
@@ -507,6 +542,20 @@
     for (const s of map.scenery?.rocks || [])
       if (routeDistance(s.x, s.z, map.routes || []) < ROUTE_CLEARANCE)
         errors.push('roca sobre la ruta');
+    // Las montañas son el borde del valle: fuera de las rutas y del
+    // patio, nunca un bloqueo. Solo la Misión 1 las tiene.
+    for (const m of map.scenery?.mountains || []) {
+      if (Math.abs(m.x) > LIMIT - 8 || Math.abs(m.z) > LIMIT - 8)
+        errors.push('montaña fuera del patio');
+      else if (routeDistance(m.x, m.z, map.routes || []) < 40)
+        errors.push('montaña sobre la ruta');
+      else if (
+        [map.rules.A, map.rules.B, map.rules.C].some(
+          (p) => Math.hypot(m.x - p.x, m.z - p.z) < 40,
+        )
+      )
+        errors.push('montaña demasiado cerca de un helipuerto');
+    }
     return errors;
   }
 
