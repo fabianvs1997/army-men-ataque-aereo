@@ -54,7 +54,15 @@
   else root.ToyOriginalMaps = api;
 })(globalThis, function (defaults) {
   'use strict';
-  const LIMIT = 320;
+  // El patio es ANCHO, no solo el camino: el límite pasa de 320 a
+  // 480 u (terreno de 960 × 960 u, 1,5x de ancho y 2,25x de área).
+  // Las posiciones de A, B y C no se mueven: la misión dura lo
+  // mismo, lo que crece es el terreno alrededor, con más sitio para
+  // maniobrar con el helicóptero y para el pelotón. No se llega a
+  // 640 (2x) a propósito: la malla del terreno crece con el cuadrado
+  // del límite y a 640 serían ~3,7 millones de valores (~15 MB) en
+  // cada carga de misión; a 480 son ~2,1 millones (~8 MB).
+  const LIMIT = 480;
   const MISSIONS = 3;
   // El camino del original es ANCHO: medio ancho 15 u (30 u en total,
   // 3x el anterior de 10 u). Debe coincidir con el del mundo
@@ -172,8 +180,11 @@
         { kind: 'bench', x: 70, z: -48, radius: 12, yaw: 0 },
       ],
       scenerySeed: 101,
-      shrubs: 190,
-      rocks: 130,
+      // Vegetación escalada con el terreno (2,25x de área): 190 → 428
+      // arbustos y 130 → 293 rocas, para mantener la misma densidad
+      // y no dejar zonas vacías en el patio ampliado.
+      shrubs: 428,
+      rocks: 293,
       // Casi toda infantería: el jardín es la primera toma de contacto.
       routeKinds: { inf: 'inf', tank: 'tank' },
       patrolKinds: {
@@ -218,8 +229,8 @@
         { kind: 'bench', x: 150, z: 60, radius: 12, yaw: 0 },
       ],
       scenerySeed: 202,
-      shrubs: 150,
-      rocks: 90,
+      shrubs: 338,
+      rocks: 203,
       routeKinds: { inf: 'inf', tank: 'tank' },
       patrolKinds: {
         AB: ['inf', 'tank', 'inf', 'tur', 'inf', 'tank'],
@@ -265,8 +276,8 @@
         { kind: 'bench', x: 0, z: 240, radius: 12, yaw: 0 },
       ],
       scenerySeed: 303,
-      shrubs: 80,
-      rocks: 175,
+      shrubs: 180,
+      rocks: 394,
       routeKinds: { inf: 'tur', tank: 'tank' },
       patrolKinds: {
         AB: ['tank', 'tur', 'tank', 'inf', 'tur', 'tank'],

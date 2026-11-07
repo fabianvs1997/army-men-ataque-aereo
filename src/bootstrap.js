@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'camino-ancho-1';
+  const VERSION = 'terreno-ancho-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',

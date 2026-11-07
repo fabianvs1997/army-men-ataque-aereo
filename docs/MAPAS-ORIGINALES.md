@@ -49,6 +49,15 @@ semilla 101») y en el registro de errores, para reportarlo.
   (con sus puntos intermedios), los enemigos (base, patrullas y
   aire extra por misión) y los puntos de interés están en `SPECS`,
   en `src/original-maps.js`.
+- **Terreno ancho, no solo el camino:** el patio mide 960 × 960 u
+  (límite 480, 1,5x el anterior de 640 × 640 u y 2,25x de área).
+  A, B y C no se mueven —la misión dura lo mismo—; lo que crece es
+  el terreno alrededor, con más sitio para maniobrar con el
+  helicóptero y para el pelotón. La vegetación escala con el área
+  (2,25x) para mantener la densidad y no dejar zonas vacías. No se
+  llega a 640 de límite (2x) a propósito: la malla del terreno crece
+  con el cuadrado del límite y a 640 serían ~3,7 millones de valores
+  (~15 MB) en cada carga de misión; a 480 son ~2,1 millones (~8 MB).
 - **Camino ancho, como en el original:** el camino de tierra mide
   30 u en total (medio ancho 15 u, 3x el anterior de 10 u), en los
   3 mapas. La única fuente de verdad es `ToyWorld.roadHalfWidth`

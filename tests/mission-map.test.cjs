@@ -13,7 +13,7 @@ test('los mapas son fijos: misma misión, mismo mapa; cada misión, el suyo', ()
     b = Maps.generate(124);
   // La semilla se ignora: el mapa de la misión 1 es siempre el mismo.
   assert.deepEqual(a, b);
-  assert.equal(a.limit * 2, 640);
+  assert.equal(a.limit * 2, 960);
   const m2 = Maps.generate(7, 2),
     m3 = Maps.generate(7, 3);
   assert.notDeepEqual(a.routes, m2.routes);

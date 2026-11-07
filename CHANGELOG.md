@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — terreno mucho más ancho, no solo el camino
+
+- Reporte de Fabian: todo el terreno tiene que ser más ancho, no solo el camino. El límite del patio pasa de 320 a 480 u (terreno de 960 × 960 u, 1,5x de ancho y 2,25x de área), en los 3 mapas fijos, con el camino de 30 u ya ancho dentro de él. A, B y C no se mueven: la misión dura lo mismo, lo que crece es el terreno alrededor, con más sitio para maniobrar con el helicóptero y para el pelotón.
+- La vegetación escala con el área (2,25x) para mantener la densidad y no dejar zonas vacías: arbustos 190/150/80 → 428/338/180 y rocas 130/90/175 → 293/203/394 en las misiones 1, 2 y 3. La valla y la casa se desplazan con el límite (la casa queda en el borde del patio ampliado) y el helicóptero queda limitado por el nuevo límite, como antes.
+- No se llega a 640 de límite (2x) a propósito: la malla del terreno crece con el cuadrado del límite y a 640 serían ~3,7 millones de valores (~15 MB) en cada carga de misión; a 480 son ~2,1 millones (~8 MB). Medido en Node: crear el mundo y su malla tarda 64–249 ms por misión (una sola vez al cargar), y el A* y los traces no tocan el tamaño del mundo (búsqueda local y trazas limitadas), así que el terreno más grande no trae de vuelta los congelamientos.
+- Sin cambios de reglas: A → B → C, quién debe recogerse y la entrega en C quedan intactos; tampoco cambia el balance de armas ni la dificultad base.
+- Pruebas nuevas en `tests/terrain-width.test.cjs` (4): límite 480 y patio de 960 × 960, A/B/C en las mismas posiciones, vegetación dentro de los límites y con la densidad de antes, y rutas transitables en el patio ampliado. Se actualiza el test de la malla en `tests/freeze-escort.test.cjs` (240 × 240 celdas, 2 073 600 valores). Los dos tests de tiempo del A* en ese archivo toman ahora el mejor de 3 llamadas: con el terreno más grande la suite en paralelo pisa más el reloj y la medida suelta superaba los 50 ms por ruido de GC/planificación, aunque la llamada en sí sigue en ~9–14 ms (el presupuesto duro es 12 ms); el umbral no cambia. `VERSION` pasa a `terreno-ancho-1`.
+
 ## Sin publicar — camino mucho más ancho, como en el original
 
 - Reporte de Fabian (captura del Army Men: Air Attack original, 1999): el camino de tierra del original es ANCHO y oscuro y cruza el mapa en diagonal; en el juego era una franja estrecha de 10 u de ancho total (medio ancho 5 u). Ahora mide 30 u en total (medio ancho 15 u, 3x), en los 3 mapas fijos, con el mismo color de tierra oscura.
