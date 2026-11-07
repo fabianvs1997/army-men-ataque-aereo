@@ -1,9 +1,48 @@
 # Helicóptero en Blender
 
 Modelo 3D original del helicóptero verde del juego, hecho desde cero en
-Blender (no es un modelo del juego original: es una recreación con las
-proporciones y los colores del helicóptero que hoy dibuja el juego en
-`src/toy-helicopter.js`).
+Blender (no es un modelo del juego original: es una recreación guiada
+por cómo se ve el helicóptero en el video del original, PS1 1999).
+
+## Revisión 2: ajuste al video del original (2026-11-07)
+
+Se vieron los 42 fotogramas del video (1 cada 3 s, 125,5 s) antes de
+tocar código. El video es un montaje (portada arriba, partida abajo);
+el helicóptero se ve sobre todo en vista cenital/3-4 jugando, y de
+frente en la portada. Diferencias corregidas:
+
+- **Puntas del rotor amarillas**: en el video el rotor girando se ve
+  con las puntas amarillas/doradas en todos los planos cenitales. Antes
+  eran dos franjas finas marfil; ahora es una banda amarilla ancha
+  (`RotorPunta_Izq/Der`, material `Amarillo`).
+- **Parabrisas único en el frontal**: en la portada el parabrisas es
+  una sola banda ancha oscura sobre el morro redondeado verde. Antes
+  eran dos burbujas oscuras que desde arriba y de frente se veían como
+  dos ojos; ahora el cristal delantero queda en la cara frontal y la
+  cabina trasera es una ventanilla lateral baja, así que desde arriba
+  el techo se ve verde liso, como en el juego.
+- **Verde más saturado**: el verde del juego (0.17, 0.53, 0.035) salía
+  pálido y amarillento en el render; el del video muestreado al sol es
+  sRGB ~35, 180, 45. Ahora `VerdePlastico` es (0.05, 0.52, 0.02) y las
+  vistas usan `view_transform = "Standard"` (con AgX los colores se
+  apagaban; misma trampa que en el tanque).
+- **Amarillo en la cola**: banda amarilla (`BandaCola`) en el botalón
+  junto a la deriva y palas del rotor de cola amarillas, como las
+  franjas que se ven en la cola en el video.
+- **Motores más esbeltos** y sin franja en el lomo (techo verde liso).
+- **Cámaras de las vistas alejadas** para que el rotor entero (17 m,
+  con las puntas amarillas) quepa en el encuadre; antes las puntas
+  quedaban cortadas.
+
+No corregido: las insignias redondas de marfil no se distinguen en el
+video (demasiado pequeñas a distancia de juego) y se mantienen porque
+son del helicóptero que hoy dibuja el juego, sin contradicción con el
+video. El winch con su cable y la caja verde son lógica del juego, no
+parte del modelo. No se ven marcas, números ni matrículas en el
+helicóptero del video, así que no se añade ninguna.
+
+**4.512 triángulos** (límite: 5.000), 75 objetos, 8 materiales.
+`VERSION` pasa a `helicoptero-blender-2`.
 
 ## Archivos
 
@@ -42,24 +81,24 @@ Helicóptero de juguete verde estilo Huey, en metros, morro hacia +Y en
 Blender (al exportar a glTF el morro queda hacia +Z, adelante en glTF,
 y arriba es +Y):
 
-- Fuselaje verde alargado con cabina de cristal oscuro en dos secciones,
-  motores laterales con escapes, insignias redondas de marfil con centro
-  verde en el fuselaje y en las alas.
-- Cola: botalón cónico, estabilizador horizontal, deriva clara con baliza
-  roja y rotor de cola de 2 palas.
-- Rotor principal de 2 palas con puntas marfil, sobre mástil con base
+- Fuselaje verde alargado con parabrisas oscuro único en el frontal y
+  ventanilla lateral trasera, motores laterales con escapes, insignias
+  redondas de marfil con centro verde en el fuselaje y en las alas.
+- Cola: botalón cónico con banda amarilla, estabilizador horizontal,
+  deriva clara con baliza roja y rotor de cola de 2 palas amarillas.
+- Rotor principal de 2 palas con puntas amarillas, sobre mástil con base
   abombada. Las palas cuelgan del vacío `Rotor`, para poder girarlas
   luego en el juego.
 - Alas cortas con lanzacohetes (2 filas x 3 cohetes por ala, con punta
   marfil), cañones en el morro y patines de aterrizaje con soportes.
-- Colores lineales del juego (`src/toy-helicopter.js`): verde
-  (0.17, 0.53, 0.035), verde claro, verde oscuro, cristal oscuro,
-  marfil, rojo y metal oscuro. Los materiales son Principled BSDF con
-  rugosidad de plástico (0.42–0.5).
+- Colores lineales ajustados al video del original: verde
+  (0.05, 0.52, 0.02), verde claro, verde oscuro, cristal oscuro,
+  marfil, amarillo, rojo y metal oscuro. Los materiales son Principled
+  BSDF con rugosidad de plástico (0.42–0.5).
 
 Medidas: unos 11 m de largo (morro a deriva), 17 m de envergadura del
-rotor, 3 m de alto hasta el buje. **4.516 triángulos** (límite: 5.000,
-para que corra en un iPhone), 78 objetos.
+rotor, 3 m de alto hasta el buje. **4.512 triángulos** (límite: 5.000,
+para que corra en un iPhone), 75 objetos.
 
 ## Qué falta para usarlo en el juego (siguiente paso, no en este PR)
 
@@ -76,5 +115,5 @@ usar este modelo hace falta:
    1 m del modelo), el giro del rotor (`Rotor`) y el destello de daño.
 3. Que el modelo no se cargue si WebGL no está disponible, y que el
    juego siga funcionando sin él (modo invitado / sin red).
-4. Medir el rendimiento en el iPhone: el modelo tiene 4.516 tris, pero
+4. Medir el rendimiento en el iPhone: el modelo tiene 4.512 tris, pero
    hay que comprobar que cargarlo no añada tirones al arrancar la misión.

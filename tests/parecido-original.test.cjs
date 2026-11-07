@@ -405,7 +405,7 @@ test('el HUD nuevo existe: brújula y contador de munición en HTML, CSS y boots
   assert.ok(css.includes('#ammo'));
   assert.ok(!css.includes('#cmp {'), 'sin CSS de la flecha vieja');
   assert.ok(bootstrap.scripts.includes('compass'), 'bootstrap carga compass');
-  assert.equal(bootstrap.VERSION, 'helicoptero-blender-1');
+  assert.equal(bootstrap.VERSION, 'helicoptero-blender-2');
 });
 
 // La escolta sigue llegando a C en las 3 misiones (reglas sin tocar).

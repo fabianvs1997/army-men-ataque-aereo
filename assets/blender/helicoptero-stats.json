@@ -4,6 +4,7 @@
     "Ala_Der": 12,
     "Ala_Izq": 12,
     "BalizaCola": 100,
+    "BandaCola": 44,
     "BaseRotor": 224,
     "BotalonCola": 44,
     "BujeRotor": 224,
@@ -28,8 +29,6 @@
     "Escape_Der": 44,
     "Escape_Izq": 44,
     "Estabilizador": 12,
-    "FranjaLomo": 12,
-    "FranjaLomoClara": 12,
     "Fuselaje": 360,
     "InsigniaAlaCentro_Der": 44,
     "InsigniaAlaCentro_Izq": 44,
@@ -68,10 +67,8 @@
     "RotorBlade_Izq": 12,
     "RotorCap_Der": 100,
     "RotorCap_Izq": 100,
-    "RotorPunta_Der_6.8": 12,
-    "RotorPunta_Der_7.25": 12,
-    "RotorPunta_Izq_6.8": 12,
-    "RotorPunta_Izq_7.25": 12,
+    "RotorPunta_Der": 12,
+    "RotorPunta_Izq": 12,
     "SensorMorro": 100,
     "SoportePatin_Der_-0.5": 28,
     "SoportePatin_Der_2.5": 28,
@@ -80,5 +77,5 @@
     "TapaBuje": 100,
     "UnionCola": 100
   },
-  "tris": 4516
+  "tris": 4512
 }

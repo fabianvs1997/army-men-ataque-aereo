@@ -103,15 +103,24 @@ test('el modelo trae las piezas del helicóptero: rotor, cola, alas y patines', 
   for (const i of bladeIdx) {
     assert.ok(rotor.children.includes(i), 'la pala debe colgar del vacío Rotor');
   }
+  // Revisión 2 (video del original): puntas del rotor amarillas y
+  // banda amarilla en la cola.
+  for (const needed of ['RotorPunta_Izq', 'RotorPunta_Der', 'BandaCola']) {
+    assert.ok(names.includes(needed), `falta el nodo ${needed}`);
+  }
 });
 
-test('el modelo usa los colores del helicóptero del juego', () => {
+test('el modelo usa el verde saturado del video y las puntas amarillas', () => {
   const gltf = readGltfJson();
   const colors = (gltf.materials || []).map((m) => m.pbrMetallicRoughness.baseColorFactor);
   const green = colors.find(
-    (c) => c && Math.abs(c[0] - 0.17) < 0.01 && Math.abs(c[1] - 0.53) < 0.01,
+    (c) => c && Math.abs(c[0] - 0.05) < 0.01 && Math.abs(c[1] - 0.52) < 0.01,
   );
-  assert.ok(green, 'falta el verde plástico del juego (0.17, 0.53, 0.035)');
+  assert.ok(green, 'falta el verde saturado del video (0.05, 0.52, 0.02)');
+  const yellow = colors.find(
+    (c) => c && Math.abs(c[0] - 0.80) < 0.01 && Math.abs(c[1] - 0.55) < 0.01,
+  );
+  assert.ok(yellow, 'falta el amarillo de las puntas del rotor (0.80, 0.55, 0.03)');
 });
 
 test('las 4 vistas previas existen y son PNG válidos', () => {

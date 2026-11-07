@@ -1,9 +1,11 @@
 # Helicóptero de juguete verde (estilo Huey) de Army Men: Ataque Aéreo.
 #
-# Modelo original desde cero, con las proporciones y los colores del
-# helicóptero del juego (src/toy-helicopter.js): fuselaje verde alargado,
-# cabina de cristal oscuro, cola con estabilizador y rotor de cola, rotor
-# principal de 2 palas, alas cortas con lanzacohetes y patines.
+# Modelo original desde cero. Primera versión con las proporciones y los
+# colores del helicóptero del juego (src/toy-helicopter.js); revisión 2
+# ajustada al video del original (PS1, 1999): puntas del rotor amarillas,
+# parabrisas único ancho en el frontal, techo verde casi sin cristal
+# visto desde arriba, verde más saturado y banda amarilla en la cola.
+# Nada se copia del original: solo se mira cómo se ve y se remodela.
 #
 # Uso (Blender 4.2, headless):
 #   blender --background --python assets/blender/helicoptero.py
@@ -55,9 +57,15 @@ def make_material(name, color, roughness=0.45, metallic=0.0, emission=None):
     return mat
 
 
-VERDE = make_material("VerdePlastico", (0.17, 0.53, 0.035), 0.42)
-VERDE_CLARO = make_material("VerdeClaro", (0.30, 0.66, 0.055), 0.42)
-VERDE_OSCURO = make_material("VerdeOscuro", (0.065, 0.24, 0.025), 0.5)
+# Colores lineales. El verde del juego (0.17, 0.53, 0.035) salía pálido
+# y amarillento; en el video del original el verde es más saturado y
+# puro (muestreado en los fotogramas: sRGB ~35, 180, 45 en la cara al
+# sol), así que se baja el rojo. El amarillo es el de las puntas del
+# rotor, que en el video se ven doradas en el rotor girando.
+VERDE = make_material("VerdePlastico", (0.05, 0.52, 0.02), 0.42)
+VERDE_CLARO = make_material("VerdeClaro", (0.18, 0.68, 0.05), 0.42)
+VERDE_OSCURO = make_material("VerdeOscuro", (0.03, 0.24, 0.02), 0.5)
+AMARILLO = make_material("Amarillo", (0.80, 0.55, 0.03), 0.42)
 CRISTAL = make_material("Cristal", (0.025, 0.045, 0.035), 0.12, 0.25)
 MARFIL = make_material("Marfil", (0.9, 0.92, 0.73), 0.5)
 ROJO = make_material("Rojo", (0.9, 0.12, 0.035), 0.4, 0.0, emission=(0.9, 0.12, 0.035))
@@ -121,21 +129,28 @@ for coll in (bpy.data.meshes, bpy.data.curves, bpy.data.materials):
 # ---------------------------------------------------------------------------
 # Casco alargado, morro hacia +Y (el juego lo dibuja con z +3,7 al morro).
 add_sphere("Fuselaje", (0, 0.65, 0), (1.35, 3.7, 1.15), VERDE, 20, 10)
-# Parabrisas delantero: casco oscuro que asoma por delante y por arriba.
-add_sphere("CabinaDelantera", (0, 2.75, 0.50), (1.02, 1.35, 0.62), CRISTAL, 16, 10)
-# Cabina trasera: segunda sección de cristal sobre el lomo.
-add_sphere("CabinaTrasera", (0, 0.55, 0.88), (1.05, 0.95, 0.55), CRISTAL, 16, 10)
-# Marco claro del parabrisas y franja oscura del lomo.
-add_box("MarcoParabrisas", (0, 2.05, 1.0), (1.0, 0.14, 0.08), VERDE_CLARO)
-add_box("FranjaLomo", (0, -0.75, 1.18), (0.53, 0.50, 0.14), VERDE_OSCURO)
-add_box("FranjaLomoClara", (0, -0.75, 1.32), (0.41, 0.37, 0.06), VERDE_CLARO)
+# Parabrisas delantero: UNA banda ancha oscura sobre el frontal, como
+# en la portada del original (morro redondeado verde debajo). Antes eran
+# dos burbujas que desde arriba y de frente se veían como dos ojos
+# oscuros; ahora el cristal queda en la cara frontal y apenas asoma
+# por encima del morro, así que desde arriba el techo se ve verde.
+add_sphere("CabinaDelantera", (0, 3.45, 0.15), (0.85, 0.75, 0.50), CRISTAL, 16, 10)
+# Cabina trasera: banda lateral baja y hundida en el fuselaje, visible
+# de lado como ventanilla y oculta desde arriba (antes era una burbuja
+# que dominaba la vista cenital).
+add_sphere("CabinaTrasera", (0, 0.7, 0.55), (1.37, 0.85, 0.42), CRISTAL, 16, 10)
+# Marco claro del borde superior del parabrisas.
+add_box("MarcoParabrisas", (0, 2.75, 0.62), (1.0, 0.14, 0.08), VERDE_CLARO)
+# Sin franja en el lomo: en el video el techo se ve verde liso.
 
-# Motores a los lados, con escapes oscuros hacia atrás.
+# Motores a los lados, con escapes oscuros hacia atrás. Algo más
+# esbeltos que antes: en la vista cenital se veían como dos bultos
+# enormes y en el video el fuselaje es una cápsula más lisa.
 for side in (-1, 1):
     add_sphere("Motor_%s" % ("Izq" if side < 0 else "Der"),
-               (side * 1.14, -1.55, 0.64), (0.59, 1.55, 0.72), VERDE, 12, 8)
+               (side * 1.05, -1.55, 0.60), (0.50, 1.40, 0.62), VERDE, 12, 8)
     add_cylinder("Escape_%s" % ("Izq" if side < 0 else "Der"),
-                 (side * 1.14, -2.84, 0.65), 0.41, 0.12, OSCURO,
+                 (side * 1.05, -2.84, 0.60), 0.38, 0.12, OSCURO,
                  rot=(math.radians(90), 0, 0), vertices=12)
 
 # Insignia redonda de marfil con centro verde a cada lado del fuselaje.
@@ -176,12 +191,17 @@ for side in (-1, 1):
     add_sphere("LuzCola_%s" % ("Izq" if side < 0 else "Der"),
                (side * 1.5, -6.3, 0.43), (0.14, 0.18, 0.17), ROJO,
                segments=8, rings=6)
-# Rotor de cola: buje y 2 palas en el lado izquierdo de la deriva.
+# Banda amarilla en el botalón junto a la deriva: en el video se ven
+# franjas amarillas en la cola, junto al rotor de cola.
+add_cylinder("BandaCola", (0, -6.35, 0.18), 0.17, 0.12, AMARILLO,
+             rot=(math.radians(90), 0, 0), vertices=12)
+# Rotor de cola: buje y 2 palas amarillas en el lado izquierdo de la
+# deriva (en el video la cola se ve con amarillo al girar).
 add_cylinder("BujeRotorCola", (-0.18, -6.6, 1.1), 0.12, 0.15, OSCURO,
              rot=(0, math.radians(90), 0), vertices=12)
 for i, ang in enumerate((math.radians(20), math.radians(110))):
     add_box("PalaRotorCola_%d" % i, (-0.28, -6.6, 1.1),
-            (0.05, 0.26, 1.05), OSCURO, rot=(ang, 0, 0))
+            (0.05, 0.26, 1.05), AMARILLO, rot=(ang, 0, 0))
 
 # ---------------------------------------------------------------------------
 # Rotor principal: mástil, buje y 2 palas (bajo el vacío "Rotor")
@@ -200,14 +220,15 @@ rotor = bpy.context.active_object
 rotor.name = "Rotor"
 
 for side, tag in ((-1, "Izq"), (1, "Der")):
-    # Pala: de x=0,6 a x=8,2, cuerda 0,32, con franjas marfil en la punta.
+    # Pala: de x=0,6 a x=8,2, cuerda 0,32, con banda amarilla ancha en
+    # la punta (en el video el rotor girando se ve con las puntas
+    # amarillas/doradas; antes eran dos franjas finas marfil).
     blade = add_box("RotorBlade_" + tag, (side * 4.4, -1.8, 2.4),
                     (7.6, 0.32, 0.07), VERDE)
     blade.parent = rotor
-    for x in (6.8, 7.25):
-        tip = add_box("RotorPunta_%s_%s" % (tag, x), (side * x, -1.8, 2.48),
-                      (0.10, 0.33, 0.025), MARFIL)
-        tip.parent = rotor
+    tip = add_box("RotorPunta_" + tag, (side * 7.15, -1.8, 2.48),
+                  (1.1, 0.33, 0.025), AMARILLO)
+    tip.parent = rotor
     cap = add_sphere("RotorCap_%s" % tag, (side * 8.0, -1.8, 2.4),
                      (0.48, 0.39, 0.16), VERDE_CLARO, segments=10, rings=6)
     cap.parent = rotor
@@ -280,6 +301,9 @@ scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
 scene.cycles.samples = 32
 scene.cycles.use_denoising = False
+# Standard y no AgX: con AgX el verde y el amarillo salen apagados
+# (misma trampa que en el tanque, docs/TANQUE-BLENDER.md).
+scene.view_settings.view_transform = "Standard"
 scene.render.resolution_x = 800
 scene.render.resolution_y = 600
 scene.render.film_transparent = False
@@ -309,11 +333,13 @@ def look_at(obj, target, location):
 import mathutils
 
 CENTER = (0, -0.8, 1.0)
+# Cámaras alejadas para que el rotor entero (17 m, con las puntas
+# amarillas) quepa en el encuadre; antes las puntas quedaban cortadas.
 VIEWS = {
-    "frontal": (0, 15, 2.5),
-    "lateral": (15, -0.8, 2.0),
-    "cenital": (0, -0.8, 22),
-    "tres-cuartos": (10, -11, 7),
+    "frontal": (0, 18, 2.5),
+    "lateral": (18, -0.8, 2.0),
+    "cenital": (0, -0.8, 26),
+    "tres-cuartos": (12, -13, 8),
 }
 for name, loc in VIEWS.items():
     look_at(cam, CENTER, loc)
