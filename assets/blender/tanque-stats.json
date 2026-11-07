@@ -1,27 +1,24 @@
 {
   "limite": 3000,
   "por_objeto": {
-    "AnilloBocacha": 36,
     "AnilloTorreta": 76,
-    "Bocacha": 12,
+    "AroEscotilla": 44,
+    "Bocacha": 44,
     "CajaTrasera": 12,
     "Canon": 44,
     "CascoInferior": 12,
     "CascoSuperior": 12,
-    "Cruceta_0": 12,
-    "Cruceta_1": 12,
-    "Cupula": 120,
     "Escape": 36,
     "Escotilla": 44,
-    "Gancho_Der": 12,
-    "Gancho_Izq": 12,
-    "Mantelete": 12,
+    "Faro_Der": 36,
+    "Faro_Izq": 36,
+    "Mantelete": 44,
     "Motriz_Der": 44,
     "Motriz_Izq": 44,
     "Oruga_Der": 12,
     "Oruga_Izq": 12,
-    "Periscopio": 12,
     "PlacaFrontal": 12,
+    "RejillaTrasera": 12,
     "Rueda_Der_0": 44,
     "Rueda_Der_1": 44,
     "Rueda_Der_2": 44,
@@ -54,5 +51,5 @@
     "Tensora_Izq": 44,
     "TorretaCuerpo": 360
   },
-  "tris": 1704
+  "tris": 1680
 }

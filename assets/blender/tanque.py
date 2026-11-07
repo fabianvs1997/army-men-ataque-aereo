@@ -5,13 +5,29 @@
 # tanque Tan del VIDEO ORIGINAL (PS1, 1999) — no del tanque que hoy
 # dibuja el juego (src/toy-renderer.js), que es más ancho que largo,
 # con una cúpula alta, banda rojiza y antena que en el vídeo no se
-# ven. En el vídeo el tanque es largo y estrecho (largo/ancho ~1,5),
-# bajo, de amarillo paja pálido con orugas marrón oliva, torreta baja
-# y pequeña con escotilla plana, cañón largo y fino con bocacha en
-# forma de bloque, ruedas claras en el lateral de la oruga y una
-# cruceta en X sobre la cubierta trasera. No hay tanque verde del
-# jugador en el juego (el jugador es el helicóptero), así que solo se
-# modela la variante Tan.
+# ven. Se estudiaron LOS DOS vídeos que compartió Fabian: el gameplay
+# de Betão Play (61,9 s) y el montaje (125,5 s). Los dos muestran el
+# MISMO tanque (no hay conflicto entre vídeos): largo y estrecho
+# (largo/ancho ~1,5), bajo, de amarillo mostaza vivo con un toque
+# verde (no paja pálido), orugas de un oliva muy oscuro con ruedas
+# claras, torreta GRANDE en cúpula redondeada con escotilla plana y
+# circular, cañón largo y fino con bocacha cilíndrica, glacis
+# amarillo sin ganchos negros, sin cruceta en X en la cubierta (no
+# se ve en ningún fotograma claro) y con dos faros redondos en la
+# cubierta delantera y una rejilla oscura en la trasera. No hay
+# tanque verde del jugador en el juego (el jugador es el
+# helicóptero), así que solo se modela la variante Tan.
+#
+# Referencias (fotogramas mirados antes de tocar el modelo):
+# - Vídeo 1 (Betão Play), ~50-52 s: vista lateral 3/4 nítida del
+#   tanque junto al camino — amarillo vivo, banda de oruga muy
+#   oscura con ruedas claras, cúpula grande, cañón fino.
+# - Vídeo 2 (montaje), ~63-67 s: vista cenital y lateral con el
+#   cañón apuntando — cúpula grande con escotilla circular, tacos
+#   de la oruga, dos círculos claros en la cubierta delantera,
+#   panel verdoso en la trasera, cañón que sobresale ~30% del casco.
+# - Vídeo 2, ~111 s: vista cenital más clara — casco 1,5:1, torreta
+#   ~57% del ancho del casco, cubierta sin X, faldones con tacos.
 #
 # Uso (Blender 4.2, headless):
 #   blender --background --python assets/blender/tanque.py
@@ -63,15 +79,23 @@ def make_material(name, color, roughness=0.45, metallic=0.0, emission=None):
     return mat
 
 
-# Amarillo paja pálido del tanque Tan del vídeo original y marrón
-# oliva de las orugas. El amarillo vivo del juego (0.95, 0.76, 0.2)
-# es más naranja y saturado que el del vídeo, que es un mostaza paja
-# claro; el marrón del juego (0.45, 0.32, 0.12) es más claro que el
-# oliva oscuro de las orugas del vídeo. El modelo ya no usa la banda
-# rojiza del juego: en el vídeo la torreta no lleva banda roja.
-AMARILLO = make_material("AmarilloTan", (0.88, 0.74, 0.30), 0.45)
-AMARILLO_OSCURO = make_material("AmarilloTanOscuro", (0.66, 0.53, 0.16), 0.5)
-MARRON = make_material("MarronOscuro", (0.34, 0.29, 0.12), 0.5)
+# Amarillo mostaza vivo del tanque Tan de los vídeos y oliva muy
+# oscuro de las orugas. Colores muestreados con herramientas de los
+# fotogramas claros (no a ojo): la zona iluminada de la torreta en
+# el vídeo 1 (~51 s) es sRGB #F4E34B, lineal (0.90, 0.77, 0.07), y
+# el costado iluminado en el vídeo 2 (~66 s) es sRGB #E1D921,
+# lineal (0.75, 0.69, 0.02). El amarillo paja pálido de la revisión
+# anterior (0.88, 0.74, 0.30) tiene demasiado azul: en el render
+# salía crema/beige, no el mostaza vivo con toque verde del vídeo.
+# La banda de la oruga en el vídeo 1 (~51 s) es sRGB #2A2803 en la
+# cara en sombra: un oliva casi negro, mucho más oscuro que el
+# marrón (0.34, 0.29, 0.12) de antes. El amarillo vivo del juego
+# (0.95, 0.76, 0.2) es más naranja que el del vídeo. El modelo ya
+# no usa la banda rojiza del juego: en el vídeo la torreta no lleva
+# banda roja.
+AMARILLO = make_material("AmarilloTan", (0.85, 0.72, 0.06), 0.45)
+AMARILLO_OSCURO = make_material("AmarilloTanOscuro", (0.45, 0.40, 0.05), 0.5)
+MARRON = make_material("MarronOscuro", (0.18, 0.16, 0.04), 0.5)
 OSCURO = make_material("MetalOscuro", (0.15, 0.15, 0.13), 0.55, 0.4)
 
 # ---------------------------------------------------------------------------
@@ -135,109 +159,126 @@ bpy.ops.object.delete(use_global=False)
 # ---------------------------------------------------------------------------
 # Orugas y ruedas (a cada lado, x = ±1.55)
 # ---------------------------------------------------------------------------
-# En el vídeo el tanque es largo y estrecho (largo/ancho ~1,5), no
-# casi cuadrado como antes (orugas de 3,7 de largo y 5,2 de ancho
-# total): orugas de 5,6 de largo y 3,85 de ancho total. La oruga se
-# ve desde arriba como una banda oscura con tacos rectangulares, y
+# En los vídeos el tanque es largo y estrecho (largo/ancho ~1,5),
+# confirmado por la vista cenital del vídeo 2 (~63 s y ~111 s):
+# orugas de 5,6 de largo y 3,85 de ancho total. La oruga se ve
+# desde arriba como una banda oscura con tacos rectangulares, y
 # desde el lado se ven las ruedas de rodaje claras (amarillas) sobre
-# la banda oscura. No hay guardabarros amarillos encima: en el vídeo
-# la parte superior de la oruga es la banda oscura con los tacos.
+# la banda MUY oscura (vídeo 1, ~51 s). Los tacos son de un
+# amarillo oliva oscuro y van casi a ras de la banda (en el vídeo
+# se leen como parte de la oruga, no como una escalera pálida).
+# No hay guardabarros amarillos encima.
 for side in (-1, 1):
     tag = "Izq" if side < 0 else "Der"
-    add_box("Oruga_" + tag, (side * 1.55, 0, 0.5), (0.75, 5.6, 0.8), MARRON)
+    add_box("Oruga_" + tag, (side * 1.55, 0, 0.45), (0.75, 5.6, 0.8), MARRON)
     # Tacos rectangulares sobre la oruga, visibles desde arriba.
     for i, y in enumerate((-2.4, -1.8, -1.2, -0.6, 0.0, 0.6, 1.2, 1.8, 2.4)):
-        add_box("Taco_%s_%d" % (tag, i), (side * 1.55, y, 0.92),
-                (0.78, 0.42, 0.08), AMARILLO_OSCURO)
+        add_box("Taco_%s_%d" % (tag, i), (side * 1.55, y, 0.86),
+                (0.78, 0.42, 0.06), AMARILLO_OSCURO)
     # 5 ruedas de rodaje claras en la cara exterior de la oruga.
     for i, y in enumerate((-1.8, -0.9, 0.0, 0.9, 1.8)):
-        add_cylinder("Rueda_%s_%d" % (tag, i), (side * 1.96, y, 0.5),
-                     0.3, 0.12, AMARILLO, rot=(0, math.radians(90), 0),
+        add_cylinder("Rueda_%s_%d" % (tag, i), (side * 1.94, y, 0.45),
+                     0.28, 0.12, AMARILLO, rot=(0, math.radians(90), 0),
                      vertices=12, smooth=False)
-    # Rueda motriz trasera y tensora delantera, un poco más grandes.
-    add_cylinder("Motriz_" + tag, (side * 1.96, -2.55, 0.55), 0.36, 0.12,
-                 AMARILLO_OSCURO, rot=(0, math.radians(90), 0), vertices=12,
+    # Rueda motriz trasera y tensora delantera, un poco más grandes;
+    # en el vídeo son amarillas claras como las de rodaje, no oscuras.
+    add_cylinder("Motriz_" + tag, (side * 1.94, -2.55, 0.5), 0.32, 0.12,
+                 AMARILLO, rot=(0, math.radians(90), 0), vertices=12,
                  smooth=False)
-    add_cylinder("Tensora_" + tag, (side * 1.96, 2.55, 0.55), 0.36, 0.12,
-                 AMARILLO_OSCURO, rot=(0, math.radians(90), 0), vertices=12,
+    add_cylinder("Tensora_" + tag, (side * 1.94, 2.55, 0.5), 0.32, 0.12,
+                 AMARILLO, rot=(0, math.radians(90), 0), vertices=12,
                  smooth=False)
 
 # ---------------------------------------------------------------------------
 # Casco
 # ---------------------------------------------------------------------------
-# Casco bajo y largo (el modelo anterior era alto y cuadrado: el
-# casco llegaba a 2,0 de alto y la torreta con cúpula a 3,5; el del
-# vídeo es chato, con la torreta baja: altura total ~2,6).
-add_box("CascoInferior", (0, 0, 1.15), (2.7, 5.0, 0.75), AMARILLO)
-add_box("CascoSuperior", (0, -0.1, 1.6), (2.5, 4.4, 0.3), AMARILLO)
-# Placa frontal inclinada (glacis): en el vídeo el morro es amarillo
-# tostado, no una plancha marrón oscura.
-add_box("PlacaFrontal", (0, 2.42, 1.15), (2.5, 0.1, 0.8), AMARILLO_OSCURO,
-        rot=(math.radians(-40), 0, 0))
-# Cruceta en X sobre la cubierta trasera, como se ve desde arriba en
-# el vídeo (dos tiras cruzadas sobre la cubierta, detrás de la torreta).
-for i, ang in enumerate((-0.62, 0.62)):
-    add_box("Cruceta_%d" % i, (0, -1.7, 1.78 + 0.03 * i), (0.14, 1.4, 0.05),
-            AMARILLO_OSCURO, rot=(0, 0, ang))
-# Ganchos de remolque en el glacis.
+# Casco bajo y largo. En la vista lateral del vídeo 2 (~66 s) la
+# altura total (hasta la torreta) es ~0,4 veces el largo del casco,
+# así que el modelo anterior (2,6 m de alto) era demasiado alto:
+# ahora la altura total es ~2,4 m. La cubierta superior es más
+# estrecha que antes (2,3 en vez de 2,5) para que desde arriba no se
+# vea una gran losa pálida vacía: en el vídeo la cubierta la tapan
+# casi entera la torreta y las orugas.
+add_box("CascoInferior", (0, 0, 1.0), (2.6, 5.0, 0.6), AMARILLO)
+add_box("CascoSuperior", (0, -0.1, 1.4), (2.3, 4.2, 0.25), AMARILLO)
+# Placa frontal inclinada (glacis): en los vídeos el morro es
+# amarillo, igual que el casco (vídeo 1, ~51 s; vídeo 2, ~66 s),
+# sin plancha oscura ni ganchos negros a la vista.
+add_box("PlacaFrontal", (0, 2.45, 1.0), (2.3, 0.1, 0.85), AMARILLO,
+        rot=(math.radians(-45), 0, 0))
+# Rejilla oscura y plana sobre la cubierta trasera: en la vista
+# cenital del vídeo 2 (~63 s) detrás de la torreta se ve un panel
+# rectangular verdoso más oscuro, discreto (no una losa negra que
+# domine la cubierta). Sin cruceta en X: en ningún fotograma claro
+# (vídeo 2, ~63 s y ~111 s) se ve una X en la cubierta, así que se
+# quitó.
+add_box("RejillaTrasera", (0, -1.7, 1.54), (1.0, 0.7, 0.04),
+        AMARILLO_OSCURO)
+# Dos faros redondos y planos en la cubierta delantera: en la vista
+# cenital del vídeo 2 (~63 s) se ven dos círculos claros delante de
+# la torreta, sobre el morro.
 for side in (-1, 1):
-    add_box("Gancho_%s" % ("Izq" if side < 0 else "Der"),
-            (side * 0.8, 2.52, 0.95), (0.14, 0.1, 0.22), OSCURO)
-# Caja de pertrechos trasera y tubo de escape.
-add_box("CajaTrasera", (0, -2.55, 1.15), (1.8, 0.45, 0.35), AMARILLO_OSCURO)
-add_cylinder("Escape", (1.0, -2.5, 1.0), 0.11, 0.5, OSCURO,
+    add_cylinder("Faro_%s" % ("Izq" if side < 0 else "Der"),
+                 (side * 0.7, 1.9, 1.54), 0.16, 0.06, AMARILLO,
+                 vertices=10, smooth=False)
+# Caja de pertrechos trasera (amarilla: en la vista trasera del
+# vídeo 1, ~50 s, la trasera es amarilla con una ranura oscura) y
+# tubo de escape pequeño y oscuro.
+add_box("CajaTrasera", (0, -2.5, 1.0), (1.6, 0.4, 0.3), AMARILLO)
+add_cylinder("Escape", (0.9, -2.55, 0.95), 0.09, 0.4, OSCURO,
              rot=(math.radians(90), 0, 0), vertices=10)
 
 # ---------------------------------------------------------------------------
 # Torreta (bajo el vacío "Torreta", para poder girarla luego)
 # ---------------------------------------------------------------------------
-bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0.35, 1.8))
+bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0.2, 1.55))
 torreta = bpy.context.active_object
 torreta.name = "Torreta"
 bpy.context.view_layer.update()
 
-# Anillo de la torreta sobre el casco.
-anillo = add_cylinder("AnilloTorreta", (0, 0.35, 1.78), 0.88, 0.18, MARRON,
+# Anillo de la torreta sobre el casco (en el vídeo 1, ~51 s, se ve
+# una línea oscura entre la torreta y el casco).
+anillo = add_cylinder("AnilloTorreta", (0, 0.2, 1.55), 1.0, 0.16, MARRON,
                       vertices=20)
 parent_keep(anillo, torreta)
-# Cuerpo de la torreta: elipsoide bajo y pequeño. En el vídeo la
-# torreta es baja y ocupa poco más de la mitad del ancho del casco
-# (antes era una cúpula grande, casi tan ancha como el casco, que lo
-# tapaba desde arriba); desde arriba se ve redondeada, más ancha por
-# detrás, con el cañón saliendo por el morro.
-torre = add_sphere("TorretaCuerpo", (0, 0.35, 2.05), (0.85, 1.05, 0.45),
+# Cuerpo de la torreta: una cúpula redondeada GRANDE. La revisión
+# anterior la hizo pequeña y achatada (1,7 de ancho, 44% del casco)
+# y era el fallo más visible desde arriba: en los vídeos la cúpula
+# ocupa ~57% del ancho del casco (vídeo 2, ~111 s: ~2,1-2,2 m de
+# ancho) y casi la mitad del largo del casco, y es lo que más se ve
+# desde arriba. Es una semiesfera achatada, no un elipsoide bajo.
+torre = add_sphere("TorretaCuerpo", (0, 0.2, 1.85), (1.05, 1.2, 0.5),
                    AMARILLO, segments=20, rings=10)
 parent_keep(torre, torreta)
-# Mantelete en el morro de la torreta, de donde sale el cañón.
-mantelete = add_box("Mantelete", (0, 1.5, 2.05), (0.62, 0.3, 0.5),
-                    AMARILLO_OSCURO)
+# Mantelete en el morro de la torreta, de donde sale el cañón: un
+# collar cilíndrico pequeño y redondeado, no la caja grande de
+# antes (en el vídeo 2, ~66 s, el cañón sale directo de la cúpula).
+mantelete = add_cylinder("Mantelete", (0, 1.35, 1.9), 0.3, 0.35, AMARILLO,
+                         rot=(math.radians(90), 0, 0), vertices=12)
 parent_keep(mantelete, torreta)
-# Cañón largo y FINO hacia el morro (+Y): en el vídeo el cañón es
-# delgado y sobresale casi un largo de casco por delante, con una
-# bocacha en forma de bloque claro en la punta (antes era grueso,
-# radio 0,15, con bocacha cilíndrica oscura y grande).
-canon = add_cylinder("Canon", (0, 3.35, 2.1), 0.11, 4.2, AMARILLO,
+# Cañón largo y FINO hacia el morro (+Y). En el vídeo 2 (~66 s) el
+# cañón sobresale por delante del casco ~30% del largo del casco
+# (~1,7 m), no casi 3 m como antes; y la bocacha es un cilindro un
+# poco más ancho y más oscuro en la punta, no un bloque pálido con
+# anillo negro.
+canon = add_cylinder("Canon", (0, 2.7, 1.9), 0.13, 3.2, AMARILLO,
                      rot=(math.radians(90), 0, 0), vertices=12)
 parent_keep(canon, torreta)
-bocacha = add_box("Bocacha", (0, 5.3, 2.1), (0.3, 0.5, 0.3), AMARILLO)
+bocacha = add_cylinder("Bocacha", (0, 4.15, 1.9), 0.17, 0.4,
+                       AMARILLO_OSCURO, rot=(math.radians(90), 0, 0),
+                       vertices=12, smooth=False)
 parent_keep(bocacha, torreta)
-anillo_bocacha = add_cylinder("AnilloBocacha", (0, 5.0, 2.1), 0.145, 0.1,
-                              OSCURO, rot=(math.radians(90), 0, 0),
-                              vertices=10, smooth=False)
-parent_keep(anillo_bocacha, torreta)
-# Escotilla del jefe: en el vídeo no hay una cúpula alta con banda
-# rojiza ni antena (se quitaron las dos), solo una escotilla baja y
-# plana sobre la torreta, con su tapa oscura.
-cupula = add_sphere("Cupula", (0, 0.05, 2.48), (0.42, 0.42, 0.14), AMARILLO,
-                    segments=12, rings=6)
-parent_keep(cupula, torreta)
-escotilla = add_cylinder("Escotilla", (0, 0.05, 2.6), 0.28, 0.05, OSCURO,
-                         vertices=12)
+# Escotilla del jefe: en los vídeos (vídeo 2, ~63 s y ~111 s) es
+# un círculo plano sobre la cúpula, amarillo con un aro fino más
+# oscuro alrededor — no el disco negro grande de antes, que desde
+# arriba se leía como un agujero. Sin periscopio: en ningún
+# fotograma claro se ve una caja oscura sobre la torreta.
+aro = add_cylinder("AroEscotilla", (0, 0.2, 2.36), 0.38, 0.03, OSCURO,
+                   vertices=12, smooth=False)
+parent_keep(aro, torreta)
+escotilla = add_cylinder("Escotilla", (0, 0.2, 2.38), 0.3, 0.05, AMARILLO,
+                         vertices=12, smooth=False)
 parent_keep(escotilla, torreta)
-# Periscopio bajo delante de la escotilla.
-periscopio = add_box("Periscopio", (0, 0.95, 2.32), (0.4, 0.2, 0.12),
-                     OSCURO)
-parent_keep(periscopio, torreta)
 
 # ---------------------------------------------------------------------------
 # Conteo de triángulos

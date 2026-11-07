@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'tanque-blender-2';
+  const VERSION = 'tanque-blender-3';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
