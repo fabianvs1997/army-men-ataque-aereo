@@ -122,6 +122,11 @@
       }));
       this.carsEscaped = 0;
       this.carsDestroyed = 0;
+      // Enemigos destruidos por el jugador (tanques, infantería,
+      // helicópteros, torretas, garajes y coches): el "Bajas" del
+      // HUD contaba solo aliados caídos y en la grabación decía 0
+      // con 490 puntos y varios tanques destruidos.
+      this.kills = 0;
       this.carsLimit = config.carsLimit || 15;
       this.carSpawnInterval = config.carSpawnInterval || 20;
       // Tren y batería (Misión 3): el tren Prego espera en su base
@@ -703,6 +708,26 @@
           }
         }
       }
+      // Volar sobre el portal sin la caja, en la fase final, antes
+      // no hacía nada en absoluto: en la grabación el jugador daba
+      // vueltas sobre el portal sin saber qué faltaba. Ahora avisa
+      // (limitado a una vez cada 5 s) en vez de quedarse en silencio.
+      if (
+        this.stage === 'CARGA_PORTAL' &&
+        this.cargo &&
+        this.cargo.state === 'waiting' &&
+        this.portal &&
+        Math.hypot(player.x - this.portal.x, player.z - this.portal.z) <=
+          this.portal.radius
+      ) {
+        this._portalHintSecs = (this._portalHintSecs || 0) + dt;
+        if (this._portalHintSecs >= 5) {
+          this._portalHintSecs = 0;
+          this.events.push({ type: 'portal-without-cargo' });
+        }
+      } else {
+        this._portalHintSecs = 0;
+      }
       // Fase de los garajes (Misión 2): al destruir el último
       // garaje, la misión se completa (el rescate ya está hecho).
       if (this.stage === 'GARAJES' && !this.garages.some((g) => !g.destroyed)) {
@@ -734,11 +759,16 @@
         ),
       );
       if (['ESCOLTAR_BC', 'ENTREGA_C'].includes(this.stage)) {
+        // "En marcha" son los sanos que caminan hacia C y "Más
+        // rezagado" es la distancia en unidades al soldado más
+        // alejado del helicóptero: en la grabación el panel decía
+        // "En camino: 4 · Distancia: 100" sin explicar ni qué ni en qué.
         this.message +=
-          ' · En camino: ' +
+          ' · En marcha: ' +
           this.remaining +
-          ' · Distancia: ' +
-          this.lagDistance;
+          ' · Más rezagado: ' +
+          this.lagDistance +
+          ' u';
         // La caja sigue pendiente: que el HUD recuerde que hay que
         // levantarla en B (se puede hacer ya, el jugador está allí).
         // Solo la caja de la Misión 1: la batería de la Misión 3 va
@@ -785,7 +815,7 @@
           ' · Batería ' + batteryWord + ' · Tren ' + trainWord;
       }
       const blocked = this.allies.filter((a) => a.cause === 'atasco').length;
-      if (blocked) this.message += ' · Bajas por bloqueo: ' + blocked;
+      if (blocked) this.message += ' · Atascados: ' + blocked;
       return null;
     }
     // Estrellas por supervivientes del pelotón (3 si sobrevive al
@@ -812,6 +842,7 @@
     }
     enemyEliminated(enemy) {
       this.events.push({ type: 'enemy-eliminated', id: enemy.id });
+      this.kills++;
       // Garaje Tan (Misión 2): deja de soltar coches.
       const garage = this.garages.find((g) => g.id === enemy.id);
       if (garage && !garage.destroyed) {
@@ -914,11 +945,13 @@
     // batería en la 3) lo redefinen con sus propios contadores, sin
     // tocar ui.js. El texto de objetivo (`message`) y la marca de la
     // brújula (`target(jugador)`) ya vienen del estado de la misión.
+    // Sin el prefijo "Misión X/3 ·": el panel ya lo pone en el
+    // título y se duplicaba. "Bajas" era solo aliados caídos (en la
+    // grabación decía 0 con varios tanques destruidos), así que se
+    // llama "Caídos" y se añade el contador real de enemigos.
     hudSummary() {
       const base =
-        'Misión ' +
-        this.number +
-        '/3 · Heridos ' +
+        'Heridos ' +
         this.rescued +
         '/' +
         this.allies.filter((a) => a.wounded).length +
@@ -926,8 +959,10 @@
         this.delivered +
         '/' +
         this.allies.length +
-        ' · Bajas ' +
-        this.allies.filter((a) => a.state === 'CAIDO').length;
+        ' · Caídos ' +
+        this.allies.filter((a) => a.state === 'CAIDO').length +
+        ' · Enemigos ' +
+        this.kills;
       // Misión 2: garajes destruidos y coches que pasaron del portal.
       if (this.garages.length) {
         const destroyed = this.garages.filter((g) => g.destroyed).length;
@@ -968,7 +1003,7 @@
           ? 'colgando'
           : this.cargo.state === 'delivered'
             ? 'entregada'
-            : 'en tierra';
+            : 'en B, por levantar';
       return base + ' · Caja ' + cargoLabel + ' · Portal';
     }
     // Vista de la carga para el renderizador (cable y caja colgando):

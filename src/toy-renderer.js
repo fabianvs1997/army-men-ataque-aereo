@@ -37,6 +37,7 @@ void main(){
   const FS = `
 precision mediump float;
 uniform vec3 color;uniform float gloss;uniform vec3 eyeDirection;
+uniform float alpha;
 varying mediump vec3 surfaceNormal;
 varying mediump vec3 worldPosition;
 void main(){
@@ -46,9 +47,9 @@ void main(){
  float shine=(pow(highlight,56.0)*0.75+pow(highlight,14.0)*0.12)*max(gloss,0.0);
  float rim=pow(1.0-max(dot(n,eyeDirection),0.0),3.0)*0.045*gloss;
  vec3 base=color;
- if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -2.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.30,.60,.16),vec3(.16,.38,.12),hill);float dirt=smoothstep(.55,.85,sin(worldPosition.x*.055+sin(worldPosition.z*.035))*cos(worldPosition.z*.045+worldPosition.x*.025));base=mix(base,vec3(.50,.38,.21),dirt*.6);float mottle=smoothstep(.25,.75,sin(worldPosition.x*.021+2.0)*cos(worldPosition.z*.017+1.0));base=mix(base,vec3(.36,.62,.19),mottle*.28);float rock2=smoothstep(12.0,22.0,worldPosition.y);base=mix(base,vec3(.48,.45,.38),rock2*.6);float snow=smoothstep(20.0,30.0,worldPosition.y);base=mix(base,vec3(.93,.94,.96),snow*.8);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.45,.42,.36),cliff*.4);}else if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.90+grain*.12+patch*.16;}
+ if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*0.5),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -2.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.30,.60,.16),vec3(.16,.38,.12),hill);float dirt=smoothstep(.55,.85,sin(worldPosition.x*.055+sin(worldPosition.z*.035))*cos(worldPosition.z*.045+worldPosition.x*.025));base=mix(base,vec3(.50,.38,.21),dirt*.6);float mottle=smoothstep(.25,.75,sin(worldPosition.x*.021+2.0)*cos(worldPosition.z*.017+1.0));base=mix(base,vec3(.36,.62,.19),mottle*.28);float rock2=smoothstep(12.0,22.0,worldPosition.y);base=mix(base,vec3(.48,.45,.38),rock2*.6);float snow=smoothstep(20.0,30.0,worldPosition.y);base=mix(base,vec3(.93,.94,.96),snow*.8);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.45,.42,.36),cliff*.4);}else if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.95+grain*.05+patch*.16;}
  float amb=gloss < -2.5 ? 0.68 : 0.48;
- gl_FragColor=vec4(base*(amb+(1.0-amb)*diffuse)+vec3(shine+rim),1.0);
+ gl_FragColor=vec4(base*(amb+(1.0-amb)*diffuse)+vec3(shine+rim),alpha);
 }`;
   // Tanque Tan: amarillo vivo/tostado, distinto del verde del jugador
   // y del caqui de la infantería Tan ([0.77, 0.62, 0.36]). Las orugas
@@ -228,6 +229,7 @@ void main(){
         'color',
         'gloss',
         'eyeDirection',
+        'alpha',
       ])
         this.loc[name] = gl.getUniformLocation(program, name);
       this.position = gl.getAttribLocation(program, 'position');
@@ -243,6 +245,12 @@ void main(){
       this.setWorld(this.world, true);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
+      // Transparencia para explosiones, humo y portal: sin esto toda
+      // esfera era opaca por construcción (la grabación mostraba
+      // globos sólidos). Las piezas translúcidas no escriben en el
+      // búfer de profundidad (ver part()), para no tapar lo que va detrás.
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.clearColor(0.27, 0.36, 0.23, 1);
       this.boundMesh = null;
     }
@@ -260,7 +268,7 @@ void main(){
       // setWorld cambia el buffer enlazado: la caché de malla queda inválida.
       this.boundMesh = null;
     }
-    part(kind, x, y, z, sx, sy, sz, color, yaw = 0, gloss = 0.6) {
+    part(kind, x, y, z, sx, sy, sz, color, yaw = 0, gloss = 0.6, alpha = 1) {
       const gl = this.gl,
         m = this.meshes[kind],
         u = this.loc;
@@ -280,7 +288,12 @@ void main(){
       gl.uniform1f(u.yaw, yaw);
       gl.uniform3fv(u.color, color);
       gl.uniform1f(u.gloss, gloss);
+      gl.uniform1f(u.alpha, alpha);
+      // Una pieza translúcida que escribiera profundidad taparía
+      // como un sólido lo que se dibuja después detrás de ella.
+      if (alpha < 1) gl.depthMask(false);
       gl.drawArrays(gl.TRIANGLES, 0, m.count);
+      if (alpha < 1) gl.depthMask(true);
       this.drawCalls++;
     }
     // Altura de la superficie visible bajo (x, z): el terreno, o la
@@ -621,14 +634,16 @@ void main(){
       // A compact practice clearing, roads and helipad on a cleared central area.
       // Las carreteras cubren todo el mapa: solo se dibujan las cercanas.
       // El camino de tierra se lee como tierra pisada, no como una
-      // alfombra lisa: el tono alterna cada dos tramos y una franja
-      // central más clara/oscura marca el desgaste del paso.
+      // alfombra lisa ni como un tablero: un solo tono en toda su
+      // longitud y una franja central apenas más oscura que marca el
+      // desgaste del paso. Antes el tono alternaba cada dos tramos
+      // y la franja invertía el contraste, y en la grabación se
+      // veía un damero marrón.
       if (world)
         for (let ri = 0; ri < world.roads.length; ri++) {
           const r = world.roads[ri];
           if (Math.hypot(r.x - cam.x, r.z - cam.z) >= radius + r.length)
             continue;
-          const tone = (ri >> 1) % 2;
           this.part(
             'box',
             r.x,
@@ -637,7 +652,7 @@ void main(){
             r.halfWidth || 5,
             0.04,
             r.length,
-            tone ? [0.63, 0.51, 0.32] : [0.56, 0.44, 0.27],
+            [0.6, 0.48, 0.3],
             r.yaw,
             -1,
           );
@@ -649,7 +664,7 @@ void main(){
             (r.halfWidth || 5) * 0.55,
             0.04,
             r.length,
-            tone ? [0.57, 0.45, 0.28] : [0.66, 0.54, 0.34],
+            [0.57, 0.45, 0.28],
             r.yaw,
             -1,
           );
@@ -684,13 +699,17 @@ void main(){
           0.04,
         );
       }
-      for (const p of world?.padMarks || [])
+      // Letra del helipuerto (A, B o C): los cubitos sueltos de 5×5
+      // se leían como una H pixelada desde la cámara cenital, así
+      // que cada fila de píxeles contiguos se dibuja como una sola
+      // barra continua: la letra queda con trazos enteros.
+      for (const run of padLetterRuns(world?.padMarks || []))
         this.part(
           'box',
-          p.x,
+          run.x,
           0.36,
-          p.z,
-          0.55,
+          run.z,
+          run.sx,
           0.04,
           0.55,
           [0.84, 0.8, 0.58],
@@ -794,6 +813,9 @@ void main(){
               p.color,
               p.yaw,
               0,
+              // El portal lleva alfa en sus piezas (halo y columna
+              // translúcidos); el resto del patio es opaco (alfa 1).
+              p.alpha == null ? 1 : p.alpha,
             );
       }
       // Vías del tren (Misión 3): traviesas y raíles, sin colisión.
@@ -853,6 +875,22 @@ void main(){
           this.part('box', cx, cy + 4.3, cz, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1], 0, 0);
           this.part('box', cx, cy + 4.3, cz, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1], 0, 0);
         }
+        // Marcador flotante sobre la carga que hay que levantar con
+        // el winch: en la grabación la caja no se distinguía de los
+        // cubos verdes y los escombros del punto B. Flota y sube y
+        // baja despacio para llamar la atención sin tapar nada.
+        this.part(
+          'sphere',
+          cx,
+          cy + 9 + Math.sin((scene.t || 0) * 2) * 0.6,
+          cz,
+          0.8,
+          0.8,
+          0.8,
+          [1, 0.85, 0.2],
+          0,
+          0,
+        );
       }
       // Aliados activos una sola vez por frame: la comprobación por arbusto
       // antes creaba un cierre y recorría los aliados en cada arbusto.
@@ -1300,8 +1338,9 @@ void main(){
             0,
             0.4,
           );
-      // Humo de misil. Sin canal alfa en WebGL, el desvanecimiento se simula
-      // creciendo y oscureciendo la bocanada, y encogiéndola al final.
+      // Humo de misil. Ahora se desvanece con alfa además de
+      // encogerse al final (antes, sin canal alfa, solo crecía y
+      // se oscurecía, y se quedaba como una bola sólida).
       for (let si = 0; si < SM.length; si += stride) {
         const s = SM[si];
         if (visible(s)) {
@@ -1323,6 +1362,7 @@ void main(){
             shade,
             0,
             0,
+            Math.max(0, 1 - age) * 0.7,
           );
         }
       }
@@ -1504,20 +1544,24 @@ void main(){
             0.4,
           );
         }
-      // Explosión del original: bola de fuego grande que crece y
-      // cambia de color con la edad —naranja, rosa, morado— con
-      // núcleo amarillo y humo gris al final. La vida la pone
-      // combat (EXPLOSION_LIFE, 0,9 s); escenas sin `max` usan 0,9.
+      // Explosión del original: bola de fuego que se encoge y se
+      // apaga con la edad —naranja, rosa, morado— con núcleo
+      // amarillo y humo gris al final. En la grabación la bola
+      // crecía un 60 % y era opaca (un tanque: 22 u de diámetro),
+      // así que ahora empieza en su tamaño y se encoge a la mitad
+      // mientras su alfa cae a 0. La vida la pone combat
+      // (EXPLOSION_LIFE, 0,55 s); escenas sin `max` usan 0,55.
       // El tamaño es solo visual: el daño no depende de aquí.
       for (const f of FX)
         if (visible(f)) {
-          const life = f.max || 0.9,
+          const life = f.max || 0.55,
             age = Math.min(1, Math.max(0, 1 - f.l / life)),
-            sz = f.s * (0.55 + age * 1.05);
+            sz = f.s * (1.0 - age * 0.55),
+            fade = Math.max(0, 1 - age);
           this.part(
             'sphere',
             f.x,
-            f.y + age * 3,
+            f.y + age * 1,
             f.z,
             sz,
             sz,
@@ -1531,8 +1575,9 @@ void main(){
                   : [1, 0.45, 0.08],
             0,
             0,
+            fade,
           );
-          if (age < 0.65) {
+          if (age < 0.5) {
             this.part(
               'sphere',
               f.x,
@@ -1544,6 +1589,7 @@ void main(){
               [1, 0.35, 0.55],
               0,
               0,
+              fade,
             );
             this.part(
               'sphere',
@@ -1556,6 +1602,7 @@ void main(){
               [1, 0.85, 0.3],
               0,
               0,
+              fade,
             );
           }
         }
@@ -1668,7 +1715,42 @@ void main(){
       return true;
     }
   }
+  // Agrupa los píxeles 5×5 de la letra del helipuerto en barras
+  // horizontales continuas por fila: píxeles contiguos (paso 1,2 u)
+  // en la misma z forman una sola barra centrada en su punto medio.
+  function padLetterRuns(marks) {
+    const rows = new Map();
+    for (const p of marks || []) {
+      const key = Math.round(p.z * 10);
+      if (!rows.has(key)) rows.set(key, []);
+      rows.get(key).push(p.x);
+    }
+    const runs = [];
+    for (const [key, xs] of rows) {
+      xs.sort((a, b) => a - b);
+      let start = xs[0],
+        prev = xs[0];
+      for (let i = 1; i <= xs.length; i++) {
+        if (i < xs.length && Math.abs(xs[i] - prev - 1.2) < 0.01) {
+          prev = xs[i];
+          continue;
+        }
+        const n = Math.round((prev - start) / 1.2) + 1;
+        runs.push({
+          x: (start + prev) / 2,
+          z: key / 10,
+          sx: 0.55 + (n - 1) * 1.2,
+        });
+        if (i < xs.length) {
+          start = xs[i];
+          prev = xs[i];
+        }
+      }
+    }
+    return runs;
+  }
   ToyRenderer.geometry = geometry;
+  ToyRenderer.padLetterRuns = padLetterRuns;
   // Paleta de las explosiones (ver el bucle FX en render): naranja,
   // rosa y morado del original, núcleo amarillo y humo gris final.
   ToyRenderer.EXPLOSION_COLORS = Object.freeze({
@@ -1678,7 +1760,7 @@ void main(){
     core: [1, 0.85, 0.3],
     smoke: [0.36, 0.37, 0.29],
   });
-  ToyRenderer.EXPLOSION_LIFE = 0.9;
+  ToyRenderer.EXPLOSION_LIFE = 0.55;
   // Tanque Tan: amarillo vivo/tostado, distinto del verde del jugador
   // y del caqui de la infantería Tan ([0.77, 0.62, 0.36]). Las
   // orugas son marrón tostado oscuro.

@@ -103,7 +103,10 @@ function mission2Setup(saturate) {
   if (saturate) {
     const rand = seeded(7);
     const kinds = ['tank', 'tur', 'heli', 'inf', 'base'];
-    for (let i = 0; i < 30; i++)
+    // Emitir hasta saturar el tope (antes bastaban 30 emisiones
+    // porque cada baja dejaba 10 cubitos; ahora deja 4 y hacen
+    // falta más emisiones para llegar a 320).
+    for (let i = 0; state.DB.length < Debris.MAX_PIECES; i++)
       Debris.emit(
         state,
         {

@@ -24,7 +24,7 @@ test('each toy breaks into molded components without an explosion; repeated hits
     assert.equal(s.P.sc, 10);
   }
 });
-test('impact fragments originate at collision point and settle on uneven terrain permanently', () => {
+test('impact fragments originate at collision point and settle on uneven terrain, then expire', () => {
   const s = {},
     ground = (x, z) => 2 + Math.sin(x * 0.1) + Math.cos(z * 0.1);
   Debris.emit(s, { k: 'heli', x: 0, y: 8, z: 0 }, false, seeded(3), {
@@ -39,9 +39,11 @@ test('impact fragments originate at collision point and settle on uneven terrain
       (p) => p.settled && Math.abs(p.y - ground(p.x, p.z) - p.sy) < 1e-9,
     ),
   );
-  const saved = JSON.stringify(s.DB);
+  // Los escombros ya no son para siempre: los cubitos se van a los
+  // 10 s de asentarse (antes el camino quedaba alfombrado para
+  // siempre). Tras 60 s no queda ninguno de esta emisión.
   for (let i = 0; i < 3600; i++) Debris.step(s, 1 / 60, ground);
-  assert.equal(JSON.stringify(s.DB), saved);
+  assert.equal(s.DB.length, 0);
 });
 test('debris uses a separate reproducible RNG and caps retained pieces', () => {
   const a = {},

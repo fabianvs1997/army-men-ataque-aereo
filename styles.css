@@ -86,7 +86,13 @@ button:focus-visible {
   left: 12px;
   bottom: 6px;
   font-size: 12px;
-  opacity: 0.85;
+  opacity: 0.95;
+  /* Puntos con fondo propio: en la grabación el texto blanco sobre
+     la hierba o el helipad se leía mal. */
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-shadow: 0 1px 2px #000;
 }
 
 #perf {
@@ -170,6 +176,21 @@ h1 {
   height: 12px;
 }
 
+/* Etiqueta visible de la barra de salud: en la grabación la barra
+   naranja de arriba no tenía texto y no se sabía qué medía (además
+   se rellenaba sola al recoger salud y parecía un fallo). */
+#armLabel {
+  position: absolute;
+  top: 37px;
+  right: 158px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffe066;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
 #inf {
   position: absolute;
   display: none;
@@ -225,7 +246,7 @@ h1 {
   left: 50%;
   transform: translateX(-50%);
   bottom: 132px;
-  width: min(200px, 46vw);
+  width: min(220px, 52vw);
   height: 34px;
   overflow: hidden;
   background: rgba(10, 20, 12, 0.72);
@@ -234,6 +255,21 @@ h1 {
   font-size: 13px;
   font-weight: 700;
   pointer-events: none;
+}
+
+/* Leyenda de la brújula: en la grabación había dos marcadores (▲ y
+   ◆) sin explicar cuál era el jugador y cuál el objetivo. */
+#compassLegend {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 114px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #d8e4b3;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 #compass .cl {
@@ -314,9 +350,34 @@ h1 {
   background: var(--panel);
   border: 1px solid #b6c38b55;
   border-radius: 16px;
-  box-shadow: 0 20px 70px #0008;
+  /* Fondo atenuado detrás del panel: en la grabación el portal
+     asomaba por encima del panel y la brújula se veía debajo,
+     rompiendo la sensación de pausa. */
+  box-shadow:
+    0 20px 70px #0008,
+    0 0 0 9999px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
   text-align: left;
+}
+
+/* Aviso corto en pantalla (llegadas a C, caja, batería): centrado
+   arriba, bajo los botones, y se esconde solo. */
+#toast {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  background: rgba(10, 20, 12, 0.85);
+  border: 1px solid #d8e4b355;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffe066;
+  text-align: center;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 #missionPanel h2 {
@@ -454,8 +515,16 @@ h1 {
     right: auto;
     width: 108px;
   }
+  #armLabel {
+    top: 13px;
+    left: 126px;
+    right: auto;
+  }
   #compass {
     bottom: 104px;
+  }
+  #compassLegend {
+    bottom: 86px;
   }
   #fu {
     width: 76px;

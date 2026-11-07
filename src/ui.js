@@ -100,7 +100,7 @@
     function showMain() {
       env.$('ti').innerHTML = 'ARMY MEN<span>Ataque aéreo</span>';
       env.$('tx').textContent =
-        'Sal de A, despeja B y escolta al pelotón hasta C. ' +
+        'Sal de A, limpia la base B y escolta al pelotón hasta C. ' +
         Object.entries(env.savedProgress?.missions || {})
           .map(([n, r]) => 'Misión ' + n + ': ' + '★'.repeat(r.stars))
           .join(' · ');
@@ -152,20 +152,36 @@
     // Panel de Misión: los detalles que antes se veían en las dos
     // barras de arriba (#inf y #objective, ahora ocultas) viven
     // aquí, con los ganchos genéricos de la misión (nombre, mensaje
-    // y resumen), sin nada hardcodeado por misión. Al abrirlo el
-    // juego se congela (ver el bucle en src/game.js, que no llama a
-    // upd con el panel abierto) y al cerrarlo se reanuda: en el
-    // iPhone nadie te mata mientras lees.
+    // y resumen), sin nada hardcodeado por misión. Cada línea lleva
+    // su etiqueta (Objetivo / Progreso / Puntos): en la grabación el
+    // panel mezclaba el resumen con el objetivo y repetía "Misión
+    // 1/3" dos veces. Al abrirlo el juego se congela (ver el bucle
+    // en src/game.js, que no llama a upd con el panel abierto) y al
+    // cerrarlo se reanuda: en el iPhone nadie te mata mientras lees.
     function refreshMissionPanel() {
       const m = env.mission;
       if (!m || !env.P) return;
       env.$('missionTitle').textContent =
         'Misión ' + env.mis + '/3 · ' + m.config.name;
-      env.$('missionObjective').textContent = m.message;
-      env.$('missionSummary').textContent = m.hudSummary
-        ? m.hudSummary()
-        : '';
+      env.$('missionObjective').textContent = 'Objetivo: ' + m.message;
+      env.$('missionSummary').textContent =
+        'Progreso: ' + (m.hudSummary ? m.hudSummary() : '');
       env.$('missionPoints').textContent = 'Puntos: ' + env.P.sc;
+    }
+    // Aviso corto en pantalla (llegadas a C, caja, batería): en la
+    // grabación el pelotón llegaba a C y el helicóptero volaba sobre
+    // el portal sin que pasara nada visible. El aviso se esconde
+    // solo a los pocos segundos.
+    function showToast(text, ms = 3500) {
+      const el = env.$('toast');
+      if (!el) return;
+      el.textContent = text;
+      el.style.display = 'block';
+      if (env._toastTimer) clearTimeout(env._toastTimer);
+      env._toastTimer = setTimeout(() => {
+        el.style.display = 'none';
+      }, ms);
+      env.needsDraw = true;
     }
     function openMissionPanel() {
       if (!env.mission || !env.P || env.st !== 'play') return;
@@ -198,9 +214,7 @@
         'inf',
         env.mission.hudSummary
           ? env.mission.hudSummary()
-          : 'Misión ' +
-              env.mis +
-              '/3 · Heridos ' +
+          : 'Heridos ' +
               env.mission.rescued +
               '/' +
               env.mission.allies.filter((a) => a.wounded).length +
@@ -208,10 +222,15 @@
               env.mission.delivered +
               '/' +
               env.mission.allies.length +
-              ' · Bajas ' +
-              env.mission.allies.filter((a) => a.state === 'CAIDO').length,
+              ' · Caídos ' +
+              env.mission.allies.filter((a) => a.state === 'CAIDO').length +
+              ' · Enemigos ' +
+              (env.mission.kills || 0),
       );
-      setText('mi', 'Misil ' + env.P.mi);
+      // El botón dice solo "Misil": el número de misiles ya está en
+      // el contador grande de abajo a la izquierda y en la grabación
+      // se veía duplicado ("6 MISIL" y "Misil 6").
+      setText('mi', 'Misil');
       // Contador de munición como el original: número grande abajo a
       // la izquierda (misiles, el arma secundaria; la ametralladora
       // no gasta munición). En vacío, el número se pone rojo.
@@ -235,7 +254,11 @@
         strip.labels.forEach((label, i) => {
           const el = env.$('cl' + i);
           el.style.display = label.visible ? 'block' : 'none';
-          el.style.left = label.at + '%';
+          // Las letras de los extremos se cortaban por el borde de
+          // la tira (en la grabación la W se veía como una V): se
+          // limitan para que la letra entera quepa dentro.
+          el.style.left =
+            Math.min(94, Math.max(6, label.at)) + '%';
           el.style.color = label.current ? '#ffd94d' : '';
           setText('cl' + i, label.label);
         });
@@ -520,6 +543,7 @@
       qualityLabel,
       setText,
       updateHUD,
+      showToast,
       openMissionPanel,
       closeMissionPanel,
       refreshMissionPanel,

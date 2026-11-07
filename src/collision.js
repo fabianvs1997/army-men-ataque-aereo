@@ -97,7 +97,13 @@
       debrisSettled = settled;
       debrisMoving = list.length - settled;
       debrisGrid = new Map();
-      for (const p of list) if (p.settled) indexInto(debrisGrid, p);
+      // Solo las piezas de tamaño real (el pecio de un tanque, una
+      // torreta, un muro de escombros) bloquean el paso y las balas:
+      // los cubitos pequeños (menos de 1 u) son decoración y antes
+      // cerraban el camino al pelotón.
+      for (const p of list)
+        if (p.settled && Math.max(p.sx, p.sy, p.sz) >= 1)
+          indexInto(debrisGrid, p);
     }
     function rebuild() {
       if (

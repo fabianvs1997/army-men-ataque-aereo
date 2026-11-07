@@ -18,20 +18,23 @@
     SMOKE_TRAIL_INTERVAL = 0.05,
     SMOKE_TRAIL_LIFE = 0.9,
     SMOKE_IMPACT_LIFE = 0.9,
-    // Explosiones como las del original: bola de fuego grande y
-    // visible, no un destello. El tamaño es solo visual: el daño y
-    // el balance no cambian (el misil sigue haciendo 6 y la muerte
-    // del enemigo no daña a nadie más). La vida es el tiempo que la
-    // bola tarda en consumirse; el renderizador la hace crecer y
-    // cambiar de color (naranja → rosa/morado → humo) con la edad.
-    EXPLOSION_LIFE = 0.9,
+    // Explosiones como las del original, pero sin tapar la pantalla:
+    // en la grabación de Fabian las bolas se veían como globos
+    // opacos gigantes (un tanque llegaba a 22 u de diámetro y crecía
+    // durante su vida). Ahora son bolas de fuego más pequeñas que se
+    // encogen y se apagan con la edad (el renderizador les da alfa),
+    // con humo y escombros. El tamaño es solo visual: el daño y el
+    // balance no cambian (el misil sigue haciendo 6 y la muerte del
+    // enemigo no daña a nadie más). La vida es el tiempo que la bola
+    // tarda en consumirse.
+    EXPLOSION_LIFE = 0.55,
     EXPLOSION_SIZE = Object.freeze({
-      inf: 4,
-      tank: 7,
-      tur: 6,
-      heli: 6,
-      base: 9,
-      missile: 5,
+      inf: 2.5,
+      tank: 4,
+      tur: 3.5,
+      heli: 3.5,
+      base: 5,
+      missile: 3,
     });
   function pushSmoke(list, puff) {
     if (!list) return;

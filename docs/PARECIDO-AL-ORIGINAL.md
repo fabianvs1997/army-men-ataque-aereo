@@ -377,7 +377,8 @@ enchufan ahí sus objetivos sin tocar `ui.js` ni `compass.js`:
 | Resumen de estado (`#inf`) | `mission.hudSummary()` (nuevo en `src/escort-mission.js`) |
 
 Hoy `hudSummary()` devuelve el resumen de rescate
-(«Misión n/3 · Heridos x/y · A salvo x/y · Bajas n») y `target()`
+(«Heridos x/y · A salvo x/y · Caídos n · Enemigos n», sin el prefijo
+«Misión n/3 ·», que ya va en el título del panel) y `target()`
 apunta a B o a C (o al herido más cercano al embarcar). Cuando una
 misión cambie de objetivo, basta con que esa misión redefina
 `message`, `target()` y `hudSummary()`:
@@ -404,13 +405,14 @@ misión cambie de objetivo, basta con que esa misión redefina
   `kill`) y **cada impacto de misil** deja su bola de fuego además
   del humo oscuro.
 - **Tamaño por tipo** (`Combat.EXPLOSION_SIZE`, solo visual):
-  infantería 4, torreta 6, helicóptero 6, tanque 7, base 9, impacto
-  de misil 5. Vida 0,9 s (`EXPLOSION_LIFE`).
+  infantería 2,5, torreta 3,5, helicóptero 3,5, tanque 4, base 5,
+  impacto de misil 3. Vida 0,55 s (`EXPLOSION_LIFE`).
 - **Colores del original** (`ToyRenderer.EXPLOSION_COLORS`): la
-  bola crece hasta ~1,6× su tamaño y pasa de naranja a rosa y
-  morado, con núcleo amarillo y humo gris al final. Cada explosión
-  añade además 3 bocanadas de humo oscuro que suben (acotadas por
-  `MAX_SMOKE`, 160, como el resto del humo).
+  bola se encoge a la mitad y se apaga con alfa (antes crecía y era
+  opaca, y en la grabación tapaba la pantalla), pasa de naranja a
+  rosa y morado, con núcleo amarillo y humo gris al final. Cada
+  explosión añade además 3 bocanadas de humo oscuro que suben
+  (acotadas por `MAX_SMOKE`, 160, como el resto del humo).
 - **Sin cambiar el daño ni el balance**: el misil sigue haciendo 6,
   la muerte de un enemigo no daña a nadie más, y la vida y el daño
   de cada tipo quedan intactos. Los tests que decían «sin bola de

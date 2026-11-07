@@ -18,6 +18,29 @@
       firePointer = null;
       env.$('stick').style.display = 'none';
     }
+    // El joystick es flotante: aparece donde toca el dedo. En la
+    // grabación su círculo de 112 px tapaba la brújula y el "MISIL"
+    // de abajo a la izquierda. Al empezar el arrastre, si el círculo
+    // choca con la brújula se desplaza el ancla a la izquierda de
+    // ella (o debajo, si no cabe): el movimiento se lee desde el
+    // ancla desplazada, así que el control sigue funcionando.
+    function clampStickAnchor(drag) {
+      const compass = env.$('compass');
+      if (!compass || typeof compass.getBoundingClientRect !== 'function')
+        return drag;
+      const rect = compass.getBoundingClientRect(),
+        r = 56;
+      if (
+        drag.sx + r > rect.left &&
+        drag.sx - r < rect.right &&
+        drag.sy + r > rect.top &&
+        drag.sy - r < rect.bottom
+      ) {
+        if (rect.left - r - 4 >= r) drag.sx = rect.left - r - 4;
+        else drag.sy = rect.bottom + r + 4;
+      }
+      return drag;
+    }
     function updateStick() {
       if (!drag) return;
       const r = env.cv.getBoundingClientRect(),
@@ -79,13 +102,17 @@
         env.audio();
         if (env.st !== 'play' || drag) return;
         env.humOn();
-        drag = {
+        drag = clampStickAnchor({
           id: e.pointerId,
           sx: e.clientX,
           sy: e.clientY,
           x: e.clientX,
           y: e.clientY,
-        };
+        });
+        // Si el ancla se desplazó, el dedo empieza en el ancla nueva:
+        // sin esto el helicóptero arrancaría solo al tocar.
+        drag.x = drag.sx;
+        drag.y = drag.sy;
         env.cv.setPointerCapture(e.pointerId);
         updateStick();
       });
