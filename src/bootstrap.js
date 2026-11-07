@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'helicoptero-blender-2';
+  const VERSION = 'helicoptero-blender-3';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
