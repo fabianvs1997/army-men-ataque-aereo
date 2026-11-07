@@ -9,14 +9,21 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (Compass) {
   'use strict';
   function create(env) {
+    // Sin etiqueta de modo de render en pantalla: el juego es
+    // siempre WebGL 3D y, si WebGL no está disponible, el mensaje
+    // #webglRequired lo dice (ver src/draw3d.js). Solo se marca que
+    // hay que redibujar.
     function renderStatus(active) {
       env.needsDraw = true;
-      env.$('renderMode').textContent = active
-        ? '3D · Plástico'
-        : 'WebGL no disponible';
     }
     function menuLayout(page) {
       env.overlayPage = page;
+      // Si el panel de Misión estaba abierto, se cierra al mostrar
+      // un menú: el juego queda en el estado de ese menú, no a
+      // medias entre el panel y la pausa.
+      env.missionPanelOpen = false;
+      env.$('missionPanel').style.display = 'none';
+      env.$('missionBtn').setAttribute('aria-pressed', 'false');
       env.$('ov').scrollTop = 0;
       const main = page === 'main' || page === 'result';
       for (const [id, name] of [
@@ -135,12 +142,48 @@
       }
     }
     function qualityLabel() {
-      for (const id of ['quality', 'menuQuality']) {
-        env.$(id).textContent = env.lowQuality
-          ? 'Gráficos: ahorro'
-          : 'Gráficos: detalle';
-        env.$(id).setAttribute('aria-pressed', String(env.lowQuality));
-      }
+      // La calidad solo se cambia desde el menú de ajustes: en el
+      // HUD ya no hay botón ni etiqueta de gráficos.
+      env.$('menuQuality').textContent = env.lowQuality
+        ? 'Calidad: ahorro'
+        : 'Calidad: completa';
+      env.$('menuQuality').setAttribute('aria-pressed', String(env.lowQuality));
+    }
+    // Panel de Misión: los detalles que antes se veían en las dos
+    // barras de arriba (#inf y #objective, ahora ocultas) viven
+    // aquí, con los ganchos genéricos de la misión (nombre, mensaje
+    // y resumen), sin nada hardcodeado por misión. Al abrirlo el
+    // juego se congela (ver el bucle en src/game.js, que no llama a
+    // upd con el panel abierto) y al cerrarlo se reanuda: en el
+    // iPhone nadie te mata mientras lees.
+    function refreshMissionPanel() {
+      const m = env.mission;
+      if (!m || !env.P) return;
+      env.$('missionTitle').textContent =
+        'Misión ' + env.mis + '/3 · ' + m.config.name;
+      env.$('missionObjective').textContent = m.message;
+      env.$('missionSummary').textContent = m.hudSummary
+        ? m.hudSummary()
+        : '';
+      env.$('missionPoints').textContent = 'Puntos: ' + env.P.sc;
+    }
+    function openMissionPanel() {
+      if (!env.mission || !env.P || env.st !== 'play') return;
+      env.missionPanelOpen = true;
+      refreshMissionPanel();
+      env.$('missionPanel').style.display = 'block';
+      env.$('missionBtn').setAttribute('aria-pressed', 'true');
+      env.clearInput();
+      env.humOff();
+      env.needsDraw = true;
+    }
+    function closeMissionPanel() {
+      if (!env.missionPanelOpen) return;
+      env.missionPanelOpen = false;
+      env.$('missionPanel').style.display = 'none';
+      env.$('missionBtn').setAttribute('aria-pressed', 'false');
+      env.syncAudio();
+      env.needsDraw = true;
     }
     function setText(id, value) {
       if (env.$(id).textContent !== value) env.$(id).textContent = value;
@@ -201,6 +244,10 @@
         marker.style.left = (strip.target.at || 50) + '%';
       }
       setText('dg', 'Puntos: ' + env.P.sc);
+      // El panel de Misión, si está abierto, se actualiza con el
+      // mismo resumen (la simulación está congelada, pero el texto
+      // queda al día si algo cambió al abrirlo).
+      if (env.missionPanelOpen) refreshMissionPanel();
       // Lectura de rendimiento opcional (?perf=1): FPS, ms por frame,
       // peor frame y nivel de degradado, para diagnosticar en el iPhone.
       // Con ?logs=1 se añade además el contador del registro de errores.
@@ -336,6 +383,9 @@
     function bind() {
       env.$('go').addEventListener('pointerdown', () => env.audio());
       env.$('pause').onclick = env.pauseGame;
+      // El panel arranca oculto (en el HTML ya lleva display:none;
+      // esto lo deja igual en el DOM que construyen las pruebas).
+      env.$('missionPanel').style.display = 'none';
 
       soundLabel();
       env.$('sound').onclick = () => {
@@ -346,12 +396,14 @@
       };
 
       qualityLabel();
-      env.$('quality').onclick = () => {
-        env.lowQuality = !env.lowQuality;
-        env.savePreference('quality', env.lowQuality ? 'low' : 'detail');
-        qualityLabel();
-        env.rs();
+      // Botón Misión: abre el panel de detalles (y congela el
+      // juego) o lo cierra (y reanuda). El botón Cerrar del panel
+      // hace lo mismo.
+      env.$('missionBtn').onclick = () => {
+        if (env.missionPanelOpen) closeMissionPanel();
+        else openMissionPanel();
       };
+      env.$('missionClose').onclick = closeMissionPanel;
 
       env.$('go').onclick = () => {
         if (env.overlayPage !== 'main' && env.overlayPage !== 'result') return;
@@ -440,7 +492,14 @@
         refreshLogs();
       };
       env.$('menuSound').onclick = () => env.$('sound').onclick();
-      env.$('menuQuality').onclick = () => env.$('quality').onclick();
+      // La calidad solo se cambia desde Ajustes (ya no hay botón en
+      // el HUD): el degradado automático sigue funcionando solo.
+      env.$('menuQuality').onclick = () => {
+        env.lowQuality = !env.lowQuality;
+        env.savePreference('quality', env.lowQuality ? 'low' : 'detail');
+        qualityLabel();
+        env.rs();
+      };
       env.$('back').onclick = menuBack;
       env.$('menuExit').onclick = () =>
         env.st === 'campaign' ? env.mainMenu() : menuPage('confirm');
@@ -461,6 +520,9 @@
       qualityLabel,
       setText,
       updateHUD,
+      openMissionPanel,
+      closeMissionPanel,
+      refreshMissionPanel,
       bind,
     };
   }

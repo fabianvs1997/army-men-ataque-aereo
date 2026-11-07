@@ -154,6 +154,7 @@ por gesto de la primera cámara de seguimiento.
 ### Parecido al original (1/3): brújula, explosiones y tanques Tan
 
 `parecido-original.test.cjs` verifica la brújula (rumbo, tira de 8 puntos y marca del objetivo), el HUD con munición/salud en el juego real, el HUD genérico con una misión ficticia (resumen y marca distintos sin tocar `ui.js`), las explosiones por tipo con humo y daño sin cambiar, la paleta y el tamaño de la explosión en el renderer, el color y la silueta del tanque Tan frente a la torreta, el pecio amarillo del tanque, la presencia del HUD nuevo en HTML/CSS/bootstrap y la escolta llegando a C en las 3 misiones.
+`hud-limpio.test.cjs` verifica el HUD limpio: el HTML del HUD ya no trae la insignia de modo de render ni el botón de gráficos, las barras de resumen y objetivo quedan ocultas, el panel de Misión se abre y se cierra con el resumen correcto en las 3 misiones y congela la simulación mientras está abierto, y el cambio de calidad sigue funcionando desde Ajustes.
 
 ### Parecido al original (2/3): defensas, winch y reglas de la Misión 1
 
