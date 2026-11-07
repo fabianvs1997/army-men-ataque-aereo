@@ -1,5 +1,16 @@
 # Changelog
 
+## Sin publicar — Tanque Tan modelado en Blender
+
+- Pedido de Fabian (2026-11-07): «Ahora modelo los tanques».
+- **Solo el modelo, no la integración en el juego todavía**: el juego sigue dibujando el tanque Tan con piezas sueltas; el plan para usar este modelo está en `docs/TANQUE-BLENDER.md` y en `docs/HELICOPTERO-BLENDER.md` (un solo cargador glTF serviría para los dos modelos).
+- Tanque enemigo Tan, amarillo/tostado, de juguete de plástico, modelado desde cero en Blender 4.2.0 (script reproducible en `assets/blender/tanque.py`, sin `.blend` guardado): casco con placa frontal inclinada marrón, faros de marfil, ganchos, caja trasera y escape; orugas marrón tostado con 5 ruedas de rodaje, motriz y tensora por lado y guardabarros; torreta giratoria con cañón largo y bocacha oscura, cúpula del jefe con banda rojiza y escotilla, periscopio, antena y caja lateral. La torreta cuelga del vacío `Torreta`, para poder girarla luego. No hay variante verde: en el juego no hay tanque del jugador, el jugador es el helicóptero.
+- Proporciones y colores del tanque que hoy dibuja el juego (`src/toy-renderer.js`, `src/debris.js`): amarillo (0.95, 0.76, 0.2), marrón (0.45, 0.32, 0.12), banda rojiza (0.55, 0.25, 0.1). **1.796 triángulos** (límite 3.000), 37 objetos. Medidas: unos 6,5 m de largo (8,5 m con el cañón), 5,2 m de ancho, 3,5 m de alto.
+- Vistas previas renderizadas con Cycles en `assets/blender/previews/tanque_{frontal,lateral,cenital,tres-cuartos}.png` y exportado en `assets/tanque-tan.glb` + `assets/tanque-tan.gltf` embebido (el que se sube al repo, porque la API de GitHub no admite binarios).
+- Tres trampas de Blender que costaron una revisión: emparentar a secas mueve las piezas (la torreta quedaba flotando 2,1 u sobre el casco; el script usa `parent_keep()` con `matrix_parent_inverse`), las tapas planas de los cilindros con sombreado suave salen con un punto oscuro en el centro (ruedas, motrices, tensoras y bocacha van sin suavizado), y con la transformada AgX el amarillo vivo salía crema pálido (las vistas usan `Standard` para que se vea como en el juego).
+- Pruebas nuevas en `tests/tanque-blender.test.cjs` (8): el script existe y exporta, el `.gltf` es glTF 2.0 de Blender con el buffer embebido decodificable, el `.glb` local es válido (magic `glTF`, versión 2), menos de 3.000 triángulos (1.796, igual que en `tanque-stats.json`), piezas (casco, orugas, torreta, cañón, bocacha, cúpula) con las de la torreta colgando del vacío `Torreta`, colores del juego y las 4 vistas previas como PNG válidos. Se actualiza la VERSION en 3 tests. `node --test`: 255/255. `VERSION` pasa a `tanque-blender-1`.
+- Sin verificar (sin navegador real ni iPhone en este entorno): el modelo en el visor 3D del juego (aún no integrado) ni su rendimiento en el iPhone (hay hasta 9 tanques en la Misión 3).
+
 ## Sin publicar — Correcciones de la grabación de Fabian (104 s, Misión 1)
 
 - Pedido de Fabian (2026-11-07, con su grabación de la partida en iPhone): «Te comparto la grabación del juego, corrige todo lo necesario». Se vieron los 35 fotogramas (1 cada 3 s) antes de tocar código.
