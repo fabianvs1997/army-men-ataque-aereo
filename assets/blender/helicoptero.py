@@ -1,10 +1,66 @@
 # Helicóptero de juguete verde (estilo Huey) de Army Men: Ataque Aéreo.
 #
-# Modelo original desde cero. Primera versión con las proporciones y los
-# colores del helicóptero del juego (src/toy-helicopter.js); revisión 2
-# ajustada al video del original (PS1, 1999): puntas del rotor amarillas,
-# parabrisas único ancho en el frontal, techo verde casi sin cristal
-# visto desde arriba, verde más saturado y banda amarilla en la cola.
+# Modelo original desde cero. Revisión 3 ajustada a LOS DOS videos del
+# original (PS1, 1999) — la revisión 2 solo usó el segundo video y ese
+# fue el error:
+#
+# Video 1 (Betão Play Oficial, 61,9 s, gameplay; 21 fotogramas 1/3 s +
+# denso 1 fps en 10-20 s y 42-60 s): el helicóptero se ve grande y
+# claro en vista cenital/3-4. Referencias: ~3 s (visto por detrás,
+# rotor con puntas amarillas, estelas rojas de las trazadoras del
+# morro — no son parte del modelo), ~12 s (vista cenital: cabina
+# verde lisa sin insignias, botalón largo y fino, estabilizador con
+# puntas amarillas), ~15 s (rotor girando, puntas amarillas en arco).
+# Video 2 (montaje, 125,5 s; 42 fotogramas): mismo helicóptero verde
+# en las partidas (p. ej. ~57 s, vista lateral: cabina corta y
+# cuadrada, botalón largo y fino, patines finos y oscuros bajo la
+# panza) y portada del juego arriba del todo (~57 s: morro redondeado
+# verde con UNA banda ancha oscura de parabrisas en el frontal y
+# techo verde). Los dos videos muestran el mismo modelo, así que se
+# ajusta a los dos; el video 1 manda en proporciones (se ve más
+# grande) y el video 2 en el frontal y el lateral.
+#
+# Diferencias corregidas en esta revisión (rev. 2 -> rev. 3):
+# - Cabina corta y cuadrada, no un elipsoide largo: el fuselaje pasa
+#   de 7,4 m a 5,2 m de largo (2,7 de ancho, 2,3 de alto); en el
+#   video la cabina mide ~2,2 veces su alto y el botalón ~lo mismo
+#   que la cabina.
+# - Botalón largo y fino: de 3,6 m a 5,7 m (radio 0,26 -> 0,12),
+#   hasta la deriva en y=-7,5; antes era la mitad de corto que la
+#   cabina y en el video es tan largo como ella.
+# - Rotor más corto y palas más anchas: envergadura 17 m -> 14,8 m
+#   (en el video el disco mide ~1,3-1,5 veces la cabina, no 2,3) y
+#   cuerda 0,32 -> 0,50, con puntas amarillas del 15 % como en el
+#   video; el mástil se mueve a y=-1,2, sobre la cabina.
+# - Parabrisas hundido: la banda oscura ya no asoma por encima del
+#   morro en la vista cenital (en la rev. 2 se veía un "bigote"
+#   negro en la cenital); sigue leyéndose como banda ancha oscura
+#   de frente, como en la portada del video 2.
+# - Sin insignias blancas: en ninguno de los dos videos se ve un
+#   círculo blanco/marfil en el fuselaje ni en las alas (la cabina
+#   es verde lisa); se quitan las 8 insignias. El juego hoy sí
+#   dibuja una insignia en el ala (src/toy-helicopter.js), pero los
+#   videos mandan para el modelo.
+# - Estabilizador con puntas amarillas (verde en el centro, amarillo
+#   en los extremos), como se ve claro en el video 1 ~12 s.
+# - Sin rojo en el modelo: se quitan la baliza roja con su mástil,
+#   las luces rojas de las puntas del estabilizador y el tapón rojo
+#   del buje (en la cenital se veía un punto rojo en el centro del
+#   rotor que no existe en los videos). La barra roja vertical que
+#   se ve en el video 1 ~3 s y ~15 s sobre el eje del helicóptero
+#   son trazadoras disparadas por los cañones del morro, no parte
+#   del helicóptero: hay varias estelas iguales sueltas por el
+#   camino en el mismo fotograma.
+# - Motores más pequeños y pegados al fuselaje: antes eran dos
+#   bultos enormes que dominaban la vista trasera; en el video los
+#   lados de la cabina son casi lisos.
+# - Patines metidos bajo la panza (x ±1,35 -> ±1,05, más bajos):
+#   desde arriba no se veían en el video; de lado se ven finos y
+#   oscuros bajo la panza (video 2 ~57 s).
+# - Puntas de los cohetes verdes, no marfil: en los videos no hay
+#   nada blanco en el helicóptero.
+# - Verde ajustado al muestreo de los fotogramas claros del video 1
+#   (mediana sRGB ~52, 193, 51 al sol): (0.04, 0.52, 0.04) lineal.
 # Nada se copia del original: solo se mira cómo se ve y se remodela.
 #
 # Uso (Blender 4.2, headless):
@@ -42,7 +98,7 @@ STATS_PATH = os.path.join(SCRIPT_DIR, "helicoptero-stats.json")
 MAX_TRIS = 5000
 
 # ---------------------------------------------------------------------------
-# Materiales (colores lineales del juego, src/toy-helicopter.js)
+# Materiales (colores lineales; verde muestreado de los fotogramas)
 # ---------------------------------------------------------------------------
 def make_material(name, color, roughness=0.45, metallic=0.0, emission=None):
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
@@ -57,18 +113,15 @@ def make_material(name, color, roughness=0.45, metallic=0.0, emission=None):
     return mat
 
 
-# Colores lineales. El verde del juego (0.17, 0.53, 0.035) salía pálido
-# y amarillento; en el video del original el verde es más saturado y
-# puro (muestreado en los fotogramas: sRGB ~35, 180, 45 en la cara al
-# sol), así que se baja el rojo. El amarillo es el de las puntas del
-# rotor, que en el video se ven doradas en el rotor girando.
-VERDE = make_material("VerdePlastico", (0.05, 0.52, 0.02), 0.42)
+# Verde del video 1 muestreado al sol: sRGB mediana ~52, 193, 51
+# (el verde anterior, 0.05/0.52/0.02, salía sRGB ~62, 191, 39, algo
+# más amarillento). El amarillo es el de las puntas del rotor, que en
+# el video se ven doradas en el rotor girando.
+VERDE = make_material("VerdePlastico", (0.04, 0.52, 0.04), 0.42)
 VERDE_CLARO = make_material("VerdeClaro", (0.18, 0.68, 0.05), 0.42)
 VERDE_OSCURO = make_material("VerdeOscuro", (0.03, 0.24, 0.02), 0.5)
 AMARILLO = make_material("Amarillo", (0.80, 0.55, 0.03), 0.42)
 CRISTAL = make_material("Cristal", (0.025, 0.045, 0.035), 0.12, 0.25)
-MARFIL = make_material("Marfil", (0.9, 0.92, 0.73), 0.5)
-ROJO = make_material("Rojo", (0.9, 0.12, 0.035), 0.4, 0.0, emission=(0.9, 0.12, 0.035))
 OSCURO = make_material("MetalOscuro", (0.15, 0.15, 0.13), 0.55, 0.4)
 
 # ---------------------------------------------------------------------------
@@ -127,45 +180,40 @@ for coll in (bpy.data.meshes, bpy.data.curves, bpy.data.materials):
 # ---------------------------------------------------------------------------
 # Fuselaje y cabina
 # ---------------------------------------------------------------------------
-# Casco alargado, morro hacia +Y (el juego lo dibuja con z +3,7 al morro).
-add_sphere("Fuselaje", (0, 0.65, 0), (1.35, 3.7, 1.15), VERDE, 20, 10)
-# Parabrisas delantero: UNA banda ancha oscura sobre el frontal, como
-# en la portada del original (morro redondeado verde debajo). Antes eran
-# dos burbujas que desde arriba y de frente se veían como dos ojos
-# oscuros; ahora el cristal queda en la cara frontal y apenas asoma
-# por encima del morro, así que desde arriba el techo se ve verde.
-add_sphere("CabinaDelantera", (0, 3.45, 0.15), (0.85, 0.75, 0.50), CRISTAL, 16, 10)
-# Cabina trasera: banda lateral baja y hundida en el fuselaje, visible
-# de lado como ventanilla y oculta desde arriba (antes era una burbuja
-# que dominaba la vista cenital).
-add_sphere("CabinaTrasera", (0, 0.7, 0.55), (1.37, 0.85, 0.42), CRISTAL, 16, 10)
-# Marco claro del borde superior del parabrisas.
-add_box("MarcoParabrisas", (0, 2.75, 0.62), (1.0, 0.14, 0.08), VERDE_CLARO)
-# Sin franja en el lomo: en el video el techo se ve verde liso.
+# Cabina corta y cuadrada (5,2 m de largo): en el video la cabina
+# mide ~2,2 veces su alto y el botalón ~lo mismo que la cabina; el
+# elipsoide largo de la rev. 2 (7,4 m) no se parecía.
+add_sphere("Fuselaje", (0, 0.65, 0), (1.35, 2.6, 1.15), VERDE, 20, 10)
+# Parabrisas delantero: UNA banda ancha oscura en la cara frontal,
+# como en la portada del video 2. Banda ancha y baja (ancho 0,72,
+# alto 0,30, centrada arriba en z=0,25): de frente se lee como la
+# banda oscura del original con el morro verde debajo, y desde
+# arriba apenas asoma una pestaña fina en la punta del morro.
+# (Primer intento de la rev. 3 era una esfera que de frente se veía
+# como un óvalo negro enorme en mitad del morro.)
+add_sphere("CabinaDelantera", (0, 2.8, 0.25), (0.72, 0.50, 0.30), CRISTAL, 16, 10)
+# Cabina trasera: ventanilla lateral baja, visible de lado y oculta
+# desde arriba.
+add_sphere("CabinaTrasera", (0, 0.7, 0.45), (1.36, 0.70, 0.38), CRISTAL, 16, 10)
+# Sin insignias blancas ni marco claro: en los dos videos la cabina
+# es verde lisa, sin círculos blancos ni marcos claros.
 
-# Motores a los lados, con escapes oscuros hacia atrás. Algo más
-# esbeltos que antes: en la vista cenital se veían como dos bultos
-# enormes y en el video el fuselaje es una cápsula más lisa.
+# Motores a los lados, con escapes oscuros hacia atrás. Pequeños y
+# pegados al fuselaje, donde la cabina es ancha: en la rev. 3 iban
+# atrás (y=-1,2), donde el fuselaje ya se estrecha a 0,95 m de medio
+# ancho, y asomaban como dos bolas enormes; en el video los lados
+# de la cabina son casi lisos.
 for side in (-1, 1):
     add_sphere("Motor_%s" % ("Izq" if side < 0 else "Der"),
-               (side * 1.05, -1.55, 0.60), (0.50, 1.40, 0.62), VERDE, 12, 8)
+               (side * 0.85, -0.6, 0.50), (0.35, 0.80, 0.45), VERDE, 12, 8)
     add_cylinder("Escape_%s" % ("Izq" if side < 0 else "Der"),
-                 (side * 1.05, -2.84, 0.60), 0.38, 0.12, OSCURO,
+                 (side * 0.85, -1.35, 0.50), 0.28, 0.12, OSCURO,
                  rot=(math.radians(90), 0, 0), vertices=12)
-
-# Insignia redonda de marfil con centro verde a cada lado del fuselaje.
-for side in (-1, 1):
-    add_disc("Insignia_%s" % ("Izq" if side < 0 else "Der"),
-             (side * 1.36, 0.5, 0.2), 0.5, MARFIL,
-             rot=(0, math.radians(90) * side, 0), vertices=12)
-    add_disc("InsigniaCentro_%s" % ("Izq" if side < 0 else "Der"),
-             (side * 1.39, 0.5, 0.2), 0.33, VERDE,
-             rot=(0, math.radians(90) * side, 0), vertices=12)
 
 # Cañones del morro y sensor oscuro bajo el morro.
 for side in (-1, 1):
     add_cylinder("Canon_%s" % ("Izq" if side < 0 else "Der"),
-                 (side * 0.85, 3.9, -0.8), 0.10, 0.65, OSCURO,
+                 (side * 0.85, 3.3, -0.8), 0.10, 0.65, OSCURO,
                  rot=(math.radians(90), 0, 0), vertices=12)
 add_sphere("SensorMorro", (0, 2.4, -1.35), (0.22, 0.32, 0.32), CRISTAL,
            segments=10, rings=6)
@@ -173,63 +221,64 @@ add_sphere("SensorMorro", (0, 2.4, -1.35), (0.22, 0.32, 0.32), CRISTAL,
 # ---------------------------------------------------------------------------
 # Cola: botalón, estabilizador, deriva y rotor de cola
 # ---------------------------------------------------------------------------
-# Botalón cónico desde el fuselaje hasta la deriva.
-add_cylinder("BotalonCola", (0, -4.55, 0.18), 0.30, 3.6, VERDE,
-             rot=(math.radians(90), 0, 0), vertices=12, radius2=0.15)
-add_sphere("UnionCola", (0, -2.9, 0.18), (0.32, 0.5, 0.32), VERDE,
+# Botalón cónico largo y fino desde la cabina hasta la deriva: 5,7 m,
+# tan largo como la cabina, como en el video 1 ~12 s (antes 3,6 m).
+add_cylinder("BotalonCola", (0, -4.75, 0.30), 0.26, 5.7, VERDE,
+             rot=(math.radians(90), 0, 0), vertices=12, radius2=0.12)
+add_sphere("UnionCola", (0, -1.95, 0.30), (0.30, 0.45, 0.30), VERDE,
            segments=10, rings=6)
-# Estabilizador horizontal.
-add_box("Estabilizador", (0, -6.2, 0.35), (1.35, 0.45, 0.12), VERDE)
-# Deriva vertical clara con luz roja en la punta y mástil.
-add_box("Deriva", (0, -6.6, 1.2), (0.15, 0.44, 1.1), VERDE_CLARO)
-add_cylinder("MastilBaliza", (0, -6.6, 2.0), 0.06, 0.5, OSCURO,
-             vertices=8)
-add_sphere("BalizaCola", (0, -6.6, 2.28), (0.15, 0.17, 0.18), ROJO,
-           segments=10, rings=6)
-# Luces rojas de navegación en los extremos del estabilizador.
+# Estabilizador horizontal con puntas amarillas: en el video 1 ~12 s
+# se ve verde en el centro y amarillo en los extremos.
+add_box("Estabilizador", (0, -7.3, 0.35), (1.0, 0.40, 0.12), VERDE)
 for side in (-1, 1):
-    add_sphere("LuzCola_%s" % ("Izq" if side < 0 else "Der"),
-               (side * 1.5, -6.3, 0.43), (0.14, 0.18, 0.17), ROJO,
-               segments=8, rings=6)
-# Banda amarilla en el botalón junto a la deriva: en el video se ven
-# franjas amarillas en la cola, junto al rotor de cola.
-add_cylinder("BandaCola", (0, -6.35, 0.18), 0.17, 0.12, AMARILLO,
-             rot=(math.radians(90), 0, 0), vertices=12)
+    add_box("EstabPunta_%s" % ("Izq" if side < 0 else "Der"),
+            (side * 0.675, -7.3, 0.35), (0.35, 0.40, 0.12), AMARILLO)
+# Deriva vertical del mismo verde que el fuselaje (en el video la
+# cola es toda verde). Sin baliza roja ni luces rojas: en los videos
+# no hay nada rojo en el helicóptero.
+add_box("Deriva", (0, -7.5, 0.9), (0.15, 0.35, 0.7), VERDE)
 # Rotor de cola: buje y 2 palas amarillas en el lado izquierdo de la
-# deriva (en el video la cola se ve con amarillo al girar).
-add_cylinder("BujeRotorCola", (-0.18, -6.6, 1.1), 0.12, 0.15, OSCURO,
+# deriva.
+add_cylinder("BujeRotorCola", (-0.18, -7.5, 1.0), 0.12, 0.15, OSCURO,
              rot=(0, math.radians(90), 0), vertices=12)
 for i, ang in enumerate((math.radians(20), math.radians(110))):
-    add_box("PalaRotorCola_%d" % i, (-0.28, -6.6, 1.1),
-            (0.05, 0.26, 1.05), AMARILLO, rot=(ang, 0, 0))
+    add_box("PalaRotorCola_%d" % i, (-0.28, -7.5, 1.0),
+            (0.05, 0.18, 0.65), AMARILLO, rot=(ang, 0, 0))
 
 # ---------------------------------------------------------------------------
 # Rotor principal: mástil, buje y 2 palas (bajo el vacío "Rotor")
 # ---------------------------------------------------------------------------
-# Base abombada del rotor sobre el lomo (el mástil no flota en el aire).
-add_sphere("BaseRotor", (0, -1.8, 1.0), (0.67, 0.67, 0.35), VERDE_CLARO,
+# Mástil sobre la cabina (y=-1,2), más bajo que en la rev. 2: el
+# buje flotaba muy alto sobre el techo. Base del mismo verde que el
+# fuselaje para que desde arriba el centro del rotor no destaque.
+add_sphere("BaseRotor", (0, -1.2, 1.0), (0.55, 0.55, 0.25), VERDE,
            segments=16, rings=8)
-add_cylinder("MastilRotor", (0, -1.8, 1.6), 0.13, 1.3, OSCURO, vertices=12)
-add_sphere("BujeRotor", (0, -1.8, 2.4), (0.48, 0.48, 0.18), VERDE_CLARO,
+add_cylinder("MastilRotor", (0, -1.2, 1.45), 0.13, 1.0, OSCURO, vertices=12)
+add_sphere("BujeRotor", (0, -1.2, 2.1), (0.48, 0.48, 0.18), VERDE_CLARO,
            segments=16, rings=8)
-add_sphere("TapaBuje", (0, -1.8, 2.58), (0.17, 0.15, 0.17), ROJO,
-           segments=10, rings=6)
 
-bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, -1.8, 2.4))
+bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, -1.2, 2.1))
 rotor = bpy.context.active_object
 rotor.name = "Rotor"
+# Palas en diagonal (45°): en la vista lateral una pala apuntando a
+# la cámara se veía como una paleta flotante sobre el helicóptero;
+# en diagonal se lee como el rotor en reposo y en la cenital queda
+# como en el video (el disco girando se ve en ángulo). El juego gira
+# el rotor igualmente, así que la orientación en reposo es libre.
+rotor.rotation_euler = (0, 0, math.radians(45))
 
 for side, tag in ((-1, "Izq"), (1, "Der")):
-    # Pala: de x=0,6 a x=8,2, cuerda 0,32, con banda amarilla ancha en
-    # la punta (en el video el rotor girando se ve con las puntas
-    # amarillas/doradas; antes eran dos franjas finas marfil).
-    blade = add_box("RotorBlade_" + tag, (side * 4.4, -1.8, 2.4),
-                    (7.6, 0.32, 0.07), VERDE)
+    # Pala: de x=0,4 a x=7,4 (envergadura total 14,8 m, ~1,3 veces la
+    # longitud total del helicóptero, como en el video; antes 17 m),
+    # cuerda 0,50 (antes 0,32: el disco girando se ve ancho) con
+    # banda amarilla en la punta (15 % de la pala).
+    blade = add_box("RotorBlade_" + tag, (side * 3.9, -1.2, 2.1),
+                    (7.0, 0.50, 0.07), VERDE)
     blade.parent = rotor
-    tip = add_box("RotorPunta_" + tag, (side * 7.15, -1.8, 2.48),
-                  (1.1, 0.33, 0.025), AMARILLO)
+    tip = add_box("RotorPunta_" + tag, (side * 6.9, -1.2, 2.18),
+                  (1.2, 0.51, 0.025), AMARILLO)
     tip.parent = rotor
-    cap = add_sphere("RotorCap_%s" % tag, (side * 8.0, -1.8, 2.4),
+    cap = add_sphere("RotorCap_%s" % tag, (side * 7.3, -1.2, 2.1),
                      (0.48, 0.39, 0.16), VERDE_CLARO, segments=10, rings=6)
     cap.parent = rotor
 
@@ -238,32 +287,33 @@ for side, tag in ((-1, "Izq"), (1, "Der")):
 # ---------------------------------------------------------------------------
 for side in (-1, 1):
     tag = "Izq" if side < 0 else "Der"
-    # Ala corta con ligera inclinación.
-    add_box("Ala_" + tag, (side * 2.85, -0.8, 0.1), (1.85, 0.72, 0.14),
+    # Ala corta con ligera inclinación. Sin insignia ni luz en la
+    # punta: en los videos las alas son verdes lisas.
+    add_box("Ala_" + tag, (side * 2.85, -0.5, 0.1), (1.85, 0.72, 0.14),
             VERDE, rot=(0, 0, side * -0.12))
-    # Insignia redonda sobre el ala.
-    add_disc("InsigniaAla_" + tag, (side * 3.0, -0.8, 0.19), 0.45, MARFIL)
-    add_disc("InsigniaAlaCentro_" + tag, (side * 3.0, -0.8, 0.22), 0.33,
-             VERDE)
-    # Luz roja en la punta del ala.
-    add_sphere("LuzAla_" + tag, (side * 4.55, -0.65, 0.0),
-               (0.32, 0.36, 0.5), OSCURO, segments=10, rings=6)
-    # Lanzacohetes: 2 filas x 3 cohetes bajo cada ala, con punta marfil.
+    # Lanzacohetes: 2 filas x 3 cohetes bajo cada ala, con la punta
+    # verde (antes marfil: en los videos no hay nada blanco en el
+    # helicóptero). Más finos que en la rev. 3 (radio 0,19): en la
+    # vista lateral se veían como un bloque enorme bajo el ala.
     for row, z in enumerate((-0.45, -1.0)):
         for col, x in enumerate((2.1, 2.75, 3.4)):
             add_cylinder("Cohete_%s_%d_%d" % (tag, row, col),
-                         (side * x, -0.38, z), 0.23, 1.05, VERDE,
+                         (side * x, -0.38, z), 0.19, 0.90, VERDE,
                          rot=(math.radians(90), 0, 0), vertices=10)
             add_cylinder("PuntaCohete_%s_%d_%d" % (tag, row, col),
-                         (side * x, 0.28, z), 0.23, 0.30, MARFIL,
+                         (side * x, 0.20, z), 0.19, 0.28, VERDE,
                          rot=(math.radians(-90), 0, 0), vertices=8,
                          radius2=0.02)
     # Patín: tubo a lo largo del fuselaje + 2 soportes hasta la panza.
-    add_cylinder("Patin_" + tag, (side * 1.35, 1.0, -1.35), 0.09, 4.6,
+    # Metido bajo la panza (x ±0,95) y más bajo, para que desde
+    # arriba no se vea y de lado se lea fino y oscuro bajo la panza
+    # (video 2 ~57 s). Más corto que en la rev. 3: sus extremos
+    # asomaban por los lados del morro en la cenital.
+    add_cylinder("Patin_" + tag, (side * 0.95, 0.5, -1.55), 0.09, 3.4,
                  OSCURO, rot=(math.radians(90), 0, 0), vertices=12)
-    for y in (-0.5, 2.5):
+    for y in (-0.5, 1.8):
         add_cylinder("SoportePatin_%s_%s" % (tag, y),
-                     (side * 1.35, y, -1.15), 0.06, 0.45, OSCURO,
+                     (side * 0.95, y, -1.35), 0.06, 0.45, OSCURO,
                      vertices=8)
 
 # ---------------------------------------------------------------------------
@@ -332,14 +382,16 @@ def look_at(obj, target, location):
 
 import mathutils
 
-CENTER = (0, -0.8, 1.0)
-# Cámaras alejadas para que el rotor entero (17 m, con las puntas
-# amarillas) quepa en el encuadre; antes las puntas quedaban cortadas.
+CENTER = (0, -2.0, 1.0)
+# Cámaras alejadas para que el rotor entero (14,8 m, con las puntas
+# amarillas) quepa en el encuadre con margen: con el objetivo de
+# 50 mm las puntas quedaban cortadas en la cenital, la frontal y la
+# lateral.
 VIEWS = {
-    "frontal": (0, 18, 2.5),
-    "lateral": (18, -0.8, 2.0),
-    "cenital": (0, -0.8, 26),
-    "tres-cuartos": (12, -13, 8),
+    "frontal": (0, 20, 3.0),
+    "lateral": (22, -2.0, 3.0),
+    "cenital": (0, -2.0, 32),
+    "tres-cuartos": (15, -18, 10),
 }
 for name, loc in VIEWS.items():
     look_at(cam, CENTER, loc)

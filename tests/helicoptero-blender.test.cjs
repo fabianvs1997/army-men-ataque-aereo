@@ -103,20 +103,33 @@ test('el modelo trae las piezas del helicóptero: rotor, cola, alas y patines', 
   for (const i of bladeIdx) {
     assert.ok(rotor.children.includes(i), 'la pala debe colgar del vacío Rotor');
   }
-  // Revisión 2 (video del original): puntas del rotor amarillas y
-  // banda amarilla en la cola.
-  for (const needed of ['RotorPunta_Izq', 'RotorPunta_Der', 'BandaCola']) {
+  // Revisión 2 (video del original): puntas del rotor amarillas.
+  // La banda amarilla en el botalón de la rev. 2 ya no existe: en
+  // los videos el amarillo de la cola son las puntas del
+  // estabilizador, no una banda en el botalón.
+  for (const needed of ['RotorPunta_Izq', 'RotorPunta_Der']) {
     assert.ok(names.includes(needed), `falta el nodo ${needed}`);
   }
+  // Revisión 3 (los DOS videos): estabilizador con puntas amarillas
+  // y nada blanco ni rojo en el modelo: sin insignias de marfil, sin
+  // baliza roja ni tapón rojo del buje.
+  for (const needed of ['EstabPunta_Izq', 'EstabPunta_Der']) {
+    assert.ok(names.includes(needed), `falta el nodo ${needed}`);
+  }
+  for (const name of names) {
+    assert.ok(!name.startsWith('Insignia'), `sobra la insignia ${name}: en los videos la cabina es verde lisa`);
+    assert.ok(!name.startsWith('Baliza'), `sobra ${name}: en los videos no hay nada rojo en el helicóptero`);
+  }
+  assert.ok(!names.includes('TapaBuje'), 'sobra TapaBuje: en los videos no hay punto rojo en el centro del rotor');
 });
 
-test('el modelo usa el verde saturado del video y las puntas amarillas', () => {
+test('el modelo usa el verde muestreado de los videos y las puntas amarillas', () => {
   const gltf = readGltfJson();
   const colors = (gltf.materials || []).map((m) => m.pbrMetallicRoughness.baseColorFactor);
   const green = colors.find(
-    (c) => c && Math.abs(c[0] - 0.05) < 0.01 && Math.abs(c[1] - 0.52) < 0.01,
+    (c) => c && Math.abs(c[0] - 0.04) < 0.01 && Math.abs(c[1] - 0.52) < 0.01,
   );
-  assert.ok(green, 'falta el verde saturado del video (0.05, 0.52, 0.02)');
+  assert.ok(green, 'falta el verde muestreado de los videos (0.04, 0.52, 0.04)');
   const yellow = colors.find(
     (c) => c && Math.abs(c[0] - 0.80) < 0.01 && Math.abs(c[1] - 0.55) < 0.01,
   );
