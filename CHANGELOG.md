@@ -1,5 +1,15 @@
 # Changelog
 
+## Sin publicar — sonido épico de guerra: rotor, disparos y música de fondo
+
+- Referencia de Fabian: video MP4 de 61,9 s con gameplay del Army Men: Air Attack original de PS1. Analizado con ffmpeg: energía continua que crece durante el clip, graves dominantes en torno a 88–112 Hz y un pulso grave de ~11 Hz (el chop del rotor), sin un bombo marcado —música orquestal sostenida más que marcha con tambor—. El audio del video NO se copia ni se sube al repo (material con derechos): todo el sonido nuevo es original, sintetizado con Web Audio API.
+- **Rotor del helicóptero:** dos sierras graves (55 y 110 Hz) con el chop de ~11 Hz modulando la ganancia, más un soplo de viento; el chop sube a ~15 Hz y el volumen con la velocidad del helicóptero (`rotorSet` en cada frame). Antes era un solo zumbido de 110 Hz sin chop ni variación.
+- **Disparos:** la ametralladora ahora tiene pegada —chasquido seco de ruido + crack agudo + cuerpo grave en tres capas cortas— para que las ráfagas no se embarren. El misil suena distinto: silbido de aire con subida de tono e ignición grave.
+- **Música de fondo épica de guerra:** marcha marcial original en re menor a 92 BPM, 8 compases en bucle exacto de ~20,9 s (Dm – Dm – Bb – Bb – F – F – C – C), con tambor grave en los tiempos 1 y 3, redoble en 2 y 4, bordón grave, acordes de metal y llamada de trompa en los últimos compases. Suena en las misiones a volumen completo y en el menú más baja (0,45). El bucle se programa compás a compás con antelación, sin huecos ni cortes.
+- **Mezcla y silencio:** la música va por un bus a 0,12, por debajo de los efectos (el disparo más suave está a 0,10 de tono pero el chasquido de ruido a 0,30, y el rotor a 0,06–0,11). El botón «Silenciar» apaga todo —música, rotor y efectos— y se recuerda la preferencia como antes.
+- **Autoplay en iPhone:** el audio solo arranca tras un toque del usuario; la música no hace nada sin AudioContext, y el contexto se crea en el primer gesto (botones y canvas), como ya hacía el juego. Si el navegador bloquea el audio, no hay errores: todo está en try/catch y los SFX comprueban el estado.
+- Pruebas nuevas en `tests/audio-epico.test.cjs` (6): partitura determinista que cierra el bucle sin huecos, `musicOn`/`musicOff` y su programador, la música no arranca sin contexto ni silenciada, rotor con chop de 11 Hz que sube con la velocidad, disparo de tres capas que el silencio apaga, y bus de música por debajo de los efectos con `suspend` que lo para todo. `VERSION` pasa a `sonido-epico-1`. Detalle en `docs/SONIDO.md`.
+
 ## Sin publicar — Misión 1 alpina pulida (capturas de Fabian)
 
 - Reporte de Fabian con 3 capturas de su iPhone (Misión 1/3, «3D · Plástico», «Gráficos: detalle»): el camino era una alfombra marrón plana y uniforme que dominaba la pantalla, el pasto un verde plano y oscuro, las colinas se veían como muros casi negros, los pinos diminutos y sueltos, las torres como mesas de techo plano que tapaban el helipuerto, y el portal no se veía en ninguna captura. Pulido solo de la Misión 1, a partir de esas capturas:

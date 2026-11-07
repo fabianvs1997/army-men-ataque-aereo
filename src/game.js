@@ -437,7 +437,7 @@
         isPlaying: () => state.st === 'play',
         isMuted: () => state.muted,
       });
-      const { silentSrc, audio, tone, noise, buzz, sfx, humOn, humOff } =
+      const { silentSrc, audio, tone, noise, buzz, sfx, humOn, humOff, rotorSet, musicOn } =
         audioEngine;
       const input = ToyInput.create(env),
         { clearInput, updateStick } = input;
@@ -477,13 +477,23 @@
       Object.assign(state, { muted: preference('muted', 'false') === 'true' });
 
       function syncAudio() {
-        if (state.st === 'play' && !state.muted) {
+        // La música solo puede arrancar tras un toque del usuario (iOS
+        // bloquea el autoplay): musicOn() no hace nada sin AudioContext,
+        // y el contexto se crea en audio(), que se llama desde los
+        // gestos (botones y canvas). Silenciar apaga todo: suspend()
+        // para la música y el rotor, y el estado muted bloquea los SFX.
+        if (state.muted) {
+          audioEngine.suspend(true);
+          return;
+        }
+        if (state.st === 'play') {
           audio();
           humOn();
-        } else
-          audioEngine.suspend(
-            state.muted || state.st === 'paused' || state.st === 'menu',
-          );
+          musicOn(1);
+        } else if (state.st === 'menu') {
+          humOff();
+          musicOn(0.45);
+        } else audioEngine.suspend(state.st === 'paused');
       }
       function applyState() {
         clearInput();
@@ -755,6 +765,7 @@
           beforeZ = state.P.z;
         const motion = pilotMotion(state.P, sx, sy, dt);
         const magnitude = motion.active ? Math.min(1, Math.hypot(sx, sy)) : 0;
+        rotorSet(magnitude, 0);
         if (motion.dx || motion.dz) {
           const next = cover.move(state.P, {
             x: clamp(
