@@ -1092,6 +1092,47 @@
             sfx.pick();
             buzz(20);
           }
+          // Avisos en pantalla: en la grabación el pelotón llegaba
+          // a C y el helicóptero volaba sobre el portal sin que
+          // pasara nada visible. Cada llegada y cada cambio de fase
+          // ahora se anuncia con un toast (ver src/ui.js).
+          if (change.type === 'delivered') {
+            sfx.pick();
+            ui.showToast(
+              'Herido entregado en C · A salvo ' +
+                state.mission.delivered +
+                '/' +
+                state.mission.allies.length,
+            );
+          }
+          if (change.type === 'arrived') {
+            sfx.pick();
+            ui.showToast(
+              'Soldado en C · A salvo ' +
+                state.mission.delivered +
+                '/' +
+                state.mission.allies.length,
+            );
+          }
+          if (change.type === 'cargo-delivered') {
+            sfx.pick();
+            ui.showToast('¡Caja entregada por el portal!');
+          }
+          if (change.type === 'battery-dropped') {
+            ui.showToast('Batería caída: levántala con el cable');
+          }
+          if (change.type === 'portal-without-cargo') {
+            ui.showToast('El portal no abre sin la caja: levántala en B', 5000);
+          }
+          if (change.type === 'stage' && change.next === 'CARGA_PORTAL') {
+            ui.showToast(
+              'Pelotón a salvo · Falta la caja: llévala por el portal',
+              5000,
+            );
+          }
+          if (change.type === 'stage' && change.next === 'GARAJES') {
+            ui.showToast('Pelotón a salvo · Quedan garajes por destruir', 5000);
+          }
           // Coches de suministros (Misión 2): un garaje vivo suelta
           // un coche en su puerta; el coche recorre la ruta del
           // garaje (del vértice de incorporación al portal).

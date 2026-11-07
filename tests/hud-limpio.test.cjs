@@ -50,8 +50,8 @@ test('el panel de Misión muestra nombre, objetivo, progreso y puntos, y se abre
   assert.equal(g.element('missionPanel').style.display, 'block');
   assert.match(g.element('missionTitle').textContent, /Misión 1\/3 · Pandemonio de Plástico/);
   assert.ok(g.element('missionObjective').textContent.length > 0);
-  assert.match(g.element('missionSummary').textContent, /Heridos 0\/\d+ · A salvo 0\/\d+ · Bajas 0/);
-  assert.match(g.element('missionSummary').textContent, /Caja en tierra · Portal/);
+  assert.match(g.element('missionSummary').textContent, /Progreso: Heridos 0\/\d+ · A salvo 0\/\d+ · Caídos 0 · Enemigos 0/);
+  assert.match(g.element('missionSummary').textContent, /Caja en B, por levantar · Portal/);
   assert.match(g.element('missionPoints').textContent, /Puntos: \d+/);
   // Cerrar con el botón Cerrar.
   g.element('missionClose').onclick();

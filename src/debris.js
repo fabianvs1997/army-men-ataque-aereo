@@ -122,7 +122,10 @@
       y: enemy.y + (enemy.k === 'heli' ? 0 : 2),
       z: enemy.z,
     };
-    for (let i = 0; i < (broken ? 10 : 4); i++) {
+    // Cubitos pequeños por baja: 4, no 10. En la grabación el camino
+    // quedaba alfombrado de cubitos amarillos/verdes que no se iban
+    // nunca y se confundían con la caja y los soldados.
+    for (let i = 0; i < (broken ? 4 : 4); i++) {
       const size = 0.16 + random() * 0.34;
       add(
         origin.x,
@@ -141,9 +144,24 @@
       list.splice(small < 0 ? 0 : small, 1);
     }
   }
+  // Vida de los escombros asentados: antes no caducaban nunca (el
+  // `age` solo crecía mientras caían y `settled` los dejaba para
+  // siempre), así que cada combate dejaba basura permanente en el
+  // camino. Ahora los cubitos se van a los 10 s de asentarse y las
+  // piezas grandes reconocibles (el pecio de un tanque) a los 30 s.
+  const SETTLED_TTL = { small: 10, large: 30 };
   function step(state, dt, groundAt) {
-    for (const p of state.DB || []) {
-      if (p.settled) continue;
+    const list = state.DB || [];
+    for (let li = list.length - 1; li >= 0; li--) {
+      const p = list[li];
+      if (p.settled) {
+        // La edad sigue corriendo asentada: es lo que hace caducar
+        // la pieza (antes el `age` se congelaba al asentarse).
+        p.age += dt;
+        if (p.age - (p.settledAt || 0) > (p.large ? SETTLED_TTL.large : SETTLED_TTL.small))
+          list.splice(li, 1);
+        continue;
+      }
       // Substeps prevent fast pieces tunnelling through sloping terrain.
       const count = Math.max(1, Math.ceil(dt / 0.016)),
         h = dt / count;
@@ -169,10 +187,18 @@
             p.y = groundAt(p.x, p.z) + p.sy;
             p.vx = p.vy = p.vz = p.spin = 0;
             p.settled = true;
+            p.settledAt = p.age;
           }
         }
       }
     }
   }
-  return { emit, step, MAX_PIECES, TANK_COLOR: tankBody, TANK_DARK: tankDark };
+  return {
+    emit,
+    step,
+    MAX_PIECES,
+    SETTLED_TTL,
+    TANK_COLOR: tankBody,
+    TANK_DARK: tankDark,
+  };
 });

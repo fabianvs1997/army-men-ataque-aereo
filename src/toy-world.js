@@ -337,7 +337,7 @@
       };
       placements.set(index, offset);
     }
-    function part(kind, x, y, z, sx, sy, sz, color, yaw = 0) {
+    function part(kind, x, y, z, sx, sy, sz, color, yaw = 0, alpha = 1) {
       yard.push({
         kind,
         x: x + offset.x,
@@ -348,6 +348,7 @@
         sz,
         color,
         yaw,
+        alpha,
       });
     }
     const wood = [0.43, 0.29, 0.17],
@@ -405,27 +406,32 @@
     part('box', 0, 47, 200, 112, 1.1, 2, [0.39, 0.34, 0.28]);
     for (const p of yard.slice(houseStart)) p.z += LIMIT - 200;
     }
-    // Torre de guardia verde: patas finas, plataforma pequeña y
-    // tejado en punta con bandera, para que desde la cámara cenital
-    // se lea como torre y no como una mesa de techo plano que tapa
-    // el helipuerto. `draw` es `part` para el punto de interés (con
-    // su offset) o `fixedPart` para las torres fijas de la base.
+    // Torre de guardia verde: patas gruesas y separadas, plataforma
+    // pequeña y tejado escalonado en 3 niveles (no un techo plano
+    // oscuro), con bandera, para que desde la cámara cenital se lea
+    // como torre y no como una mesa que tapa el helipuerto. En la
+    // grabación el techo plano de 6,5×6,5 tapaba las patas finas de
+    // 0,55 y la torre parecía una mesa. `draw` es `part` para el
+    // punto de interés (con su offset) o `fixedPart` para las torres
+    // fijas de la base.
     function towerAt(draw, x, z) {
       const y = height(x, z);
       for (const [lx, lz] of [
-        [-2.2, -2.2],
-        [2.2, -2.2],
-        [-2.2, 2.2],
-        [2.2, 2.2],
+        [-2.8, -2.8],
+        [2.8, -2.8],
+        [-2.8, 2.8],
+        [2.8, 2.8],
       ])
-        draw('box', x + lx, y + 4, z + lz, 0.55, 8, 0.55, wood);
+        draw('box', x + lx, y + 4, z + lz, 0.85, 8, 0.85, wood);
       draw('box', x, y + 8.5, z, 6, 1, 6, wood);
       draw('box', x, y + 10.5, z, 6, 0.5, 0.5, wood);
       draw('box', x, y + 10.5, z, 0.5, 0.5, 6, wood);
-      draw('box', x, y + 12.5, z, 6.5, 1, 6.5, [0.3, 0.35, 0.25]);
-      draw('sphere', x, y + 14.5, z, 3, 2.2, 3, [0.24, 0.3, 0.2]);
-      draw('box', x, y + 17, z, 0.25, 3, 0.25, [0.2, 0.2, 0.18]);
-      draw('box', x + 1, y + 17.8, z, 2, 1.1, 0.15, [0.2, 0.72, 0.2]);
+      draw('box', x, y + 11.8, z, 6.5, 0.7, 6.5, [0.42, 0.48, 0.32]);
+      draw('box', x, y + 12.9, z, 4.5, 0.7, 4.5, [0.48, 0.54, 0.36]);
+      draw('box', x, y + 14, z, 2.5, 0.7, 2.5, [0.55, 0.6, 0.4]);
+      draw('sphere', x, y + 15.5, z, 2.4, 1.8, 2.4, [0.24, 0.3, 0.2]);
+      draw('box', x, y + 17.5, z, 0.25, 3, 0.25, [0.2, 0.2, 0.18]);
+      draw('box', x + 1, y + 18.3, z, 2, 1.1, 0.15, [0.2, 0.72, 0.2]);
     }
     // Piezas fijas alpinas: se escriben directas en `yard`, sin el
     // `offset` de los puntos de interés, para que no se desplacen.
@@ -473,18 +479,20 @@
     // salida): halo en el suelo, círculo luminoso, orbe en 3 capas
     // (exterior, medio y núcleo casi blanco) y una columna de luz
     // alta, para que brille de verdad y se vea desde lejos como faro
-    // al final del camino. En la Misión 1 el portal ya no es solo
-    // decoración: pasar con la caja por él cierra la misión (ver
-    // src/escort-mission.js); en la Misión 3, salir por él también.
+    // al final del camino. En la grabación el portal se veía como un
+    // huevo frito gigante y opaco (disco beige de 28 u + bola naranja
+    // de 13 u), así que ahora es más pequeño —acorde a su radio
+    // funcional de 12 u— y translúcido: halo y columna con alfa
+    // 0,35–0,4 y orbe con alfa 0,9, para que se vea luz, no un sólido.
     placeLandmark(1);
     h = height(-45, -33);
     if (landmarks[1].kind === 'portal') {
-      part('sphere', -45, h + 0.4, -33, 14, 0.3, 14, [0.98, 0.88, 0.55]);
-      part('sphere', -45, h + 0.4, -33, 7, 0.35, 7, [0.95, 0.8, 0.35]);
-      part('sphere', -45, h + 9, -33, 6.5, 7.5, 6.5, [1.0, 0.55, 0.1]);
-      part('sphere', -45, h + 9, -33, 5, 6, 5, [1.0, 0.75, 0.25]);
-      part('sphere', -45, h + 9, -33, 3.2, 4.2, 3.2, [1.0, 0.95, 0.62]);
-      part('sphere', -45, h + 22, -33, 2.5, 18, 2.5, [1.0, 0.9, 0.55]);
+      part('sphere', -45, h + 0.4, -33, 8, 0.3, 8, [0.98, 0.88, 0.55], 0, 0.4);
+      part('sphere', -45, h + 0.4, -33, 5, 0.35, 5, [0.95, 0.8, 0.35], 0, 0.45);
+      part('sphere', -45, h + 6, -33, 4, 5, 4, [1.0, 0.55, 0.1], 0, 0.9);
+      part('sphere', -45, h + 6, -33, 3, 3.8, 3, [1.0, 0.75, 0.25], 0, 0.9);
+      part('sphere', -45, h + 6, -33, 2, 2.6, 2, [1.0, 0.95, 0.62], 0, 0.95);
+      part('sphere', -45, h + 18, -33, 1.2, 14, 1.2, [1.0, 0.9, 0.55], 0, 0.35);
     } else {
     part('rounded', -45, h + 4, -33, 5, 4, 4, [0.44, 0.54, 0.48]);
     part('box', -45, h + 8.2, -33, 4, 0.4, 3, [0.62, 0.67, 0.58]);

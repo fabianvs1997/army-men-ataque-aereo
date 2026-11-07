@@ -94,7 +94,7 @@ test('el HUD muestra munición y salud, y la brújula sigue al rumbo y al objeti
   const { env, el } = hudEnv(rescueMission());
   require('../src/ui.js').create(env).updateHUD();
   assert.equal(el('ammoNum').textContent, '4');
-  assert.equal(el('mi').textContent, 'Misil 4');
+  assert.equal(el('mi').textContent, 'Misil');
   assert.equal(el('ai').style.width, '70%');
   assert.equal(el('objective').textContent, 'Rescate A → B → C · Recoge a los heridos');
   assert.equal(el('inf').textContent, 'Misión 1/3 · Heridos 1/2 · A salvo 0/3 · Bajas 0');
@@ -150,11 +150,11 @@ test('el HUD del juego real actualiza munición, salud y brújula al jugar', () 
 });
 
 // Explosiones: tamaño por tipo, humo y paleta del original.
-test('las explosiones tienen tamaño por tipo y vida de 0,9 s, sin cambiar el daño', () => {
-  assert.equal(Combat.EXPLOSION_LIFE, 0.9);
+test('las explosiones tienen tamaño por tipo y vida de 0,55 s, sin cambiar el daño', () => {
+  assert.equal(Combat.EXPLOSION_LIFE, 0.55);
   assert.ok(Combat.EXPLOSION_SIZE.tank > Combat.EXPLOSION_SIZE.inf);
-  assert.equal(Combat.EXPLOSION_SIZE.base, 9);
-  assert.equal(Combat.EXPLOSION_SIZE.missile, 5);
+  assert.equal(Combat.EXPLOSION_SIZE.base, 5);
+  assert.equal(Combat.EXPLOSION_SIZE.missile, 3);
   const s = {
       P: { x: 0, y: 8, z: 0, sc: 0 },
       FX: [],
@@ -179,11 +179,11 @@ test('las explosiones tienen tamaño por tipo y vida de 0,9 s, sin cambiar el da
   assert.equal(combat.kill(tank), true);
   assert.equal(s.FX.length, 1);
   assert.equal(s.FX[0].s, Combat.EXPLOSION_SIZE.tank);
-  assert.equal(s.FX[0].l, 0.9);
-  assert.equal(s.FX[0].max, 0.9);
+  assert.equal(s.FX[0].l, 0.55);
+  assert.equal(s.FX[0].max, 0.55);
   // Humo oscuro de la explosión, además de los escombros.
   assert.ok(s.SM.filter((p) => p.dark).length >= 3);
-  assert.ok(s.DB.length > 10);
+  assert.ok(s.DB.length >= 9);
   const inf = { x: -10, y: 0, z: 20, k: 'inf', hp: 1, r: 1.5, p: 10, cd: 99 };
   combat.kill(inf);
   assert.equal(s.FX[1].s, Combat.EXPLOSION_SIZE.inf);
@@ -261,9 +261,10 @@ test('el renderer dibuja la explosión grande con naranja, rosa y núcleo amaril
   assert.ok(has(Renderer.EXPLOSION_COLORS.orange), 'naranja');
   assert.ok(has([1, 0.35, 0.55]), 'rosa');
   assert.ok(has(Renderer.EXPLOSION_COLORS.core), 'núcleo amarillo');
-  // Más grande que antes: la bola joven ya mide ~s·0,6 (antes s·0,2).
+  // La bola joven ya mide casi su tamaño completo y se encoge con
+  // la edad (antes crecía un 60 % y tapaba la pantalla).
   const age = 1 - 0.85 / 0.9,
-    expected = 7 * (0.55 + age * 1.05);
+    expected = 7 * (1 - age * 0.55);
   assert.ok(sizes.some((v) => Math.abs(v - expected) < 1e-9), 'bola grande');
   // Explosión vieja (l 0,2): humo gris, sin núcleo.
   colors.length = 0;
@@ -404,7 +405,7 @@ test('el HUD nuevo existe: brújula y contador de munición en HTML, CSS y boots
   assert.ok(css.includes('#ammo'));
   assert.ok(!css.includes('#cmp {'), 'sin CSS de la flecha vieja');
   assert.ok(bootstrap.scripts.includes('compass'), 'bootstrap carga compass');
-  assert.equal(bootstrap.VERSION, 'hud-limpio-1');
+  assert.equal(bootstrap.VERSION, 'correcciones-grabacion-1');
 });
 
 // La escolta sigue llegando a C en las 3 misiones (reglas sin tocar).

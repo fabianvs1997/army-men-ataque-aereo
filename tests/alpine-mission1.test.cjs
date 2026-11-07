@@ -156,7 +156,7 @@ test('pulido: valle con laderas suaves y bordes altos, portal brillante y torres
   const color = (c) => (p) => JSON.stringify(p.color) === JSON.stringify(c);
   assert.ok(yard.some(color([0.98, 0.88, 0.55])), 'sin halo del portal');
   assert.ok(
-    yard.some((p) => p.sy >= 15 && color([1, 0.9, 0.55])(p)),
+    yard.some((p) => p.sy >= 12 && color([1, 0.9, 0.55])(p)),
     'sin columna de luz del portal',
   );
   // La caja grande de suministros ya no va en el patio: es la carga del
