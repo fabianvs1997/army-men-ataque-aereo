@@ -1,5 +1,16 @@
 # Changelog
 
+## Sin publicar — Helicóptero modelado en Blender
+
+- Pedido de Fabian (2026-11-07): modelar el helicóptero del juego en Blender, aquí en este entorno (no en su PC).
+- **El modelo** (`assets/blender/helicoptero.py`, `assets/helicoptero.glb`, `assets/helicoptero.gltf`): helicóptero de juguete verde estilo Huey, modelado original desde cero con las proporciones y los colores del helicóptero que hoy dibuja el juego (`src/toy-helicopter.js`): fuselaje verde alargado, cabina de cristal oscuro en dos secciones, motores laterales con escapes, insignias de marfil con centro verde, cola con botalón cónico, estabilizador, deriva con baliza roja y rotor de cola, rotor principal de 2 palas con puntas marfil, alas cortas con lanzacohetes (2 filas x 3 por ala), cañones en el morro y patines de aterrizaje. Morro hacia +Y en Blender (+Z en glTF). **4.516 triángulos** (límite 5.000, para el iPhone), 78 objetos, 7 materiales.
+- **Vistas previas** en `assets/blender/previews/`: frontal, lateral, cenital (como se ve en el juego) y tres-cuartos, renderizadas con Cycles por CPU.
+- **Cómo se regenera**: `blender --background --python assets/blender/helicoptero.py` (Blender 4.2.0; el script es la fuente de verdad, no hay `.blend` guardado). El script cuenta los triángulos, renderiza las 4 vistas y exporta `.glb` y `.gltf` embebido. Detalle en `docs/HELICOPTERO-BLENDER.md`.
+- **Limitación de la subida**: la API de GitHub no admite archivos binarios, así que el `.glb` (205 KB) y los PNG de las vistas previas no van en el PR: el repo lleva el `.gltf` embebido en base64 (mismo contenido, texto UTF-8) y las vistas previas van enlazadas en el cuerpo del PR. El `.glb` se regenera en local con el script.
+- **Solo el modelo, no la integración**: el juego sigue dibujando el helicóptero con piezas sueltas; para usar este modelo falta un cargador glTF mínimo, sustituir el dibujado y medir el rendimiento en el iPhone. Plan escrito en `docs/HELICOPTERO-BLENDER.md`.
+- Pruebas nuevas en `tests/helicoptero-blender.test.cjs` (8): el script existe y exporta, el `.gltf` es glTF 2.0 de Blender con el buffer embebido decodificable, el `.glb` local es válido, menos de 5.000 triángulos, piezas (rotor, cola, alas, patines) con las palas colgando del vacío `Rotor`, colores del juego y las 4 vistas previas como PNG válidos. Se actualiza la VERSION en 3 tests. `node --test`: 255/255. `VERSION` pasa a `helicoptero-blender-1`.
+- Sin verificar (sin navegador real ni iPhone en este entorno): el modelo en el visor 3D del juego (aún no integrado) ni su rendimiento en el iPhone.
+
 ## Sin publicar — Correcciones de la grabación de Fabian (104 s, Misión 1)
 
 - Pedido de Fabian (2026-11-07, con su grabación de la partida en iPhone): «Te comparto la grabación del juego, corrige todo lo necesario». Se vieron los 35 fotogramas (1 cada 3 s) antes de tocar código.
