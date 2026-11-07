@@ -5,6 +5,12 @@
     const LIMIT = map?.limit || 200,
       STEP = 4,
       COUNT = (LIMIT * 2) / STEP + 1;
+    // El camino del original es ANCHO y oscuro y cruza el mapa: medio
+    // ancho 15 u (30 u en total, 3x el anterior de 10 u). Es la única
+    // fuente de verdad del ancho: el renderizador dibuja la caja con
+    // este medio ancho, la sombra lo usa en surfaceTop y los mapas
+    // fijos mantienen la vegetación y las patrullas fuera de él.
+    const ROAD_HALF_WIDTH = 15;
     const missions =
       typeof module === 'object' && module.exports
         ? require('./toy-missions.js')
@@ -106,7 +112,11 @@
       return Math.sqrt(best2);
     }
     function rawHeight(x, z) {
-      let distance = trailDistance(x, z) - 14;
+      // El terreno es llano bajo todo el ancho del camino y 10 u más
+      // de arcén a cada lado (25 u desde la línea central): ahí van
+      // las patrullas que flanquean la ruta (±19 u) y `canTravel`
+      // las necesita en suelo llano. A partir de ahí sube suavemente.
+      let distance = trailDistance(x, z) - (ROAD_HALF_WIDTH + 10);
       for (const [cx, cz, radius] of clearings)
         distance = Math.min(distance, Math.hypot(x - cx, z - cz) - radius);
       const t = Math.max(0, Math.min(1, distance / 16));
@@ -189,6 +199,7 @@
           y: 0.1,
           yaw: Math.atan2(bx - ax, bz - az),
           length: length / count / 2 + 0.25,
+          halfWidth: ROAD_HALF_WIDTH,
         });
     }
     function canTravel(x, z, radius = 0) {
@@ -388,7 +399,7 @@
           Math.hypot(x, z) < 24 ||
           clearings.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 7) ||
           !clearOfLandmarks(x, z, 7) ||
-          trailDistance(x, z) < 18 ||
+          trailDistance(x, z) < ROAD_HALF_WIDTH + 6 ||
           z > LIMIT - 44
         )
           continue;
@@ -401,7 +412,7 @@
           z = Math.cos(i * 7.713 + (map?.seed || 0)) * (LIMIT - 19);
         if (
           Math.hypot(x, z) < 24 ||
-          trailDistance(x, z) < 18 ||
+          trailDistance(x, z) < ROAD_HALF_WIDTH + 6 ||
           clearings.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + 5) ||
           landmarks.some((p) => Math.hypot(x - p.x, z - p.z) < p.radius + 5)
         )
@@ -426,6 +437,7 @@
       canTravel,
       mesh,
       roads,
+      roadHalfWidth: ROAD_HALF_WIDTH,
       rocks,
       landmarks,
       yard,
