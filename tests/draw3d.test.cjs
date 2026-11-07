@@ -62,7 +62,8 @@ test('game without WebGL reports WebGL unavailable and shows the message', () =>
   const { game } = require('../support/fake-host.cjs');
   const g = game();
   assert.equal(g.app.state.renderer3d, null);
-  assert.equal(g.element('renderMode').textContent, 'WebGL no disponible');
+  // Sin WebGL no hay etiqueta de modo en el HUD: el mensaje de WebGL
+  // requerido aparece al dibujar (abajo).
   assert.equal(g.app.draw3d.draw(g.app.view), false);
   assert.equal(g.element('webglRequired').style.display, 'flex');
   assert.equal(g.element('world3d').style.display, 'none');

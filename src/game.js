@@ -346,6 +346,7 @@
         'DB',
         'needsDraw',
         'overlayPage',
+        'missionPanelOpen',
         'st',
         'pixelRatioCap',
         'perfLevel',
@@ -587,6 +588,7 @@
       });
       Object.assign(state, {
         st: 'menu',
+        missionPanelOpen: false,
         P: undefined,
         E: [],
         BL: [],
@@ -1182,7 +1184,10 @@
         }
         state.lastFrameN = n;
         if (!host.document.hidden) {
-          if (state.st === 'play') {
+          // Con el panel de Misión abierto la simulación se congela
+          // (el estado sigue en 'play', pero no se llama a upd): el
+          // jugador lee tranquilo y al cerrar el panel se reanuda.
+          if (state.st === 'play' && !env.missionPanelOpen) {
             state.rot += dt * 30;
             upd(dt);
           } else if (state.st === 'menu') {
