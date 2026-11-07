@@ -59,7 +59,7 @@ Los obstáculos del patio son sólidos pero no destructibles en esta entrega.
 
 Los tres mapas son fijos y están escritos a mano en
 `src/original-maps.js` (ver [MAPAS-ORIGINALES.md](MAPAS-ORIGINALES.md)):
-recrean los escenarios del Army Men: Air Attack original —el jardín,
+recrean los escenarios del Army Men: Air Attack original —el valle alpino,
 el picnic y la playa— con límites de 480 (patio de 960 × 960 u), posición de A/B/C, rutas
 A–B y B–C, composición enemiga por misión, vegetación, puntos de
 interés y relieve propios de cada escenario. La misma misión siempre

@@ -16,7 +16,7 @@ test('cada misión tiene un mapa fijo: siempre el mismo, distinto de las otras d
   assert.deepEqual(
     maps.map((m) => [m.name, m.scenario, m.seed]),
     [
-      ['El jardín', 'Backyard', 101],
+      ['Pandemonio de Plástico', 'Alpine', 101],
       ['El picnic', 'Picnic', 202],
       ['La playa', 'Beach', 303],
     ],
@@ -33,7 +33,7 @@ test('cada misión tiene un mapa fijo: siempre el mismo, distinto de las otras d
   const campaign = Maps.generateCampaign();
   assert.deepEqual(
     campaign.maps.map((m) => m.name),
-    ['El jardín', 'El picnic', 'La playa'],
+    ['Pandemonio de Plástico', 'El picnic', 'La playa'],
   );
   assert.deepEqual(campaign.seeds, [101, 202, 303]);
   assert.ok(campaign.maps.every((m) => Maps.validate(m).length === 0));
@@ -158,5 +158,5 @@ test('no queda rastro del motor random: ni mapgen, ni Mapa nuevo, ni semillas de
   const bootstrap = require('../src/bootstrap.js');
   assert.ok(bootstrap.scripts.includes('original-maps'));
   assert.ok(!bootstrap.scripts.includes('mapgen'));
-  assert.equal(bootstrap.VERSION, 'terreno-ancho-1');
+  assert.equal(bootstrap.VERSION, 'alpino-m1-1');
 });

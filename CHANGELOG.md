@@ -1,5 +1,12 @@
 # Changelog
 
+## Sin publicar — Misión 1 alpina: «Pandemonio de Plástico», solo el mapa
+
+- Corrección investigada (2026-11-06): la Misión 1 del original es «Plastic Pandemonium», una base secreta alpina del mundo de plástico —no el patio de una casa—. La Misión 1 pasa de «El jardín» a valle alpino: pasto verde, camino de tierra, pinos altos, 12 montañas con cima nevada como borde (sobre todo a la derecha del camino, cerca del portal), base verde de salida con 4 torres de guardia, caja verde de suministros junto a B y portal brillante al final del camino, pasado C. Desaparecen de la Misión 1 la valla, la casa, el macetero, la regadera, el banco y la manguera. Las misiones 2 y 3 no se tocan.
+- Solo el mapa: A, B y C, las rutas, los enemigos (117 HP, 3 tanques) y la dificultad de la Misión 1 son los de antes; el portal es solo decoración —la entrega sigue siendo en C, sin mecánica nueva de portal ni de suministros—. La caja se achicó a tamaño de helicóptero para no tapar a una patrulla (su caja de colisión de 16 u solapaba `patrol-ab-4`). Los pinos son cobertura como los arbustos, con tronco y copa en las colisiones.
+- Sin plano público exacto del original: el trazado es una reconstrucción de las guías (GameFAQs, General Eric) y del gameplay (Jack's Arcade Vault, PS1, 3:34–6:55); las dimensiones exactas y la posición de cada pino y roca no se pudieron verificar. Detalle en `docs/MAPAS-ORIGINALES.md`.
+- Pruebas nuevas en `tests/alpine-mission1.test.cjs` (4): la Misión 1 es alpina sin props de jardín, conserva trazado y dificultad, el mundo no tiene valla ni casa y sus puntos están junto a A, B y C, y es un bosque de pinos con montañas fuera de las rutas. `VERSION` pasa a `alpino-m1-1`.
+
 ## Sin publicar — terreno mucho más ancho, no solo el camino
 
 - Reporte de Fabian: todo el terreno tiene que ser más ancho, no solo el camino. El límite del patio pasa de 320 a 480 u (terreno de 960 × 960 u, 1,5x de ancho y 2,25x de área), en los 3 mapas fijos, con el camino de 30 u ya ancho dentro de él. A, B y C no se mueven: la misión dura lo mismo, lo que crece es el terreno alrededor, con más sitio para maniobrar con el helicóptero y para el pelotón.

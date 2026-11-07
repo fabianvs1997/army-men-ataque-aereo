@@ -119,7 +119,7 @@ test('reintentar conserva el mapa; otra misión cambia de mapa fijo; otra partid
   b.app.start(1, true);
   const seed = a.state.mapSeed,
     roads = JSON.stringify(a.state.world.roads);
-  assert.equal(a.state.mapName, 'El jardín');
+  assert.equal(a.state.mapName, 'Pandemonio de Plástico');
   assert.equal(b.state.mapSeed, seed);
   assert.equal(JSON.stringify(b.state.world.roads), roads);
   a.app.start(1, true, true);

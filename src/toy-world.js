@@ -5,6 +5,11 @@
     const LIMIT = map?.limit || 200,
       STEP = 4,
       COUNT = (LIMIT * 2) / STEP + 1;
+    // Valle alpino (Misión 1, «Plastic Pandemonium»): sin valla de
+    // jardín, sin casa y sin macetero/regadera/banco; el borde del
+    // mapa son las montañas y los puntos de interés son la caja de
+    // suministros, el portal y las torres de guardia.
+    const alpine = map?.scenario === 'Alpine';
     // El camino del original es ANCHO y oscuro y cruza el mapa: medio
     // ancho 15 u (30 u en total, 3x el anterior de 10 u). Es la única
     // fuente de verdad del ancho: el renderizador dibuja la caja con
@@ -63,8 +68,7 @@
       }
       return route;
     }
-    const trails = map ? routes : routes.map(smooth);
-    const segments = trails.flatMap((route) =>
+    const trails = map ? routes : routes.map(smooth);    const segments = trails.flatMap((route) =>
       route.slice(1).map((b, i) => [route[i], b]),
     );
     // Tramos con su caja envolvente: trailDistance es el bucle caliente
@@ -288,6 +292,8 @@
       clay = [0.65, 0.29, 0.16],
       leaf = [0.24, 0.39, 0.12];
     // Individual weathered fence boards and horizontal rails surround the lawn.
+    // En el valle alpino no hay valla de jardín: el borde son las montañas.
+    if (!alpine) {
     for (let q = -LIMIT + 4; q <= LIMIT - 4; q += 8)
       for (const side of [-1, 1]) {
         if (side < 0 || Math.abs(q) > 112)
@@ -315,7 +321,9 @@
           part('box', 0, y, side * (LIMIT - 2), 112, 0.6, 0.8, wood);
         part('box', side * (LIMIT - 2), y, 0, 0.8, 0.6, LIMIT, wood);
       }
+    }
     // House wall, back door, windows and a paved terrace at the far end.
+    if (!alpine) {
     const houseStart = yard.length;
     part('box', 0, 24, 214, 110, 24, 12, [0.76, 0.7, 0.58]);
     part('box', 0, 2, 180, 104, 2, 18, [0.6, 0.59, 0.53]);
@@ -333,9 +341,39 @@
     }
     part('box', 0, 47, 200, 112, 1.1, 2, [0.39, 0.34, 0.28]);
     for (const p of yard.slice(houseStart)) p.z += LIMIT - 200;
+    }
+    // Torre de guardia verde (4 patas, plataforma, barandilla y
+    // tejado): `draw` es `part` para el punto de interés (con su
+    // offset) o `fixedPart` para las torres fijas de la base.
+    function towerAt(draw, x, z) {
+      const y = height(x, z);
+      for (const [lx, lz] of [
+        [-3, -3],
+        [3, -3],
+        [-3, 3],
+        [3, 3],
+      ])
+        draw('box', x + lx, y + 4, z + lz, 0.7, 8, 0.7, wood);
+      draw('box', x, y + 8.5, z, 8, 1, 8, wood);
+      draw('box', x, y + 10.5, z, 8, 0.5, 0.5, wood);
+      draw('box', x, y + 10.5, z, 0.5, 0.5, 8, wood);
+      draw('box', x, y + 13, z, 9, 1, 9, [0.3, 0.35, 0.25]);
+    }
+    // Piezas fijas alpinas: se escriben directas en `yard`, sin el
+    // `offset` de los puntos de interés, para que no se desplacen.
+    function fixedPart(kind, x, y, z, sx, sy, sz, color, yaw = 0) {
+      yard.push({ kind, x, y, z, sx, sy, sz, color, yaw });
+    }
     // Rectangular terracotta planter: rim, soil and low leafy plants.
+    // En el valle alpino, la caja verde de suministros de plástico.
     placeLandmark(0);
     let h = height(34, 26);
+    if (alpine) {
+      part('box', 34, h + 1.5, 26, 4.5, 3, 4.5, [0.13, 0.42, 0.14]);
+      part('box', 34, h + 3.2, 26, 5, 0.6, 5, [0.18, 0.52, 0.18]);
+      part('box', 34, h + 3.6, 26, 0.6, 0.3, 5, [0.1, 0.1, 0.1]);
+      part('box', 34, h + 3.6, 26, 5, 0.3, 0.6, [0.1, 0.1, 0.1]);
+    } else {
     part('box', 34, h + 3, 26, 15, 3, 7, clay);
     part('box', 34, h + 6, 26, 16, 0.8, 8, [0.73, 0.37, 0.22]);
     part('box', 34, h + 6.85, 26, 14, 0.08, 6, [0.2, 0.16, 0.1]);
@@ -344,9 +382,18 @@
       part('sphere', x, h + 8, 26, 3, 2.8, 3, leaf);
       part('sphere', x - 1, h + 10, 25, 1.8, 1.7, 1.8, [0.37, 0.49, 0.18]);
     }
+    }
     // Galvanized watering can with raised loop handle and a long spout.
+    // En el valle alpino, el portal brillante: orbe amarillo-naranja
+    // sobre un círculo luminoso en el suelo. Solo decoración: no
+    // cambia las reglas (la entrega sigue siendo en C).
     placeLandmark(1);
     h = height(-45, -33);
+    if (alpine) {
+      part('sphere', -45, h + 0.4, -33, 7, 0.35, 7, [0.95, 0.8, 0.35]);
+      part('sphere', -45, h + 9, -33, 5.5, 6.5, 5.5, [1.0, 0.72, 0.15]);
+      part('sphere', -45, h + 9, -33, 3.5, 4.5, 3.5, [1.0, 0.9, 0.5]);
+    } else {
     part('rounded', -45, h + 4, -33, 5, 4, 4, [0.44, 0.54, 0.48]);
     part('box', -45, h + 8.2, -33, 4, 0.4, 3, [0.62, 0.67, 0.58]);
     for (const x of [-49, -41])
@@ -354,9 +401,14 @@
     part('box', -45, h + 14, -33, 4, 0.45, 0.45, [0.38, 0.46, 0.4]);
     part('box', -39, h + 4, -29, 0.65, 0.65, 5, [0.48, 0.56, 0.48], 0.8);
     part('sphere', -35, h + 4, -25, 1.6, 1, 1.6, [0.61, 0.64, 0.54]);
+    }
     // Garden bench with separate wooden slats and dark metal legs.
+    // En el valle alpino, una torre de guardia junto a la base.
     placeLandmark(2);
     h = height(70, -48);
+    if (alpine) {
+      towerAt(part, 70, -48);
+    } else {
     for (const x of [62, 78])
       for (const z of [-51, -45])
         part('box', x, h + 3, z, 0.6, 3, 0.6, [0.19, 0.23, 0.2]);
@@ -364,7 +416,9 @@
       part('box', 70, h + 6.4, z, 11, 0.6, 1.2, [0.55, 0.37, 0.2]);
     for (const y of [9, 12])
       part('box', 70, h + y, -52, 11, 1, 0.5, [0.52, 0.34, 0.18]);
+    }
     // A hose winds beside the can; stone slabs break up the dirt path.
+    if (!alpine) {
     placeLandmark(1);
     for (let i = 0; i < 36; i++) {
       const a = i * 0.18,
@@ -384,6 +438,17 @@
         [0.19, 0.31, 0.19],
         Math.atan2(nx - x, nz - z),
       );
+    }
+    }
+    if (alpine) {
+      // Las otras 3 torres de guardia de la base de salida (la 4ª es
+      // el punto de interés `tower`): alrededor de A, fuera del camino.
+      for (const [tx, tz] of [
+        [28, 12],
+        [5, -34],
+        [-25, -25],
+      ])
+        towerAt(fixedPart, tx, tz);
     }
     // Deterministic natural shrubs replace the scattered toy building blocks.
     // Con mapa del motor, la vegetación viene ya generada (posiciones
@@ -419,6 +484,11 @@
           continue;
         rocks.push({ x, z, s: 1.1 + (i % 4) * 0.4 });
       }
+    // Montañas del valle alpino (solo la Misión 1): rocas grandes
+    // como borde del mapa; las dibuja el renderizador con cima nevada.
+    const mountains = map?.scenery?.mountains
+      ? map.scenery.mountains.map((m) => ({ ...m }))
+      : [];
     function clearOfLandmarks(x, z, margin = 8) {
       return (
         z < LIMIT - 44 - margin &&
@@ -428,6 +498,7 @@
     const api = {
       limit: LIMIT,
       seed: map?.seed,
+      alpine,
       height,
       pads,
       padMarks,
@@ -439,6 +510,7 @@
       roads,
       roadHalfWidth: ROAD_HALF_WIDTH,
       rocks,
+      mountains,
       landmarks,
       yard,
       shrubs,
