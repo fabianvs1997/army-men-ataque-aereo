@@ -65,11 +65,13 @@ test('A, B y C no se mueven: las distancias de misión son las mismas', () => {
 
 test('la vegetación llena el patio ampliado sin salir de los límites', () => {
   // Densidad como antes del ensanche (área 2,25x): los conteos
-  // suben en la misma proporción para no dejar zonas vacías.
+  // suben en la misma proporción para no dejar zonas vacías. La
+  // Misión 3 ya no es playa: sin castillos de arena, el patio de
+  // vías tiene menos rocas que antes (180, no 394).
   const minimums = [
     { shrubs: 400, rocks: 250 },
     { shrubs: 300, rocks: 180 },
-    { shrubs: 150, rocks: 350 },
+    { shrubs: 150, rocks: 150 },
   ];
   for (const mission of [1, 2, 3]) {
     const map = Maps.generate(mission);

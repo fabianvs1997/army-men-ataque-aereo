@@ -12,8 +12,8 @@ mismo mapa. Reintentar conserva el mapa, como siempre.
 | Misión | Mapa | Escenario | Semilla | Inspiración en el original |
 | --- | --- | --- | --- | --- |
 | 1 | Pandemonio de Plástico | Alpine | 101 | «Plastic Pandemonium», primera misión del original: base secreta alpina, suministros de plástico y un portal |
-| 2 | El picnic | Picnic | 202 | «Picnic Panic», el picnic del original: comida por todas partes y hormigas |
-| 3 | La playa | Beach | 303 | «Don't Feed The Crabs» y «Tide Pool Terror», los rescates de la playa del original: castillos de arena y libélulas |
+| 2 | Locura de coches | Road | 202 | «Going Car-razy», segunda misión del original: garajes Tan, coches de suministros y un portal |
+| 3 | El tren que pudo | Rail | 303 | «The Train That Could», tercera misión del original: el tren Prego, la batería robada y el helicóptero Tan |
 
 - **Misión 1, Pandemonio de Plástico** — A (0, 0), B (-150, 170), C (180, 190).
   Valle alpino del mundo de plástico, como el original: pasto verde,
@@ -42,28 +42,43 @@ mismo mapa. Reintentar conserva el mapa, como siempre.
     helipuertos y las patrullas siguen en llano; la escolta llega a
     C. Solo terreno: sacos, vallas, tiendas, cajas, HUD y sonidos
     quedan para después.
-- **Misión 2, El picnic** — A (-30, -80), B (85, 175), C (240, 40).
-  El mantel del picnic: banco, macetero y regadera juntos junto a la
-  ruta B→C, como mesa y comida del picnic; relieve más suave y
-  menos rocas. Más blindados que la 1 (132 HP, 6 tanques) y un
-  helicóptero enemigo patrullando, como los insectos del picnic.
-- **Misión 3, La playa** — A (60, -40), B (-180, 120), C (120, 220).
-  Arena abierta y llana, pocos pinos, muchas rocas (castillos de
-  arena) junto a C y dos helicópteros enemigos (libélulas) sobre la
-  playa. La más dura: 156 HP, 9 tanques.
+- **Misión 2, Locura de coches** — A (-30, -80), B (85, 175), C (240, 40).
+  Circuito de carretera A → B → C → A: la vuelta C→A cierra el
+  anillo por el sur. Tres garajes Tan (este, norte y oeste) junto al
+  circuito, con la puerta hacia el vértice al que se incorporan sus
+  coches; el portal de los coches está 25 u al sur del circuito.
+  Sin mesa de picnic, sin macetero ni regadera. Más blindados que la
+  1 (162 HP, 6 tanques, 3 garajes de 10 HP) y un helicóptero enemigo
+  patrullando. Reglas del original: cada garaje suelta un coche de
+  suministros cada 20 s (escalonados 0/7/14 s) que avanza por el
+  circuito hasta el portal; si pasan 15 coches, la misión fracasa;
+  tras la entrega en C, si queda algún garaje, hay que destruirlo
+  para cerrar la misión.
+- **Misión 3, El tren que pudo** — A (60, -40), B (-180, 120), C (120, 220).
+  Vías de tren que cruzan el mapa de oeste a este, 8 u al sur del
+  camino, desde la base del tren (al oeste de B) hasta C, con la
+  plataforma de energía detrás del tren; el helicóptero Tan que robó
+  la batería vuela junto a la ruta a B y el portal de salida está
+  pasado C. Sin playa ni castillos de arena. La más dura: 164 HP,
+  9 tanques y 4 helicópteros en el plan. Reglas del original: el
+  helicóptero Tan deja caer la batería al morir, se lleva con el
+  winch a la plataforma, el tren arranca y la misión se cierra
+  saliendo por el portal tras su llegada a C.
 
 ## Qué es recreación y qué es adaptación
 
 No hay un plano exacto público de los mapas del original para
-copiarlos 1:1, y sus tres primeras misiones tenían otros objetivos
+copiarlos 1:1. Las tres primeras misiones tenían sus propios objetivos
 («Plastic Pandemonium»: recoger suministros de plástico y volar por
 un portal; «Going Car-razy»: parar 15 coches y destruir garajes;
 «The Train That Could»: devolver una batería a un tren y
 escoltarlo). Lo que se recrea fielmente en espíritu es el escenario
-de cada misión —su ambiente, sus puntos y su dificultad— dentro del
-sistema de rescate A → B → C de este juego, con assets propios: no
-se copia arte, música ni texto del original. El nombre y la semilla
-de cada mapa se muestran en el HUD con `?perf=1` («Pandemonio de Plástico ·
+de cada misión —su ambiente, sus puntos y su dificultad— y, desde la
+parte 3, también sus objetivos, integrados tras el rescate A → B → C
+de este juego (caja y portal en la 1, garajes y coches en la 2,
+batería, tren y portal en la 3), con assets propios: no se copia arte,
+música ni texto del original. El nombre y la semilla de cada mapa se
+muestran en el HUD con `?perf=1` («Pandemonio de Plástico ·
 semilla 101») y en el registro de errores, para reportarlo.
 
 ## Corrección: la Misión 1 es alpina, no un jardín
@@ -81,15 +96,20 @@ las guías (GameFAQs, General Eric) y del gameplay (Jack's Arcade
 Vault, PS1, 3:34–6:55); las dimensiones exactas y la posición de
 cada pino y roca no se pudieron verificar. Solo cambia el mapa: las
 reglas A → B → C, los enemigos (117 HP, 3 tanques) y la dificultad
-son los de antes, y el portal es solo decoración —la entrega sigue
-siendo en C, no hay mecánica nueva de portal ni de suministros.
+son los de antes. El portal de la Misión 1 dejó de ser solo
+decoración en la parte 2: la caja de plástico se lleva por el portal
+(205, 192) tras la entrega en C para cerrar la misión
+(`docs/PARECIDO-AL-ORIGINAL.md`).
 
 ## Cómo está construido cada mapa
 
 - **Trazado fijo, escrito a mano:** A, B y C, las rutas A→B y B→C
   (con sus puntos intermedios), los enemigos (base, patrullas y
   aire extra por misión) y los puntos de interés están en `SPECS`,
-  en `src/original-maps.js`.
+  en `src/original-maps.js`. La Misión 2 añade la vuelta C→A que
+  cierra el circuito, los 3 garajes (con su ruta de coches al portal)
+  y el portal de los coches; la Misión 3 añade las vías del tren, la
+  plataforma de la batería, el helicóptero Tan y el portal de salida.
 - **Terreno ancho, no solo el camino:** el patio mide 960 × 960 u
   (límite 480, 1,5x el anterior de 640 × 640 u y 2,25x de área).
   A, B y C no se mueven —la misión dura lo mismo—; lo que crece es
@@ -110,10 +130,12 @@ siendo en C, no hay mecánica nueva de portal ni de suministros.
   RNG de semilla fija por misión (mulberry32, sin `Math.random`),
   fuera de helipuertos y rutas; el mapa resultante es idéntico en
   cada partida.
-- **Dificultad creciente:** la vida enemiga total es 117, 132 y 156
+- **Dificultad creciente:** la vida enemiga total es 117, 162 y 164
   HP en las misiones 1, 2 y 3, y los tanques 3, 6 y 9. Los objetivos
   A → B → C, quién debe recogerse y la entrega en C no cambian;
-  tampoco el balance de armas.
+  tampoco el balance de armas. Cada misión añade su cierre del
+  original tras la entrega en C (portal con la caja, garajes, tren
+  y portal).
 
 ## Jugabilidad garantizada
 

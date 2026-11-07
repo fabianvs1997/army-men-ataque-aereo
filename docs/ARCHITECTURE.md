@@ -11,17 +11,18 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | input | Teclado y punteros; read() y clear() |
 | collision | Volúmenes del escenario, índice espacial, barrido de proyectiles y movimiento |
 | debris | Componentes de juguetes, astillas, gravedad, rebotes y límite de restos |
-| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`). Cada bala lleva su origen (`b.kind`: `soldier` \| `heli` \| `tank`; las torretas cuentan como tanque) y el renderizador dibuja la trazadora proporcional al arma |
-| projection | Proyección de cámara ortográfica oblicua (mundo → pantalla); la usa el HUD (brújula) y las pruebas. No dibuja nada |
+| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`). Cada bala lleva su origen (`b.kind`: `soldier` \| `heli` \| `tank`; las torretas cuentan como tanque) y el renderizador dibuja la trazadora proporcional al arma. Cada baja y cada impacto de misil es una explosión (`boom`, tamaños en `EXPLOSION_SIZE`, vida `EXPLOSION_LIFE`) con humo oscuro; el daño no cambia |
+| compass | Brújula pura del HUD: rumbo (0° = N) a tira de 8 puntos con el rumbo actual en el centro y la marca morada del objetivo; el objetivo lo da la misión, no va hardcodeado |
+| projection | Proyección de cámara ortográfica oblicua (mundo → pantalla); la usan las pruebas. La brújula del HUD ya no la usa: `compass` calcula rumbo y objetivo en coordenadas del mundo. No dibuja nada |
 | draw3d | Dibujo solo WebGL: si el renderizador dibuja, muestra `world3d`; si WebGL no inicia o se pierde, muestra `#webglRequired` en vez de un respaldo 2D |
-| ui | Menús, HUD y textos |
+| ui | Menús, HUD y textos. El HUD es genérico: el texto de objetivo viene de `mission.config.name` + `mission.message`, el resumen de estado de `mission.hudSummary()` y la marca de la brújula de `mission.target(jugador)` (ver [PARECIDO-AL-ORIGINAL.md](PARECIDO-AL-ORIGINAL.md)) |
 | game | Estado, transiciones, simulación y bucle |
-| toy-world | Geometría y decoración compartidas |
+| toy-world | Geometría y decoración compartidas. Las defensas de la Misión 1 (sacos, valla, tiendas, torre, cajas) van directas al patio (`yard`), así que son cobertura real para las colisiones; la caja de la carga va aparte en `cargoCrate` para que el renderizador pueda levantarla con el winch. Las vías de la Misión 3 van en `world.rails` (sin colisión) y la plataforma de la batería, baja, al patio |
 | toy-missions | Geometría de campaña y utilidades de impactos; API anterior conservada para regresión |
-| original-maps | Los tres mapas fijos del original: A/B/C, trazado de rutas, composición enemiga por misión, vegetación, puntos de interés y relieve, escritos a mano, con validación de jugabilidad (ver [MAPAS-ORIGINALES.md](MAPAS-ORIGINALES.md)) |
+| original-maps | Los tres mapas fijos del original: A/B/C, trazado de rutas, composición enemiga por misión, vegetación, puntos de interés y relieve, escritos a mano, con validación de jugabilidad (ver [MAPAS-ORIGINALES.md](MAPAS-ORIGINALES.md)). Solo la Misión 1 trae además defensas (`defenses`: sacos, valla, tiendas, torre, cajas), carga (`cargo`) y portal (`portal`); la Misión 2 trae el circuito C→A, los garajes (`garages`) con su ruta de coches al portal de coches (`carPortal`) y el límite de 15 coches; la Misión 3 trae las vías (`tracks`), el tren (`train`), la plataforma de la batería (`batteryPad`), el helicóptero Tan (`tanHeliId`), la batería como carga y el portal de salida |
 | mission-map | Fachada de compatibilidad sobre `original-maps`: genera el mapa fijo de una misión y expone `generateCampaign` y `validate` |
 | escort-config | Reglas y constantes A/B/C, fuerzas iniciales y ruta terrestre |
-| escort-mission | Estados, eventos, combate aliado, abordaje, escolta y resultado |
+| escort-mission | Estados, eventos, combate aliado, abordaje, escolta y resultado. La Misión 1 añade la fase `CARGA_PORTAL` tras la entrega en C: winch de la caja de plástico (`cargo`) y cierre por el portal (`portal`); la Misión 2 añade la fase `GARAJES` (destruir los garajes Tan tras la entrega en C) y el contador de coches con fracaso a los 15; la Misión 3 añade la batería (cae del helicóptero Tan, winch en cualquier fase, entrega en la plataforma que arranca el tren) y la fase `PORTAL` (salir por el portal tras la llegada del tren a C) (ver [PARECIDO-AL-ORIGINAL.md](PARECIDO-AL-ORIGINAL.md)) |
 | escort-navigation | Desvíos locales con búsqueda de ruta y colisiones barridas. A* con montón binario y presupuestos duros: meta recortada a 64 u, inicio y meta saneados al punto libre más cercano, como mucho 1200 expansiones o 12 ms por llamada; si no encuentra ruta devuelve null y el soldado espera. |
 | perf | Monitor de rendimiento: EMA del tiempo real por frame y degradado automático en 3 niveles (tope de DPR 1.75 → 1.25 → 1, dibujo a 30 fps y mitad de escombros/humo en el nivel 2) con recuperación gradual. |
 | logger | Registro de errores en el dispositivo: `console.error`, errores no controlados, rechazos y frames de más de 500 ms, con versión, misión, fase, semilla y rendimiento; últimas 100 entradas en localStorage con rotación, nunca rompe el juego. |
@@ -30,7 +31,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | supabase | Cliente opcional de Supabase: Auth por correo, puntuaciones y envío de errores. Carga perezosa del CDN; sin configuración o sin red, todo queda en local. |
 | escort-progress | Mejores resultados con esquema versionado y almacenamiento opcional |
 | toy-helicopter | Modelo plástico del jugador para el renderizador WebGL |
-| toy-renderer | Renderizado WebGL y detección de disponibilidad. La sombra del helicóptero se apoya en `surfaceTop(x, z)` (terreno, camino o helipuerto) para no quedar enterrada bajo el camino; se encoge con la altitud |
+| toy-renderer | Renderizado WebGL y detección de disponibilidad. La sombra del helicóptero se apoya en `surfaceTop(x, z)` (terreno, camino o helipuerto) para no quedar enterrada bajo el camino; se encoge con la altitud. Dibuja la caja de la carga en el suelo (`world.cargoCrate`) y, con `scene.cargo`, el cable del winch y la caja colgando bajo el helicóptero (caja verde o batería oscura con bornes amarillos, según `cargo.kind`); dibuja los garajes y los coches Tan, el tren verde de la Misión 3 (`scene.train`) y las vías (`world.rails`) |
 
 Game.create(host, options) permite inyectar random y Renderer. El objeto state
 posee los datos de partida; view es una vista de acceso a ese mismo estado para
@@ -60,11 +61,13 @@ Los obstáculos del patio son sólidos pero no destructibles en esta entrega.
 Los tres mapas son fijos y están escritos a mano en
 `src/original-maps.js` (ver [MAPAS-ORIGINALES.md](MAPAS-ORIGINALES.md)):
 recrean los escenarios del Army Men: Air Attack original —el valle alpino,
-el picnic y la playa— con límites de 480 (patio de 960 × 960 u), posición de A/B/C, rutas
+el circuito de carretera y el tren— con límites de 480 (patio de 960 × 960 u), posición de A/B/C, rutas
 A–B y B–C, composición enemiga por misión, vegetación, puntos de
 interés y relieve propios de cada escenario. La misma misión siempre
 da el mismo mapa; `validate` comprueba por geometría que cada mapa
-es jugable. `mission-map.js` es solo una fachada de compatibilidad
+es jugable. La Misión 2 añade la vuelta C→A y los garajes con coches;
+la Misión 3 añade las vías del tren, la plataforma de la batería y el
+portal de salida. `mission-map.js` es solo una fachada de compatibilidad
 sobre los mapas fijos. `ToyWorld.create(map)` construye una instancia
 independiente, compartida por física y renderizado de esa partida.
 `start(n, full, retry)` conserva el mapa al reintentar. `Renderer.setWorld`

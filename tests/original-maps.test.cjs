@@ -17,8 +17,8 @@ test('cada misión tiene un mapa fijo: siempre el mismo, distinto de las otras d
     maps.map((m) => [m.name, m.scenario, m.seed]),
     [
       ['Pandemonio de Plástico', 'Alpine', 101],
-      ['El picnic', 'Picnic', 202],
-      ['La playa', 'Beach', 303],
+      ['Locura de coches', 'Road', 202],
+      ['El tren que pudo', 'Rail', 303],
     ],
   );
   assert.notDeepEqual(maps[0].rules.A, maps[1].rules.A);
@@ -33,7 +33,7 @@ test('cada misión tiene un mapa fijo: siempre el mismo, distinto de las otras d
   const campaign = Maps.generateCampaign();
   assert.deepEqual(
     campaign.maps.map((m) => m.name),
-    ['Pandemonio de Plástico', 'El picnic', 'La playa'],
+    ['Pandemonio de Plástico', 'Locura de coches', 'El tren que pudo'],
   );
   assert.deepEqual(campaign.seeds, [101, 202, 303]);
   assert.ok(campaign.maps.every((m) => Maps.validate(m).length === 0));
@@ -53,8 +53,10 @@ test('la dificultad crece con la misión: más vida y más tanques en la 3 que e
   });
   assert.deepEqual(totals, [
     { hp: 117, tanks: 3, turrets: 4, air: 0 },
-    { hp: 132, tanks: 6, turrets: 4, air: 1 },
-    { hp: 156, tanks: 9, turrets: 7, air: 2 },
+    // Misión 2: 132 + 30 de los 3 garajes Tan (10 HP cada uno).
+    { hp: 162, tanks: 6, turrets: 4, air: 1 },
+    // Misión 3: 156 + 8 del helicóptero Tan que robó la batería.
+    { hp: 164, tanks: 9, turrets: 7, air: 2 },
   ]);
   assert.ok(totals[2].hp > totals[1].hp && totals[1].hp > totals[0].hp);
 });
@@ -100,8 +102,50 @@ test('los tres mapas fijos son jugables: ruta transitable y escolta completa', (
     const env = { groundAt: world.height, cover, enemies: [] };
     for (const a of m.allies.filter((a) => a.wounded))
       for (let i = 0; i < 40; i++) m.update(0.05, a, env);
-    for (let i = 0; i < 2000 && m.stage !== 'COMPLETADA'; i++)
-      m.update(0.05, m.finish, env);
+    // Fases finales por misión: la caja y el portal (Misión 1), los
+    // garajes Tan (Misión 2) y la batería, el tren y el portal
+    // (Misión 3). El tren tarda ~67 s en llegar a C, así que el
+    // tope es generoso (150 s de juego).
+    const player = { ...m.finish };
+    const tanHeli = map.rules.enemies.find((e) => e.id === 'tan-heli');
+    for (let i = 0; i < 3000 && m.stage !== 'COMPLETADA'; i++) {
+      if (m.stage === 'CARGA_PORTAL' && m.cargo) {
+        const target = m.cargo.state === 'carried' ? m.portal : m.cargo;
+        player.x = target.x;
+        player.z = target.z;
+      } else if (m.stage === 'GARAJES') {
+        // Misión 2: destruir los garajes Tan tras la entrega en C.
+        for (const g of m.garages)
+          m.enemyEliminated({ id: g.id, k: 'garage' });
+      } else if (m.stage === 'ENTREGA_C' && m.train) {
+        // Misión 3: si la batería sigue en el helicóptero Tan,
+        // derribarlo; si está caída, levantarla con el winch; si
+        // cuelga, llevarla a la plataforma; si el tren va en camino,
+        // esperar en C.
+        if (m.cargo.state === 'hidden' && tanHeli)
+          m.enemyEliminated({
+            id: 'tan-heli',
+            k: 'heli',
+            x: tanHeli.x,
+            z: tanHeli.z,
+          });
+        else if (m.cargo.state === 'waiting') {
+          player.x = m.cargo.x;
+          player.z = m.cargo.z;
+        } else if (m.cargo.state === 'carried' && m.batteryPad) {
+          player.x = m.batteryPad.x;
+          player.z = m.batteryPad.z;
+        }
+        if (m.train.state !== 'waiting') {
+          player.x = m.finish.x;
+          player.z = m.finish.z;
+        }
+      } else if (m.stage === 'PORTAL' && m.portal) {
+        player.x = m.portal.x;
+        player.z = m.portal.z;
+      }
+      m.update(0.05, player, env);
+    }
     assert.equal(m.delivered, 7, `m${mission}: ${m.stage}`);
     assert.equal(m.stage, 'COMPLETADA');
   }
@@ -118,10 +162,14 @@ test('el mundo usa la vegetación, los puntos de interés y el relieve de cada m
   );
   assert.notDeepEqual(worlds[0].shrubs, worlds[2].shrubs);
   assert.notDeepEqual(worlds[0].landmarks, worlds[2].landmarks);
-  // La playa es llana y abierta; el jardín, el más arbolado.
+  // El patio de vías es llano y abierto; el valle alpino, el más arbolado.
   assert.ok(maps[2].terrain.amp < maps[0].terrain.amp);
   assert.ok(maps[0].scenery.shrubs.length > maps[2].scenery.shrubs.length);
-  assert.ok(maps[2].scenery.rocks.length > maps[0].scenery.rocks.length);
+  // La Misión 3 ya no es playa: sin castillos de arena (menos rocas
+  // que el valle) y con vías de tren que cruzan el mapa.
+  assert.ok(maps[2].scenery.rocks.length < maps[0].scenery.rocks.length);
+  assert.ok(maps[2].tracks.length >= 2);
+  assert.ok(maps[2].rules.train);
   for (const [i, world] of worlds.entries()) {
     assert.ok(world.mesh().every(Number.isFinite));
     for (const p of world.landmarks) {
@@ -158,5 +206,5 @@ test('no queda rastro del motor random: ni mapgen, ni Mapa nuevo, ni semillas de
   const bootstrap = require('../src/bootstrap.js');
   assert.ok(bootstrap.scripts.includes('original-maps'));
   assert.ok(!bootstrap.scripts.includes('mapgen'));
-  assert.equal(bootstrap.VERSION, 'terreno-video-1');
+  assert.equal(bootstrap.VERSION, 'parecido-original-1');
 });

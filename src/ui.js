@@ -1,8 +1,12 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(
+    typeof module === 'object' && module.exports
+      ? require('./compass.js')
+      : root.ToyCompass,
+  );
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ToyUI = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Compass) {
   'use strict';
   function create(env) {
     function renderStatus(active) {
@@ -143,34 +147,59 @@
     }
     function updateHUD() {
       env.$('ai').style.width = env.P.arm * 10 + '%';
+      // Resumen de estado genérico: lo da la misión (hoy, heridos y
+      // entregas del rescate A → B → C; las misiones con objetivos
+      // nuevos lo redefinen con sus contadores). Sin él, el texto
+      // clásico de rescate.
       setText(
         'inf',
-        'Misión ' +
-          env.mis +
-          '/3 · Heridos ' +
-          env.mission.rescued +
-          '/' +
-          env.mission.allies.filter((a) => a.wounded).length +
-          ' · A salvo ' +
-          env.mission.delivered +
-          '/' +
-          env.mission.allies.length +
-          ' · Bajas ' +
-          env.mission.allies.filter((a) => a.state === 'CAIDO').length,
+        env.mission.hudSummary
+          ? env.mission.hudSummary()
+          : 'Misión ' +
+              env.mis +
+              '/3 · Heridos ' +
+              env.mission.rescued +
+              '/' +
+              env.mission.allies.filter((a) => a.wounded).length +
+              ' · A salvo ' +
+              env.mission.delivered +
+              '/' +
+              env.mission.allies.length +
+              ' · Bajas ' +
+              env.mission.allies.filter((a) => a.state === 'CAIDO').length,
       );
       setText('mi', 'Misil ' + env.P.mi);
+      // Contador de munición como el original: número grande abajo a
+      // la izquierda (misiles, el arma secundaria; la ametralladora
+      // no gasta munición). En vacío, el número se pone rojo.
+      setText('ammoNum', String(env.P.mi));
+      env.$('ammoNum').style.color = env.P.mi <= 0 ? '#ff6b5e' : '';
       setText(
         'objective',
         env.mission.config.name + ' · ' + env.mission.message,
       );
-      const target = env.mission.target(env.P),
-        point = env.P3(target.x, env.groundAt(target.x, target.z), target.z),
-        player = env.P3(env.P.x, env.groundAt(env.P.x, env.P.z), env.P.z);
-      env.$('cmp').style.transform =
-        'rotate(' +
-        (Math.atan2(point[0] - player[0], player[1] - point[1]) * 180) /
-          Math.PI +
-        'deg)';
+      // Brújula del original (ver src/compass.js): tira de 8 puntos
+      // que se desplaza con el rumbo, rumbo actual resaltado en el
+      // centro y marca morada hacia el objetivo. El objetivo viene
+      // de mission.target(jugador), no está hardcodeado: cuando las
+      // misiones cambien de objetivo, la marca seguirá al vigente.
+      if (Compass) {
+        const target = env.mission.target(env.P),
+          strip = Compass.strip(
+            Compass.headingDeg(env.P.yaw),
+            Compass.bearingDeg(env.P.x, env.P.z, target.x, target.z),
+          );
+        strip.labels.forEach((label, i) => {
+          const el = env.$('cl' + i);
+          el.style.display = label.visible ? 'block' : 'none';
+          el.style.left = label.at + '%';
+          el.style.color = label.current ? '#ffd94d' : '';
+          setText('cl' + i, label.label);
+        });
+        const marker = env.$('compassTarget');
+        marker.style.display = strip.target.visible ? 'block' : 'none';
+        marker.style.left = (strip.target.at || 50) + '%';
+      }
       setText('dg', 'Puntos: ' + env.P.sc);
       // Lectura de rendimiento opcional (?perf=1): FPS, ms por frame,
       // peor frame y nivel de degradado, para diagnosticar en el iPhone.

@@ -126,6 +126,16 @@ test('squad navigates the actual plastic wreckage left by combat across visual s
     s.P.x = m.finish.x;
     s.P.z = m.finish.z;
     for (let i = 0; i < 1800 && s.st === 'play'; i++) app.upd(0.05);
+    // Misión 1: tras la entrega en C queda la caja y el portal.
+    if (m.stage === 'CARGA_PORTAL') {
+      s.P.x = m.cargo.x;
+      s.P.z = m.cargo.z;
+      for (let i = 0; i < 200 && m.cargo.state === 'waiting'; i++)
+        app.upd(0.05);
+      s.P.x = m.portal.x;
+      s.P.z = m.portal.z;
+      for (let i = 0; i < 600 && s.st === 'play'; i++) app.upd(0.05);
+    }
     assert.equal(s.st, 'win');
     assert.equal(
       m.delivered,

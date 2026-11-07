@@ -24,10 +24,13 @@
 <button id="menuCredits" class="secondary">Acerca del juego</button>
 </nav>
 <div id="helpPane" class="menu-pane">
-<div class="briefing"><b>01</b><p><strong>A · Salida segura.</strong> Despega de la base defendida por infantería amiga y sigue la vereda hasta B. Cada misión tiene su mapa fijo del original: el valle alpino, el picnic y la playa.</p></div>
+<div class="briefing"><b>01</b><p><strong>A · Salida segura.</strong> Despega de la base defendida por infantería amiga y sigue la vereda hasta B. Cada misión tiene su mapa fijo del original: el valle alpino, el circuito de carretera y el patio de vías.</p></div>
 <div class="briefing"><b>02</b><p><strong>B · Despeja la base.</strong> Elimina a los enemigos dentro del perímetro naranja. Los soldados sanos responden al fuego.</p></div>
 <div class="briefing"><b>03</b><p><strong>Recoge solo a los heridos.</strong> Acércate a los soldados con una cruz y suelta los controles 1.5 s. Capacidad: 4. El abordaje se bloquea si vuelve una amenaza.</p></div>
 <div class="briefing"><b>04</b><p><strong>C · Protege la columna.</strong> Los sanos marchan por tierra. Entrégalos junto con los heridos en el helipuerto verde: mantente quieto 2 s y espera a todos los supervivientes.</p></div>
+<div class="briefing"><b>05</b><p><strong>Misión 1 · La caja y el portal.</strong> Tras la entrega en C, levanta la caja verde de plástico con el cable: quédate quieto sobre ella 1,5 s (también puedes levantarla antes, al salir de B) y llévala colgando por el portal brillante del final del camino. Las defensas —sacos, tiendas y cajas— son cobertura real.</p></div>
+<div class="briefing"><b>06</b><p><strong>Misión 2 · Garajes y coches.</strong> Los garajes Tan sueltan coches de suministros que corren por el circuito hasta el portal. Si pasan 15, la misión fracasa. Destruye los tres garajes (el HUD cuenta los coches) y entrega al pelotón en C; si queda algún garaje, destrúyelo después de la entrega.</p></div>
+<div class="briefing"><b>07</b><p><strong>Misión 3 · El tren y la batería.</strong> Un helicóptero Tan robó la batería del tren Prego. Destrúyelo, levanta la batería caída con el cable y déjala en la plataforma detrás del tren: el tren arrancará hacia la base verde de C. Escolta al pelotón, espera al tren y sal por el portal brillante pasado C.</p></div>
 <h2>Controles de teclado</h2><p>W / ↑: avanzar · S / ↓: retroceder · A / ← y D / →: girar · Espacio: fuego · M / Mayús: misil · P / Esc: pausa.</p>
 <h2>Tu campaña</h2><p>Tres misiones con 2, 4 y 6 rescates. Reintentar conserva los puntos de las misiones anteriores. El progreso se pierde al recargar o abandonar la campaña.</p>
 </div>
@@ -55,7 +58,7 @@
 <button id="logsExport" class="secondary setting">Exportar registro</button>
 <button id="logsClear" class="secondary setting">Borrar registro</button>
 </div>
-<div id="creditsPane" class="menu-pane"><h2>Un patio a escala de juguete</h2><p>Pilota un helicóptero de plástico entre maceteros, senderos y muebles de jardín. Combate, recoge a tus soldados y completa la extracción.</p><h2>Proyecto</h2><p>Desarrollado en el repositorio de fabianvs1997. Inspirado en los clásicos de helicópteros y soldados de juguete.</p></div>
+<div id="creditsPane" class="menu-pane"><h2>Un mundo de plástico a escala de juguete</h2><p>Pilota un helicóptero de plástico por el valle alpino, el circuito de carretera y el patio de vías. Combate, recoge a tus soldados y completa la extracción.</p><h2>Proyecto</h2><p>Desarrollado en el repositorio de fabianvs1997. Inspirado en los clásicos de helicópteros y soldados de juguete.</p></div>
 <div id="confirmPane" class="menu-pane"><p>Perderás el progreso de esta campaña. La próxima partida comenzará desde la misión 1. Tus mejores resultados, sonido y gráficos se conservarán.</p><button id="confirmExit">Abandonar campaña</button></div>
 <button id="menuExit" class="secondary" style="display:none">Volver al menú principal</button>
 <button id="back" class="secondary" style="display:none">← Volver</button>
@@ -63,7 +66,7 @@
 </section>
 </div>
 <div id="stick" aria-hidden="true"><i id="knob"></i></div>
-<div id="hud"><button id="quality" aria-pressed="false">Gráficos: detalle</button><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm"><i id="ai"></i></div><div id="cmp">▲</div><div id="inf"></div><div id="dg"></div><div id="perf" style="display:none"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
+<div id="hud"><button id="quality" aria-pressed="false">Gráficos: detalle</button><div id="objective" role="status"></div><span id="renderMode" aria-live="polite"></span><button id="pause" aria-label="Pausar partida">Pausa</button><button id="sound" aria-pressed="false">Silenciar</button><div id="arm" aria-label="Salud del helicóptero"><i id="ai"></i></div><div id="ammo" aria-label="Munición de misil"><span id="ammoNum">6</span><span id="ammoLabel">MISIL</span></div><div id="compass" aria-label="Brújula"><span class="cl" id="cl0"></span><span class="cl" id="cl1"></span><span class="cl" id="cl2"></span><span class="cl" id="cl3"></span><span class="cl" id="cl4"></span><span class="cl" id="cl5"></span><span class="cl" id="cl6"></span><span class="cl" id="cl7"></span><span id="compassTarget" aria-hidden="true">◆</span><span id="compassNeedle" aria-hidden="true">▲</span></div><div id="inf"></div><div id="dg"></div><div id="perf" style="display:none"></div><button class="b" id="mi">Misil</button><button class="b" id="fu">Fuego</button></div>
 </div>
 <script src="src/bootstrap.js"></script>
 </body>

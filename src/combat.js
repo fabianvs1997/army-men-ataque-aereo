@@ -17,7 +17,22 @@
   const MAX_SMOKE = 160,
     SMOKE_TRAIL_INTERVAL = 0.05,
     SMOKE_TRAIL_LIFE = 0.9,
-    SMOKE_IMPACT_LIFE = 0.9;
+    SMOKE_IMPACT_LIFE = 0.9,
+    // Explosiones como las del original: bola de fuego grande y
+    // visible, no un destello. El tamaño es solo visual: el daño y
+    // el balance no cambian (el misil sigue haciendo 6 y la muerte
+    // del enemigo no daña a nadie más). La vida es el tiempo que la
+    // bola tarda en consumirse; el renderizador la hace crecer y
+    // cambiar de color (naranja → rosa/morado → humo) con la edad.
+    EXPLOSION_LIFE = 0.9,
+    EXPLOSION_SIZE = Object.freeze({
+      inf: 4,
+      tank: 7,
+      tur: 6,
+      heli: 6,
+      base: 9,
+      missile: 5,
+    });
   function pushSmoke(list, puff) {
     if (!list) return;
     list.push(puff);
@@ -114,11 +129,47 @@
         onBreak: (broken) => env.sfx.snap && env.sfx.snap(broken),
         onBuzz: (p) => env.buzz(p),
       };
-    const hitEnemy = (e, d, point) => hit(context, e, d, effects, point),
-      killEnemy = (e) => kill(context, e, effects);
+    // Matar con un impacto (bala o misil) también explota: hit()
+    // devuelve true solo cuando el enemigo muere, y ahí se añade
+    // la bola de fuego y el humo. El `kill` de nivel de módulo (sin
+    // entorno) no explota: no tiene acceso a FX ni a SM.
+    const hitEnemy = (e, d, point) => {
+        const killed = hit(context, e, d, effects, point);
+        if (killed) boom(e.x, (e.y || 0) + 2, e.z, EXPLOSION_SIZE[e.k] || 4);
+        return killed;
+      },
+      // Matar a un enemigo es una explosión: la bola de fuego (FX, la
+      // dibuja el renderer con los colores del original) más varias
+      // bocanadas de humo oscuro que suben. Los escombros ya los pone
+      // Debris.emit dentro de kill(); aquí solo se añade el fuego y
+      // el humo.
+      killEnemy = (e) => {
+        if (e.dead) return false;
+        const ok = kill(context, e, effects);
+        if (ok)
+          boom(e.x, (e.y || 0) + 2, e.z, EXPLOSION_SIZE[e.k] || 4);
+        return ok;
+      };
 
     function boom(x, y, z, s) {
-      env.FX.push({ x, y, z, l: 0.5, s });
+      env.FX.push({ x, y, z, l: EXPLOSION_LIFE, max: EXPLOSION_LIFE, s });
+      // Humo de la explosión: 3 bocanadas oscuras que suben y crecen
+      // mientras la bola de fuego se apaga. Acotado por MAX_SMOKE
+      // como el resto del humo.
+      const r = effects.visualRandom;
+      for (let i = 0; i < 3; i++)
+        pushSmoke(env.SM, {
+          x: x + (r() - 0.5) * s * 0.6,
+          y: y + (r() - 0.5) * s * 0.3,
+          z: z + (r() - 0.5) * s * 0.6,
+          l: SMOKE_IMPACT_LIFE,
+          max: SMOKE_IMPACT_LIFE,
+          s: s * (0.35 + r() * 0.25),
+          dark: true,
+          dx: (r() - 0.5) * 0.8,
+          dy: 1.1 + r() * 0.7,
+          dz: (r() - 0.5) * 0.8,
+        });
     }
 
     function stepProjectiles(dt) {
@@ -214,7 +265,9 @@
         }
         if (o.y < env.groundAt(o.x, o.z)) ex = true;
         if (ex) {
-          // Impacto: una bocanada oscura marca el punto, sin bola de fuego.
+          // Impacto: bola de fuego además de la bocanada oscura. El
+          // daño sigue siendo el de antes (6 a las víctimas en radio).
+          boom(o.x, o.y, o.z, EXPLOSION_SIZE.missile);
           pushSmoke(env.SM, {
             x: o.x,
             y: o.y,
@@ -337,5 +390,7 @@
     GUN_ASSIST_RANGE,
     BULLET_SPEED,
     MAX_SMOKE,
+    EXPLOSION_LIFE,
+    EXPLOSION_SIZE,
   };
 });

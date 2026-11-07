@@ -68,7 +68,7 @@ test('smoke trail is bounded even on very long missile flights', () => {
   assert.equal(s.SM.length, Combat.MAX_SMOKE);
 });
 
-test('missile impact leaves a dark smoke puff but no fireball FX', () => {
+test('missile impact leaves a dark smoke puff and a fireball FX', () => {
   const { app, state: s } = game();
   app.start(1, true);
   s.E = [];
@@ -77,7 +77,11 @@ test('missile impact leaves a dark smoke puff but no fireball FX', () => {
   s.MS = [{ x: e.x, y: e.y + 1, z: e.z, vx: 0, vz: 0, l: 0.01 }];
   app.combat.stepProjectiles(0.02);
   assert.equal(e.dead, 1);
-  assert.equal(s.FX.length, 0);
+  // La explosión del misil (bola de fuego) y la del tanque muerto.
+  assert.ok(s.FX.length >= 2);
+  assert.ok(
+    s.FX.every((f) => f.s >= Combat.EXPLOSION_SIZE.missile && f.l > 0),
+  );
   assert.ok(s.SM.some((p) => p.dark));
 });
 

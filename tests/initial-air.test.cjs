@@ -30,12 +30,16 @@ test('simulation never adds helicopters or replaces destroyed ones after old tim
     app.start(n, true);
     const initial = new Set(state.E),
       air = state.E.filter((e) => e.k === 'heli');
+    // Los coches de la Misión 2 sí aparecen durante la partida: los
+    // sueltan los garajes Tan vivos (no son helicópteros nuevos ni
+    // reemplazos de los destruidos).
+    const isNewCar = (e) => e.k === 'car' && !initial.has(e);
     for (let i = 0; i < 700; i++) {
       state.P.inv = 100;
       app.upd(0.05);
       assert.equal(state.st, 'play');
       assert.ok(
-        state.E.every((e) => initial.has(e)),
+        state.E.every((e) => initial.has(e) || isNewCar(e)),
         'new enemy appeared',
       );
     }
@@ -46,6 +50,6 @@ test('simulation never adds helicopters or replaces destroyed ones after old tim
     }
     assert.equal(state.st, 'play');
     assert.equal(state.E.filter((e) => e.k === 'heli' && !e.dead).length, 0);
-    assert.ok(state.E.every((e) => initial.has(e)));
+    assert.ok(state.E.every((e) => initial.has(e) || isNewCar(e)));
   }
 });
