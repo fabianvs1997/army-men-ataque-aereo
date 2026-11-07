@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'sonido-epico-1';
+  const VERSION = 'terreno-video-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',

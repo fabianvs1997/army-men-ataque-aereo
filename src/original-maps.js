@@ -176,7 +176,47 @@
         [140, 185],
         [180, 190],
       ],
-      terrain: { phase: 0, amp: 22, freqX: 31, freqZ: 37 },
+      terrain: {
+        phase: 0,
+        // El relieve del video (fotogramas f005–f025): colinas
+        // onduladas en todo el terreno jugable, no solo en el borde.
+        // `amp` es la altura base de las lomas (16, no 22: con la
+        // ondulación añadida, las colinas se quedan verdes como en
+        // el video en vez de nevarse) y `ridges` son las crestas
+        // rocosas grises que cruzan el valle —norte, este junto al
+        // portal y oeste—, fuera de rutas y helipuertos. El mundo
+        // (src/toy-world.js) las levanta como lomos de roca.
+        amp: 16,
+        freqX: 31,
+        freqZ: 37,
+        ridges: [
+          {
+            points: [
+              [-120, 300],
+              [0, 330],
+              [140, 310],
+              [260, 280],
+            ],
+            h: 14,
+          },
+          {
+            points: [
+              [300, 60],
+              [330, 160],
+              [310, 260],
+            ],
+            h: 12,
+          },
+          {
+            points: [
+              [-360, -80],
+              [-380, 60],
+              [-350, 200],
+            ],
+            h: 12,
+          },
+        ],
+      },
       // Puntos alpinos del original, en vez de los del jardín de casa:
       // la caja verde de suministros de plástico junto a B (el puesto),
       // el portal brillante al final del camino, pasado C, y una torre
@@ -620,6 +660,22 @@
       )
         errors.push('montaña demasiado cerca de un helipuerto');
     }
+    // Las crestas rocosas del terreno (solo la Misión 1): cada punto
+    // de la cresta queda fuera de las rutas y de los helipuertos,
+    // como las montañas; el relieve nunca bloquea la escolta.
+    for (const ridge of map.terrain?.ridges || [])
+      for (const [x, z] of ridge.points || []) {
+        if (Math.abs(x) > LIMIT - 8 || Math.abs(z) > LIMIT - 8)
+          errors.push('cresta rocosa fuera del patio');
+        else if (routeDistance(x, z, map.routes || []) < 40)
+          errors.push('cresta rocosa sobre la ruta');
+        else if (
+          [map.rules.A, map.rules.B, map.rules.C].some(
+            (p) => Math.hypot(x - p.x, z - p.z) < 40,
+          )
+        )
+          errors.push('cresta rocosa demasiado cerca de un helipuerto');
+      }
     return errors;
   }
 
