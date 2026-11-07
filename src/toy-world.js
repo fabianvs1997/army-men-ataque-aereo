@@ -123,7 +123,12 @@
       let distance = trailDistance(x, z) - (ROAD_HALF_WIDTH + 10);
       for (const [cx, cz, radius] of clearings)
         distance = Math.min(distance, Math.hypot(x - cx, z - cz) - radius);
-      const t = Math.max(0, Math.min(1, distance / 16));
+      // Valle alpino: la ladera sube más lejos y más suave que en los
+      // otros mapas (rampa de 28 u en vez de 16), para que las colinas
+      // no se levanten como muros junto al camino; y el borde del
+      // mapa sube hasta +20 u, como paredes del valle.
+      const ramp = map?.scenario === 'Alpine' ? 28 : 16;
+      const t = Math.max(0, Math.min(1, distance / ramp));
       // Relieve de cada mapa fijo (src/original-maps.js): cada mapa
       // tiene su amplitud y frecuencias; sin mapa, el relieve clásico.
       const terrain = map?.terrain;
@@ -133,7 +138,13 @@
             Math.sin(x / terrain.freqX + terrain.phase) *
             Math.cos(z / terrain.freqZ + terrain.phase)
         : 22 + 4 * Math.sin(x / 31 + (map?.seed || 0)) * Math.cos(z / 37);
-      return t * t * (3 - 2 * t) * ridge;
+      let h = t * t * (3 - 2 * t) * ridge;
+      if (map?.scenario === 'Alpine') {
+        const edge = Math.max(Math.abs(x), Math.abs(z)),
+          w = Math.max(0, Math.min(1, (edge - 300) / 150));
+        h += w * w * 20;
+      }
+      return h;
     }
     const heights = new Float32Array(COUNT * COUNT);
     for (let z = 0; z < COUNT; z++)
@@ -342,22 +353,27 @@
     part('box', 0, 47, 200, 112, 1.1, 2, [0.39, 0.34, 0.28]);
     for (const p of yard.slice(houseStart)) p.z += LIMIT - 200;
     }
-    // Torre de guardia verde (4 patas, plataforma, barandilla y
-    // tejado): `draw` es `part` para el punto de interés (con su
-    // offset) o `fixedPart` para las torres fijas de la base.
+    // Torre de guardia verde: patas finas, plataforma pequeña y
+    // tejado en punta con bandera, para que desde la cámara cenital
+    // se lea como torre y no como una mesa de techo plano que tapa
+    // el helipuerto. `draw` es `part` para el punto de interés (con
+    // su offset) o `fixedPart` para las torres fijas de la base.
     function towerAt(draw, x, z) {
       const y = height(x, z);
       for (const [lx, lz] of [
-        [-3, -3],
-        [3, -3],
-        [-3, 3],
-        [3, 3],
+        [-2.2, -2.2],
+        [2.2, -2.2],
+        [-2.2, 2.2],
+        [2.2, 2.2],
       ])
-        draw('box', x + lx, y + 4, z + lz, 0.7, 8, 0.7, wood);
-      draw('box', x, y + 8.5, z, 8, 1, 8, wood);
-      draw('box', x, y + 10.5, z, 8, 0.5, 0.5, wood);
-      draw('box', x, y + 10.5, z, 0.5, 0.5, 8, wood);
-      draw('box', x, y + 13, z, 9, 1, 9, [0.3, 0.35, 0.25]);
+        draw('box', x + lx, y + 4, z + lz, 0.55, 8, 0.55, wood);
+      draw('box', x, y + 8.5, z, 6, 1, 6, wood);
+      draw('box', x, y + 10.5, z, 6, 0.5, 0.5, wood);
+      draw('box', x, y + 10.5, z, 0.5, 0.5, 6, wood);
+      draw('box', x, y + 12.5, z, 6.5, 1, 6.5, [0.3, 0.35, 0.25]);
+      draw('sphere', x, y + 14.5, z, 3, 2.2, 3, [0.24, 0.3, 0.2]);
+      draw('box', x, y + 17, z, 0.25, 3, 0.25, [0.2, 0.2, 0.18]);
+      draw('box', x + 1, y + 17.8, z, 2, 1.1, 0.15, [0.2, 0.72, 0.2]);
     }
     // Piezas fijas alpinas: se escriben directas en `yard`, sin el
     // `offset` de los puntos de interés, para que no se desplacen.
@@ -365,14 +381,18 @@
       yard.push({ kind, x, y, z, sx, sy, sz, color, yaw });
     }
     // Rectangular terracotta planter: rim, soil and low leafy plants.
-    // En el valle alpino, la caja verde de suministros de plástico.
+    // En el valle alpino, la caja verde de suministros de plástico:
+    // más grande y con una segunda caja al lado, para que destaque
+    // junto al puesto (B) sin tapar la ruta.
     placeLandmark(0);
     let h = height(34, 26);
     if (alpine) {
-      part('box', 34, h + 1.5, 26, 4.5, 3, 4.5, [0.13, 0.42, 0.14]);
-      part('box', 34, h + 3.2, 26, 5, 0.6, 5, [0.18, 0.52, 0.18]);
-      part('box', 34, h + 3.6, 26, 0.6, 0.3, 5, [0.1, 0.1, 0.1]);
-      part('box', 34, h + 3.6, 26, 5, 0.3, 0.6, [0.1, 0.1, 0.1]);
+      part('box', 34, h + 1.8, 26, 6, 3.6, 6, [0.13, 0.42, 0.14]);
+      part('box', 34, h + 3.9, 26, 6.5, 0.7, 6.5, [0.18, 0.52, 0.18]);
+      part('box', 34, h + 4.3, 26, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1]);
+      part('box', 34, h + 4.3, 26, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1]);
+      part('box', 41, h + 1.2, 31, 3.5, 2.4, 3.5, [0.11, 0.36, 0.12]);
+      part('box', 41, h + 2.6, 31, 3.8, 0.5, 3.8, [0.16, 0.48, 0.16]);
     } else {
     part('box', 34, h + 3, 26, 15, 3, 7, clay);
     part('box', 34, h + 6, 26, 16, 0.8, 8, [0.73, 0.37, 0.22]);
@@ -384,15 +404,20 @@
     }
     }
     // Galvanized watering can with raised loop handle and a long spout.
-    // En el valle alpino, el portal brillante: orbe amarillo-naranja
-    // sobre un círculo luminoso en el suelo. Solo decoración: no
-    // cambia las reglas (la entrega sigue siendo en C).
+    // En el valle alpino, el portal brillante: halo en el suelo,
+    // círculo luminoso, orbe en 3 capas (exterior, medio y núcleo
+    // casi blanco) y una columna de luz alta, para que brille de
+    // verdad y se vea desde lejos como faro al final del camino.
+    // Solo decoración: no cambia las reglas (la entrega sigue en C).
     placeLandmark(1);
     h = height(-45, -33);
     if (alpine) {
+      part('sphere', -45, h + 0.4, -33, 14, 0.3, 14, [0.98, 0.88, 0.55]);
       part('sphere', -45, h + 0.4, -33, 7, 0.35, 7, [0.95, 0.8, 0.35]);
-      part('sphere', -45, h + 9, -33, 5.5, 6.5, 5.5, [1.0, 0.72, 0.15]);
-      part('sphere', -45, h + 9, -33, 3.5, 4.5, 3.5, [1.0, 0.9, 0.5]);
+      part('sphere', -45, h + 9, -33, 6.5, 7.5, 6.5, [1.0, 0.55, 0.1]);
+      part('sphere', -45, h + 9, -33, 5, 6, 5, [1.0, 0.75, 0.25]);
+      part('sphere', -45, h + 9, -33, 3.2, 4.2, 3.2, [1.0, 0.95, 0.62]);
+      part('sphere', -45, h + 22, -33, 2.5, 18, 2.5, [1.0, 0.9, 0.55]);
     } else {
     part('rounded', -45, h + 4, -33, 5, 4, 4, [0.44, 0.54, 0.48]);
     part('box', -45, h + 8.2, -33, 4, 0.4, 3, [0.62, 0.67, 0.58]);
@@ -442,11 +467,12 @@
     }
     if (alpine) {
       // Las otras 3 torres de guardia de la base de salida (la 4ª es
-      // el punto de interés `tower`): alrededor de A, fuera del camino.
+      // el punto de interés `tower`): a ~50 u de A, fuera del camino
+      // y sin tapar el helipuerto desde la cámara.
       for (const [tx, tz] of [
-        [28, 12],
-        [5, -34],
-        [-25, -25],
+        [40, 28],
+        [12, -50],
+        [-46, -22],
       ])
         towerAt(fixedPart, tx, tz);
     }

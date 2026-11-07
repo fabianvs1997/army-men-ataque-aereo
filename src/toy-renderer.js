@@ -46,8 +46,9 @@ void main(){
  float shine=(pow(highlight,56.0)*0.75+pow(highlight,14.0)*0.12)*max(gloss,0.0);
  float rim=pow(1.0-max(dot(n,eyeDirection),0.0),3.0)*0.045*gloss;
  vec3 base=color;
- if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.90+grain*.12+patch*.16;}
- gl_FragColor=vec4(base*(0.48+0.52*diffuse)+vec3(shine+rim),1.0);
+ if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*2.0),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -2.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.30,.60,.16),vec3(.16,.38,.12),hill);float dirt=smoothstep(.55,.85,sin(worldPosition.x*.11+sin(worldPosition.z*.07))*cos(worldPosition.z*.09+worldPosition.x*.05));base=mix(base,vec3(.50,.38,.21),dirt*.5);float rock2=smoothstep(12.0,22.0,worldPosition.y);base=mix(base,vec3(.48,.45,.38),rock2*.6);float snow=smoothstep(20.0,30.0,worldPosition.y);base=mix(base,vec3(.93,.94,.96),snow*.8);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.45,.42,.36),cliff*.4);}else if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.90+grain*.12+patch*.16;}
+ float amb=gloss < -2.5 ? 0.68 : 0.48;
+ gl_FragColor=vec4(base*(amb+(1.0-amb)*diffuse)+vec3(shine+rim),1.0);
 }`;
   function geometry(kind) {
     const data = [];
@@ -551,25 +552,58 @@ void main(){
           Math.hypot(W / 2, Math.max(HY, H - HY) / Math.sin(PITCH)) / F + 48,
         visible = (o) => Math.hypot(o.x - cam.x, o.z - cam.z) < radius;
       if (world)
-        this.part('terrain', 0, 0, 0, 1, 1, 1, [0.39, 0.5, 0.24], 0, -2);
+        // Prado alpino (Misión 1): verde vivo y saturado, con luz de
+        // día soleada (gloss -3, rama propia en el shader). Los demás
+        // mapas conservan su verde de siempre (gloss -2).
+        this.part(
+          'terrain',
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          world.alpine ? [0.42, 0.58, 0.22] : [0.39, 0.5, 0.24],
+          0,
+          world.alpine ? -3 : -2,
+        );
       else this.part('box', 0, -1, 0, 200, 1, 200, [0.39, 0.49, 0.25], 0, 0.02);
       // A compact practice clearing, roads and helipad on a cleared central area.
       // Las carreteras cubren todo el mapa: solo se dibujan las cercanas.
+      // El camino de tierra se lee como tierra pisada, no como una
+      // alfombra lisa: el tono alterna cada dos tramos y una franja
+      // central más clara/oscura marca el desgaste del paso.
       if (world)
-        for (const r of world.roads)
-          if (Math.hypot(r.x - cam.x, r.z - cam.z) < radius + r.length)
-            this.part(
-              'box',
-              r.x,
-              r.y,
-              r.z,
-              r.halfWidth || 5,
-              0.04,
-              r.length,
-              [0.63, 0.51, 0.32],
-              r.yaw,
-              -1,
-            );
+        for (let ri = 0; ri < world.roads.length; ri++) {
+          const r = world.roads[ri];
+          if (Math.hypot(r.x - cam.x, r.z - cam.z) >= radius + r.length)
+            continue;
+          const tone = (ri >> 1) % 2;
+          this.part(
+            'box',
+            r.x,
+            r.y,
+            r.z,
+            r.halfWidth || 5,
+            0.04,
+            r.length,
+            tone ? [0.63, 0.51, 0.32] : [0.56, 0.44, 0.27],
+            r.yaw,
+            -1,
+          );
+          this.part(
+            'box',
+            r.x,
+            r.y + 0.01,
+            r.z,
+            (r.halfWidth || 5) * 0.55,
+            0.04,
+            r.length,
+            tone ? [0.57, 0.45, 0.28] : [0.66, 0.54, 0.34],
+            r.yaw,
+            -1,
+          );
+        }
       for (const site of world ? world.pads : [{ x: 0, z: 0, final: false }]) {
         this.part(
           'box',
@@ -617,31 +651,51 @@ void main(){
       // Rocas y objetos del patio cercanos.
       if (world) {
         // Montañas del valle alpino (solo la Misión 1): roca grande
-        // gris-marrón con cima nevada, como borde del mapa.
+        // gris-marrón clara con cima nevada grande y blanca, como
+        // borde del mapa. Cada una varía en altura, anchura y tono,
+        // con un pico rocoso encima de la base: no son bolas idénticas.
         for (const m of world.mountains || [])
           if (visible(m)) {
-            const y = world.height(m.x, m.z);
+            const y = world.height(m.x, m.z),
+              hv =
+                Math.abs(
+                  Math.sin(m.x * 12.9898 + m.z * 78.233) * 43758.5453,
+                ) % 1,
+              hFac = 0.5 + hv * 0.25,
+              rock = [0.5 + hv * 0.08, 0.47 + hv * 0.07, 0.4 + hv * 0.06];
             this.part(
               'sphere',
               m.x,
-              y + m.s * 0.35,
+              y + m.s * 0.3,
               m.z,
               m.s,
-              m.s * 0.55,
+              m.s * hFac,
               m.s * 0.8,
-              [0.45, 0.42, 0.36],
+              rock,
               m.x,
               0,
             );
             this.part(
               'sphere',
-              m.x,
-              y + m.s * 0.75,
+              m.x + m.s * 0.15,
+              y + m.s * (0.3 + hFac * 0.75),
               m.z,
-              m.s * 0.45,
-              m.s * 0.25,
-              m.s * 0.4,
-              [0.93, 0.94, 0.96],
+              m.s * 0.55,
+              m.s * 0.35,
+              m.s * 0.5,
+              rock,
+              0,
+              0,
+            );
+            this.part(
+              'sphere',
+              m.x + m.s * 0.15,
+              y + m.s * (0.3 + hFac * 0.95),
+              m.z,
+              m.s * (0.4 + hv * 0.15),
+              m.s * 0.22,
+              m.s * 0.36,
+              [0.96, 0.97, 1.0],
               0,
               0,
             );
@@ -713,16 +767,23 @@ void main(){
           continue;
         this.groundOffset = world ? world.height(d.x, d.z) : 0;
         if (d.t === 'pine') {
-          // Pino alpino alto: tronco y tres copas cónicas cada vez
-          // más estrechas, verde oscuro, como en el original.
+          // Pino alpino alto: tronco y cuatro copas cónicas cada vez
+          // más estrechas, verde oscuro con variación por árbol, como
+          // en el original. Altura total ~3,4× la escala (hasta ~21 u,
+          // varias veces el helicóptero).
+          const v =
+              Math.abs(Math.sin(d.x * 12.9898 + d.z * 78.233) * 43758.5453) %
+              1,
+            tint = 0.85 + 0.3 * v,
+            shade = (g) => [g[0] * tint, g[1] * tint, g[2] * tint];
           this.part(
             'box',
             d.x,
-            d.s * 0.6,
+            d.s * 0.7,
             d.z,
-            0.5,
-            d.s * 1.2,
-            0.5,
+            0.55,
+            d.s * 1.4,
+            0.55,
             [0.33, 0.28, 0.12],
             0,
             0,
@@ -730,36 +791,48 @@ void main(){
           this.part(
             'sphere',
             d.x,
-            d.s * 1.5,
+            d.s * 1.45,
             d.z,
-            d.s * 0.95,
-            d.s * 0.8,
-            d.s * 0.9,
-            [0.14, 0.3, 0.1],
+            d.s * 1.05,
+            d.s * 0.85,
+            d.s * 1.0,
+            shade([0.13, 0.29, 0.09]),
             0,
             0,
           );
           this.part(
             'sphere',
             d.x,
-            d.s * 2.1,
+            d.s * 2.05,
             d.z,
-            d.s * 0.7,
-            d.s * 0.7,
-            d.s * 0.65,
-            [0.18, 0.36, 0.12],
+            d.s * 0.78,
+            d.s * 0.75,
+            d.s * 0.72,
+            shade([0.17, 0.35, 0.11]),
             0,
             0,
           );
           this.part(
             'sphere',
             d.x,
-            d.s * 2.6,
+            d.s * 2.55,
             d.z,
-            d.s * 0.42,
-            d.s * 0.55,
-            d.s * 0.4,
-            [0.22, 0.42, 0.14],
+            d.s * 0.52,
+            d.s * 0.6,
+            d.s * 0.48,
+            shade([0.21, 0.41, 0.13]),
+            0,
+            0,
+          );
+          this.part(
+            'sphere',
+            d.x,
+            d.s * 2.95,
+            d.z,
+            d.s * 0.3,
+            d.s * 0.45,
+            d.s * 0.28,
+            shade([0.25, 0.46, 0.15]),
             0,
             0,
           );
