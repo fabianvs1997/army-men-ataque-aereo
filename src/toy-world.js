@@ -143,6 +143,43 @@
         const edge = Math.max(Math.abs(x), Math.abs(z)),
           w = Math.max(0, Math.min(1, (edge - 300) / 150));
         h += w * w * 20;
+        // Terreno del video (fotogramas f005–f025): el suelo sube y
+        // baja en todo el valle, no solo en el borde. La ondulación
+        // crece con la misma rampa que aleja del camino —el factor
+        // suave de `t`—, así el camino, los helipuertos y las
+        // patrullas (±19 u) siguen en llano y la escolta no se
+        // atasca; las colinas quedan verdes porque `amp` es 16.
+        const roll =
+          3 * Math.sin(x / 53 + 1.7) * Math.cos(z / 47 + 0.6) +
+          2 * Math.sin(x / 23 + 4.1) * Math.cos(z / 29 + 2.3);
+        h += t * t * (3 - 2 * t) * roll;
+        // Crestas rocosas del video: lomos de roca gris que cruzan
+        // el valle (norte, este junto al portal y oeste), definidos
+        // por mapa en `terrain.ridges`; la cresta es alta en su
+        // línea central y cae suave hasta desaparecer a 26 u.
+        for (const crest of terrain?.ridges || []) {
+          let d = Infinity;
+          for (let i = 1; i < crest.points.length; i++) {
+            const [ax, az] = crest.points[i - 1],
+              [bx, bz] = crest.points[i],
+              dx = bx - ax,
+              dz = bz - az,
+              len2 = dx * dx + dz * dz,
+              u =
+                len2 === 0
+                  ? 0
+                  : Math.max(
+                      0,
+                      Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2),
+                    );
+            d = Math.min(
+              d,
+              Math.hypot(x - (ax + u * dx), z - (az + u * dz)),
+            );
+          }
+          const u = Math.max(0, Math.min(1, d / 26));
+          h += crest.h * (1 - u * u * (3 - 2 * u));
+        }
       }
       return h;
     }

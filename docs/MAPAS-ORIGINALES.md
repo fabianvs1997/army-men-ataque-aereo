@@ -31,6 +31,17 @@ mismo mapa. Reintentar conserva el mapa, como siempre.
     orbe en 3 capas y columna de luz; las torres son esbeltas, con
     punta y bandera, a ~50 u de A; la caja de suministros es más
     grande y está al oeste de B.
+  - **Terreno replicado del video (solo terreno):** 25 fotogramas del
+    gameplay original de PS1 (1 cada 5 s) muestran el valle
+    ondulado: el suelo sube y baja en todo el terreno jugable
+    (colinas de 12–23 u a 40–150 u del camino), con manchas grandes
+    de tierra color canela sobre las lomas y pasto moteado de verde
+    claro/oscuro. Tres crestas rocosas grises cruzan el valle —norte
+    (z ~300), este a la derecha del camino cerca del portal
+    (x ~300) y oeste (x ~-370)—, con la cima nevada. El camino, los
+    helipuertos y las patrullas siguen en llano; la escolta llega a
+    C. Solo terreno: sacos, vallas, tiendas, cajas, HUD y sonidos
+    quedan para después.
 - **Misión 2, El picnic** — A (-30, -80), B (85, 175), C (240, 40).
   El mantel del picnic: banco, macetero y regadera juntos junto a la
   ruta B→C, como mesa y comida del picnic; relieve más suave y
