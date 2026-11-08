@@ -145,7 +145,12 @@ test('el camino tiene un solo tono de tierra, sin damero', () => {
   assert.equal(r.render({ ...s }), true);
   const has = (c) =>
     capture.colors.some((v) => v.every((n, i) => Math.abs(n - c[i]) < 1e-9));
-  assert.ok(has([0.6, 0.48, 0.3]), 'tono único de tierra');
+  // Tono único de tierra OSCURA en M1 (f006): marrón oscuro, no la
+  // banda canela clara de antes; la franja central es apenas más
+  // oscura, no invierte el contraste ni alterna por tramos.
+  assert.ok(has([0.25, 0.2, 0.12]), 'tono único de tierra oscura');
+  assert.ok(has([0.22, 0.17, 0.1]), 'franja central oscura');
+  assert.ok(!has([0.6, 0.48, 0.3]), 'sigue la banda canela clara');
   assert.ok(!has([0.63, 0.51, 0.32]), 'sin tono claro alterno');
   assert.ok(!has([0.56, 0.44, 0.27]), 'sin tono oscuro alterno');
   assert.ok(!has([0.66, 0.54, 0.34]), 'sin franja central invertida');
