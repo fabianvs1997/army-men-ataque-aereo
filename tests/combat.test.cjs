@@ -72,7 +72,8 @@ test('kill awards exactly once and releases each base once', () => {
   assert.equal(releases, 1);
   assert.equal(booms, 1);
   assert.equal(s.FX.length, 0);
-  assert.ok(s.DB.length > 10);
+  // Sin escombros: matar no deja ningún resto en el suelo.
+  assert.equal(s.DB?.length || 0, 0);
   assert.equal(s.PK.length, 0);
 });
 test('hit only kills at zero HP; injected RNG controls loot', () => {
@@ -89,7 +90,8 @@ test('hit only kills at zero HP; injected RNG controls loot', () => {
   assert.equal(e.hp, 1);
   assert.equal(e.fl, 0);
   assert.equal(e.chips, 1);
-  assert.equal(s.DB.length, 4);
+  // Un impacto que no mata tampoco deja restos (antes dejaba 4 cubitos).
+  assert.equal(s.DB?.length || 0, 0);
   assert.equal(s.P.sc, 0);
   assert.equal(Combat.hit(s, e, 1, effects), true);
   assert.deepEqual(s.PK, [{ x: 0, z: 30, ty: 'a' }]);

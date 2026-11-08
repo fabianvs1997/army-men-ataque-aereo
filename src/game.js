@@ -451,7 +451,7 @@
         { clearInput, updateStick } = input;
       const cover = ToyCollision.create(env, ToyWorld);
       const combat = ToyCombat.create(env),
-        { mk, boom, hit, kill, gunVelocity, bulletKindFor, stepProjectiles, stepDebris } =
+        { mk, boom, hit, kill, gunVelocity, bulletKindFor, stepProjectiles } =
           combat;
       // Solo 3D: la proyección de cámara vive en ToyProjection y el
       // dibujo, en ToyDraw3D (WebGL). La brújula del HUD ya no usa
@@ -1048,7 +1048,8 @@
             sfx.pick();
             buzz(20);
           }
-        stepDebris(dt);
+        // Sin paso de escombros: los enemigos destruidos no dejan
+        // restos y las marcas de aliado caído (state.DB) son estáticas.
         for (const o of state.FX) o.l -= dt;
         for (const o of state.SM) {
           o.l -= dt;
@@ -1159,6 +1160,13 @@
             const spot = nearestFlyable(change.x, change.z);
             state.mission.placeBattery(spot.x, spot.z);
           }
+          // Aliado caído: state.DB solo guarda estas dos cajitas
+          // verdes, el cuerpo del aliado en el suelo (el renderizador
+          // no dibuja a los CAIDO como soldados, así que sin esto la
+          // baja sería invisible). No son escombros de enemigo: son
+          // 2 piezas diminutas por baja, estáticas, y no bloquean el
+          // paso ni las balas (miden menos de 1 u). Los enemigos
+          // destruidos no dejan nada.
           if (change.type === 'soldier-fallen') {
             const a = state.mission.guards
               .concat(state.mission.allies)

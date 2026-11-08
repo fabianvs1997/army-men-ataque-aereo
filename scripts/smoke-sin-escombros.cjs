@@ -1,4 +1,6 @@
 // Development fixture: deterministic impacts in the real file:// game, both renderers.
+// Sin escombros: un impacto que no mata y las bajas no dejan ningún resto
+// en el suelo (antes el impacto dejaba 4 cubitos y cada baja su pecio).
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const { pathToFileURL } = require('node:url');
@@ -57,32 +59,23 @@ const path = require('node:path');
         },
       ];
       g.combat.stepProjectiles(0.05);
-      if (tank.hp !== 5 || s.DB.length !== 4)
-        throw Error('Impact did not chip tank');
+      if (tank.hp !== 5 || s.DB.length !== 0)
+        throw Error('Impact left debris or did not chip tank');
       if (s.FX.length) throw Error('Unexpected fireball');
       for (const e of s.E) g.combat.hit(e, 100);
       s.E = s.E.filter((e) => !e.dead);
       s.BL = [];
-      for (let i = 0; i < 30; i++) g.combat.stepDebris(1 / 60);
       g.draw3d.draw();
       return {
         pieces: s.DB.length,
         webgl: document.getElementById('world3d').style.display,
       };
     });
-    assert.ok(result.pieces > 60);
+    assert.equal(result.pieces, 0, 'ningún resto tras 5 bajas');
     assert.equal(result.webgl, 'block');
     await page.screenshot({
-      path: process.env.DEBRIS_SCREENSHOT || '/tmp/plastic-airborne.png',
+      path: process.env.NO_DEBRIS_SCREENSHOT || '/tmp/plastic-no-debris.png',
     });
-    await page.evaluate(() => {
-      const g = window.fixtureGame;
-      for (let i = 0; i < 600; i++) g.combat.stepDebris(1 / 60);
-      if (!g.state.DB.every((p) => p.settled))
-        throw Error('Unsettled wreckage');
-      g.draw3d.draw();
-    });
-    await page.screenshot({ path: '/tmp/plastic-settled.png' });
     await page.evaluate(() => {
       const g = window.fixtureGame;
       g.view.renderer3d = null;
@@ -94,7 +87,7 @@ const path = require('node:path');
     await page.evaluate(() => window.fixtureGame.draw3d.draw());
     assert.deepEqual(errors, []);
     console.log(
-      'PASS debris: swept hit, five enemy types, no fireballs, landing, WebGL, portrait/landscape; no JS errors',
+      'PASS no-debris: swept hit, five enemy types, no fireballs, no remains, WebGL, portrait/landscape; no JS errors',
     );
   } finally {
     await browser.close();

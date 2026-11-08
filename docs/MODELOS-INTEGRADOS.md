@@ -61,8 +61,7 @@ esos dos.
   igual un `turretAngle` independiente (el mecanismo existe y se
   prueba). Se conserva la elipse oscura del suelo bajo el tanque.
 - El helicóptero enemigo Tan (`tan=true`) SIGUE procedural: no hay
-  modelo Tan del helicóptero enemigo. Los pecios de tanque destruido
-  siguen siendo los de `src/debris.js`.
+  modelo Tan del helicóptero enemigo. Los tanques destruidos ya no dejan pecio ni restos: solo explosión y humo.
 
 ## Respaldo procedural (nunca en negro, nunca roto)
 

@@ -4,7 +4,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Compass = require('../src/compass.js');
 const Combat = require('../src/combat.js');
-const Debris = require('../src/debris.js');
 const Renderer = require('../src/toy-renderer.js');
 const { game, seeded } = require('../support/fake-host.cjs');
 const bootstrap = require('../src/bootstrap.js');
@@ -181,9 +180,9 @@ test('las explosiones tienen tamaño por tipo y vida de 0,55 s, sin cambiar el d
   assert.equal(s.FX[0].s, Combat.EXPLOSION_SIZE.tank);
   assert.equal(s.FX[0].l, 0.55);
   assert.equal(s.FX[0].max, 0.55);
-  // Humo oscuro de la explosión, además de los escombros.
+  // Humo oscuro de la explosión; sin restos en el suelo.
   assert.ok(s.SM.filter((p) => p.dark).length >= 3);
-  assert.ok(s.DB.length >= 9);
+  assert.equal(s.DB?.length || 0, 0);
   const inf = { x: -10, y: 0, z: 20, k: 'inf', hp: 1, r: 1.5, p: 10, cd: 99 };
   combat.kill(inf);
   assert.equal(s.FX[1].s, Combat.EXPLOSION_SIZE.inf);
@@ -281,8 +280,6 @@ test('el tanque Tan es amarillo vivo, distinto del verde del jugador y del caqui
   assert.ok(dist(body, [0.22, 0.59, 0.13]) > 0.7);
   assert.ok(dist(body, [0.77, 0.62, 0.36]) > 0.15);
   assert.deepEqual(Renderer.TAN_TANK.dark, [0.45, 0.32, 0.12]);
-  // El pecio del tanque es del mismo amarillo (no caqui).
-  assert.deepEqual(Debris.TANK_COLOR, body);
 });
 
 function renderColors(enemies) {
@@ -360,32 +357,15 @@ test('el renderer pinta el tanque Tan de amarillo y la torreta sigue de caqui', 
   assert.ok(has(turretColors, [0.76, 0.61, 0.36]), 'torreta caqui');
 });
 
-test('los escombros del tanque Tan son amarillos y los de infantería no', () => {
-  const tankState = { DB: [], P: { x: 0, z: 0 } };
-  Debris.emit(
-    tankState,
-    { k: 'tank', x: 0, y: 0, z: 0 },
-    true,
-    () => 0.5,
-  );
-  assert.ok(
-    tankState.DB.some(
-      (p) =>
-        p.large &&
-        p.color.every((v, i) => v === Renderer.TAN_TANK.body[i]),
-    ),
-    'pecio amarillo del tanque',
-  );
-  const infState = { DB: [], P: { x: 0, z: 0 } };
-  Debris.emit(infState, { k: 'inf', x: 0, y: 0, z: 0 }, true, () => 0.5);
-  assert.ok(
-    !infState.DB.some(
-      (p) =>
-        p.large &&
-        p.color.every((v, i) => v === Renderer.TAN_TANK.body[i]),
-    ),
-    'la infantería no deja pecio amarillo',
-  );
+test('destruir un tanque Tan o un soldado no deja restos amarillos ni de ningún color', () => {
+  // Antes el tanque destruido dejaba un pecio amarillo y la
+  // infantería piezas caqui; ahora ningún enemigo deja restos.
+  const state = { P: { x: 0, z: 0, sc: 0 }, DB: [], FX: [], PK: [] };
+  for (const k of ['tank', 'inf']) {
+    const e = { x: 0, y: 0, z: 0, k, hp: 1, r: 2, p: 10, cd: 999 };
+    assert.equal(Combat.kill(state, e, { random: () => 0.9 }), true);
+  }
+  assert.equal(state.DB.length, 0);
 });
 
 // Estructura: el HUD nuevo existe en HTML/CSS y la brújula se carga.
@@ -405,7 +385,7 @@ test('el HUD nuevo existe: brújula y contador de munición en HTML, CSS y boots
   assert.ok(css.includes('#ammo'));
   assert.ok(!css.includes('#cmp {'), 'sin CSS de la flecha vieja');
   assert.ok(bootstrap.scripts.includes('compass'), 'bootstrap carga compass');
-  assert.equal(bootstrap.VERSION, 'modelos-visibles-1');
+  assert.equal(bootstrap.VERSION, 'sin-escombros-1');
 });
 
 // La escolta sigue llegando a C en las 3 misiones (reglas sin tocar).

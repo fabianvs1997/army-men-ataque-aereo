@@ -68,7 +68,7 @@ Las pruebas fijan que un A* con meta lejana no quema el frame, que una
 meta dentro de un obstáculo vuelve al instante, que un muro alto tiene
 rodeo, que como mucho hay un recálculo por frame aunque se atasquen los
 4 soldados, y que el monitor de rendimiento degrada y recupera por
-niveles. El bench simula la escolta con un muro de escombros en la ruta
+niveles. El bench simula la escolta con un muro de rocas en la ruta
 y reporta peor frame, llamadas y coste máximo de `Navigation.path`.
 Los picos de peor frame en Node están dominados por calentamiento del
 JIT/GC en los primeros frames; el dato fiable es el coste máximo de
@@ -93,15 +93,13 @@ de GC/JIT), el dato fiable es el coste de trace por frame.
 
 ## Rotura de plástico
 
-`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-debris.cjs` comprueba
-un impacto barrido, cinco tipos de enemigo, ausencia de bolas de fuego, reposo
-sobre el terreno y ambos renderers en file://. Captura imágenes en /tmp.
-Las pruebas Node cubren daño repetido, piezas separadas una sola vez, misiles,
-persistencia, límite de restos, pausa y limpieza de misión. La optimización de la
-misión 2 (`tests/perf-mission2.test.cjs`, `scripts/bench-mission2.cjs`) fija el
-presupuesto de frame con el campo de escombros saturado (320 piezas): antes del
-índice espacial costaba ~4× el campo vacío y ahora cuesta lo mismo. Validación
-física de rendimiento en iPhone pendiente.
+`BROWSER_EXECUTABLE=/ruta/a/chromium node scripts/smoke-sin-escombros.cjs` comprueba
+un impacto barrido, cinco tipos de enemigo, ausencia de bolas de fuego y de
+restos tras las bajas, y ambos renderers en file://. Captura imágenes en /tmp.
+Las pruebas Node cubren daño repetido, misiles, pausa y limpieza de misión. La
+optimización de la misión 2 (`tests/perf-mission2.test.cjs`, `scripts/bench-mission2.cjs`)
+fija el presupuesto de frame de la escolta: matar enemigos no deja restos ni
+degrada el frame. Validación física de rendimiento en iPhone pendiente.
 
 ## Cobertura y objetos sólidos
 

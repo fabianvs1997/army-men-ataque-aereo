@@ -21,7 +21,7 @@
     deliverySeconds: 2,
     soldierSpeed: 7,
     soldierRadius: 0.65,
-    soldierHalfHeight: 0.9, // feet clear low plastic chips; larger wreckage remains solid
+    soldierHalfHeight: 0.9, // los pies salvan los relieves bajos del terreno; sin escombros, nada sólido bloquea el camino salvo vegetación y rocas
     soldierHP: 18,
     guardHP: 30,
     allyRange: 36,

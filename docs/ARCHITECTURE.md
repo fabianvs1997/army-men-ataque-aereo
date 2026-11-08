@@ -10,8 +10,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | audio | AudioContext, tonos, ruido cacheado, zumbido; callbacks isPlaying/isMuted |
 | input | Teclado y punteros; read() y clear() |
 | collision | Volúmenes del escenario, índice espacial, barrido de proyectiles y movimiento |
-| debris | Componentes de juguetes, astillas, gravedad, rebotes y límite de restos |
-| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`). Cada bala lleva su origen (`b.kind`: `soldier` \| `heli` \| `tank`; las torretas cuentan como tanque) y el renderizador dibuja la trazadora proporcional al arma. Cada baja y cada impacto de misil es una explosión (`boom`, tamaños en `EXPLOSION_SIZE`, vida `EXPLOSION_LIFE`) con humo oscuro; el daño no cambia |
+| combat | Velocidad de disparo, impactos, bajas, proyectiles y humo de misil (`state.SM`, separado de las explosiones de `FX`). Cada bala lleva su origen (`b.kind`: `soldier` \| `heli` \| `tank`; las torretas cuentan como tanque) y el renderizador dibuja la trazadora proporcional al arma. Cada baja y cada impacto de misil es una explosión (`boom`, tamaños en `EXPLOSION_SIZE`, vida `EXPLOSION_LIFE`) con humo oscuro; el daño no cambia. Ninguna baja deja restos en el suelo: `state.DB` solo guarda las marcas de aliado caído |
 | compass | Brújula pura del HUD: rumbo (0° = N) a tira de 8 puntos con el rumbo actual en el centro y la marca morada del objetivo; el objetivo lo da la misión, no va hardcodeado |
 | projection | Proyección de cámara ortográfica oblicua (mundo → pantalla); la usan las pruebas. La brújula del HUD ya no la usa: `compass` calcula rumbo y objetivo en coordenadas del mundo. No dibuja nada |
 | draw3d | Dibujo solo WebGL: si el renderizador dibuja, muestra `world3d`; si WebGL no inicia o se pierde, muestra `#webglRequired` en vez de un respaldo 2D |
@@ -24,7 +23,7 @@ antigua solo redirige. No se necesita bundler, fetch ni servidor local.
 | escort-config | Reglas y constantes A/B/C, fuerzas iniciales y ruta terrestre |
 | escort-mission | Estados, eventos, combate aliado, abordaje, escolta y resultado. La Misión 1 añade la fase `CARGA_PORTAL` tras la entrega en C: winch de la caja de plástico (`cargo`) y cierre por el portal (`portal`); la Misión 2 añade la fase `GARAJES` (destruir los garajes Tan tras la entrega en C) y el contador de coches con fracaso a los 15; la Misión 3 añade la batería (cae del helicóptero Tan, winch en cualquier fase, entrega en la plataforma que arranca el tren) y la fase `PORTAL` (salir por el portal tras la llegada del tren a C) (ver [PARECIDO-AL-ORIGINAL.md](PARECIDO-AL-ORIGINAL.md)) |
 | escort-navigation | Desvíos locales con búsqueda de ruta y colisiones barridas. A* con montón binario y presupuestos duros: meta recortada a 64 u, inicio y meta saneados al punto libre más cercano, como mucho 1200 expansiones o 12 ms por llamada; si no encuentra ruta devuelve null y el soldado espera. |
-| perf | Monitor de rendimiento: EMA del tiempo real por frame y degradado automático en 3 niveles (tope de DPR 1.75 → 1.25 → 1, dibujo a 30 fps y mitad de escombros/humo en el nivel 2) con recuperación gradual. |
+| perf | Monitor de rendimiento: EMA del tiempo real por frame y degradado automático en 3 niveles (tope de DPR 1.75 → 1.25 → 1, dibujo a 30 fps y mitad de humo en el nivel 2) con recuperación gradual. |
 | logger | Registro de errores en el dispositivo: `console.error`, errores no controlados, rechazos y frames de más de 500 ms, con versión, misión, fase, semilla y rendimiento; últimas 100 entradas en localStorage con rotación, nunca rompe el juego. |
 | supabase-env | Archivo generado en el despliegue (o en local) desde variables de entorno; define `__SUPABASE_CONFIG__`. Gitignorado, nunca en el repo. |
 | supabase-config | Lee la configuración inyectada (`__SUPABASE_CONFIG__`); sin ella, modo invitado offline. Ningún valor va pegado en el código. La clave secreta no se usa nunca. |
@@ -47,10 +46,9 @@ Game.create permite visualRandom independiente de random para pruebas de efectos
 
 Collision.create(scene, world) toma las piezas del patio directamente de ToyWorld,
 con cajas orientadas y elipsoides para vegetación/rocas. Cachea un índice espacial
-para objetos fijos; los restos usan su posición actual. Los escombros asentados
-van a su propio índice por celdas (se reconstruye solo cuando cambia el conjunto
-asentado) y las piezas aún en el aire se revisan directas: con el campo saturado
-(320 piezas) un trazado ya no recorre todos los escombros. La selección de vegetación
+para objetos fijos; sin escombros (ninguna baja deja restos), no hay índice de
+restos ni piezas en el aire que revisar: cada trace/move solo recorre los
+sólidos del mundo. La selección de vegetación
 excluye las piezas ocultas alrededor de rescates. trace devuelve el primer contacto;
 move barre ambos ejes para detener y deslizar cuerpos. Combat compara el contacto
 con el del objetivo y comprueba la visibilidad de las víctimas antes del daño de misil.
@@ -92,7 +90,7 @@ medir, y `mesh()` escribe en un `Float32Array` prealocado en vez de
 El bucle principal alimenta `perf.update` con el dt real de cada frame; si
 la EMA supera 30 ms durante 90 frames seguidos, `ToyPerf` baja el nivel de
 detalle (tope de `devicePixelRatio`, dibujo a 30 fps y mitad de
-escombros/humo en el nivel 2) y lo recupera tras 600 frames rápidos por
+humo en el nivel 2) y lo recupera tras 600 frames rápidos por
 nivel. Con `?perf=1` el HUD muestra FPS, ms por frame, peor frame, nivel
 y fase de la misión, para diagnosticar en el iPhone si el congelamiento
 persiste.

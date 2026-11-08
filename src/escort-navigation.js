@@ -36,8 +36,8 @@
     });
     const free = (x, z) =>
       !cover.overlaps?.(point(x, z), radius, halfHeight);
-    // Punto libre más cercano: si el soldado está encajado dentro de un
-    // escombro, ningún vecino es transitable y buscar sería inútil.
+    // Punto libre más cercano: si el soldado está encajado dentro de
+    // un obstáculo, ningún vecino es transitable y buscar sería inútil.
     const nearestFree = (x, z) => {
       if (free(x, z)) return { x, z };
       for (let r = 1; r <= 8; r++)

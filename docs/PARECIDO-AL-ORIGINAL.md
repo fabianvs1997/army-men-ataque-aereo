@@ -139,11 +139,12 @@ llega a C), partida completa de la Misión 3 en el juego real
 (batería, tren y portal), dificultad creciente (117/162/164 HP,
 3/6/9 tanques, 1/2/4 helicópteros), `positionAlong` y renderer
 (garaje, coche, tren, vías, batería en el suelo y colgando). Las
-partidas completas no exigen los 7 entregados: un soldado puede
-morir de atasco si los escombros de los enemigos abatidos le
-cierran el camino y el A* se corta por presupuesto (reloj de pared)
-en una máquina cargada, y la misión sigue adelante con los
-supervivientes (es el comportamiento del juego, no de esta parte);
+partidas completas no exigen los 7 entregados: un soldado ya no
+puede morir de atasco por escombros, porque al destruir un enemigo
+no queda ningún resto en el suelo y el camino queda libre (antes
+los restos le cerraban el camino y el A* se cortaba por presupuesto);
+si un soldado cayera por otra causa, la misión sigue adelante con
+los supervivientes (es el comportamiento del juego, no de esta parte);
 lo que comprueban es que todos queden contabilizados (a salvo o
 caídos) y que la fase avance. Los
 tests de mapas, escolta, juego y HUD (`tests/original-maps.test.cjs`,
@@ -417,9 +418,9 @@ misión cambie de objetivo, basta con que esa misión redefina
   la muerte de un enemigo no daña a nadie más, y la vida y el daño
   de cada tipo quedan intactos. Los tests que decían «sin bola de
   fuego» (`tests/projectiles.test.cjs`,
-  `tests/debris.test.cjs`) se actualizan al comportamiento nuevo.
+  `tests/sin-escombros.test.cjs`) se actualizan al comportamiento nuevo.
 
-## Tanques Tan (`src/toy-renderer.js`, `src/debris.js`)
+## Tanques Tan (`src/toy-renderer.js`)
 
 - **Color propio**: amarillo vivo/tostado `[0.95, 0.76, 0.2]` con
   orugas marrón tostado oscuro `[0.45, 0.32, 0.12]`
@@ -431,9 +432,9 @@ misión cambie de objetivo, basta con que esa misión redefina
   cúpula del jefe con banda rojiza sobre la torreta y placa frontal
   oscura. Solo visual: el radio de colisión (`r = 3.5`), la vida
   (6 HP) y el daño no cambian.
-- **Pecio a juego**: los escombros grandes del tanque destruido son
-  del mismo amarillo (`ToyDebris.TANK_COLOR`); la infantería sigue
-  dejando pecio caqui.
+- **Sin pecio**: el tanque destruido ya no deja restos en el suelo
+  (como ningún enemigo): solo la explosión y el humo, que se apagan
+  solos.
 
 ## Rendimiento
 

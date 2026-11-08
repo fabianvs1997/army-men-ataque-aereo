@@ -51,16 +51,13 @@
       rescued,
       grid = new Map(),
       solids = [];
-    // Escombros: la mayoría están asentados y no se mueven nunca más, así
-    // que van a su propio índice espacial (como los sólidos). Solo las
-    // piezas aún en el aire se revisan directamente, y son pocas.
-    // Antes cada trace/move recorría los 320 escombros con un segment()
-    // con trigonometría; con la misión 2 (pelotón en marcha + ~80
-    // trazados por frame) eso era el grueso del coste por frame.
-    let debrisGrid = new Map(),
-      debrisLen = -1,
-      debrisSettled = -1,
-      debrisMoving = 0;
+    // Sin escombros: los enemigos destruidos no dejan restos (ver
+    // src/combat.js) y state.DB solo guarda las marcas de aliado
+    // caído, diminutas y estáticas, que no bloquean el paso ni las
+    // balas. Antes los escombros asentados iban a su propio índice
+    // espacial (320 piezas con un segment() con trigonometría por
+    // trazado); al no haber escombros, el índice sobra y cada
+    // trace/move solo recorre los sólidos del mundo.
     const CELL = 24;
     function indexInto(map, o) {
       const c = Math.abs(Math.cos(o.yaw || 0)),
@@ -81,29 +78,6 @@
           if (!map.has(key)) map.set(key, []);
           map.get(key).push(o);
         }
-    }
-    function rebuildDebris() {
-      const list = scene.DB || [];
-      // Si no ha cambiado la longitud y ya no hay piezas en el aire, el
-      // conjunto asentado no puede haber cambiado: no se reescanea nada.
-      if (list.length === debrisLen && debrisMoving === 0) return;
-      let settled = 0;
-      for (const p of list) if (p.settled) settled++;
-      if (list.length === debrisLen && settled === debrisSettled) {
-        debrisMoving = list.length - settled;
-        return;
-      }
-      debrisLen = list.length;
-      debrisSettled = settled;
-      debrisMoving = list.length - settled;
-      debrisGrid = new Map();
-      // Solo las piezas de tamaño real (el pecio de un tanque, una
-      // torreta, un muro de escombros) bloquean el paso y las balas:
-      // los cubitos pequeños (menos de 1 u) son decoración y antes
-      // cerraban el camino al pelotón.
-      for (const p of list)
-        if (p.settled && Math.max(p.sx, p.sy, p.sz) >= 1)
-          indexInto(debrisGrid, p);
     }
     function rebuild() {
       if (
@@ -171,7 +145,6 @@
     }
     function candidates(a, b, r) {
       rebuild();
-      rebuildDebris();
       const found = new Set();
       for (
         let x = Math.floor((Math.min(a.x, b.x) - r) / CELL);
@@ -184,11 +157,7 @@
           z++
         ) {
           for (const o of grid.get(x + ',' + z) || []) found.add(o);
-          for (const o of debrisGrid.get(x + ',' + z) || []) found.add(o);
         }
-      // Piezas aún en el aire: pocas y transitorias; se revisan directas.
-      if (debrisMoving > 0)
-        for (const p of scene.DB || []) if (!p.settled) found.add(p);
       return found;
     }
     function trace(a, b, r = 0, halfY = r) {
