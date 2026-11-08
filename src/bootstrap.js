@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'sin-escombros-1';
+  const VERSION = 'auditoria-calidad-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
