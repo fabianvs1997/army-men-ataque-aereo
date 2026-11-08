@@ -1052,6 +1052,11 @@
               3.05,
               bulletKindFor(e.k),
             );
+            // Fuego enemigo audible (vídeo M1: trazadoras Tan por
+            // todo el valle): cañón grave para tanque/torreta,
+            // crack fino para infantería, jeep y helicóptero Tan.
+            if (e.k === 'tank' || e.k === 'tur') sfx.tankShot();
+            else sfx.enemyShot();
           }
         }
         if (!stepProjectiles(dt)) return;
@@ -1113,6 +1118,7 @@
           if (change.type === 'cargo-lifted') {
             state.P.sc += 50;
             sfx.winch();
+            sfx.crateHook();
             buzz(20);
           }
           // Avisos en pantalla: en la grabación el pelotón llegaba

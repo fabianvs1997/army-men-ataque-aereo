@@ -161,6 +161,33 @@
         tone(1100, 900, 0.08, 'triangle', 0.12);
         noise(0.05, 0.12, 3200);
       },
+      tankShot() {
+        // Cañón del tanque Tan (vídeo M1: 2-3 tanques amarillos
+        // guardando la caja): trueno grave y lento, muy distinto
+        // de la ametralladora del jugador y de la trazadora de
+        // infantería. El golpe de aire dura más que el disparo.
+        tone(100, 35, 0.35, 'sine', 0.35);
+        tone(300, 80, 0.15, 'square', 0.12);
+        noise(0.3, 0.5, 600);
+      },
+      enemyShot() {
+        // Trazadora enemiga (infantería Tan en grupos, jeep Tan):
+        // crack agudo, fino y bajo, para que las ráfagas enemigas
+        // se oigan sin tapar el disparo del jugador ni el rotor.
+        noise(0.05, 0.12, 2400);
+        tone(900, 300, 0.05, 'triangle', 0.06);
+      },
+      crateHook() {
+        // Gancho del winch al enganchar la caja verde brillante:
+        // doble golpe metálico (el cable ya suena en `winch`).
+        // Suena al final del izado, junto al `winch` de la carga.
+        tone(1250, 1250, 0.06, 'triangle', 0.15);
+        noise(0.04, 0.1, 5000);
+        env.host.setTimeout(() => {
+          tone(1900, 1900, 0.04, 'square', 0.08);
+          noise(0.03, 0.08, 5000);
+        }, 120);
+      },
       portal() {
         // Salida por el portal: barrido brillante ascendente +
         // campana, como el brillo del halo al cruzar.
