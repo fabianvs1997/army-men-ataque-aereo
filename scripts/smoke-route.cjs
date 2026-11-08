@@ -91,10 +91,30 @@ const path = require('node:path');
         };
         stand(s.mission.finish, 50);
         const early = s.st;
+        // Misión 3: la batería cae al morir el helicóptero Tan; se
+        // levanta con el winch (en cualquier fase) y se deja en la
+        // plataforma del tren, que arranca hacia C mientras se
+        // rescata a los heridos. Las posiciones salen del estado
+        // vivo de la misión (cargo, batteryPad, portal), no de
+        // coordenadas copiadas: la batería cae donde muere el
+        // helicóptero y el juego la acerca a un punto volable.
+        if (n === 3) {
+          stand(s.mission.cargo, 40);
+          stand(s.mission.batteryPad, 10);
+        }
         for (const a of s.mission.allies.filter((a) => a.wounded)) stand(a, 35);
         stand(s.mission.start, 50);
         const atStart = s.st;
         stand(s.mission.finish, 1800);
+        // Misión 1: tras la entrega en C queda la caja (winch en la
+        // fase CARGA_PORTAL) y la salida por el portal.
+        if (n === 1) {
+          stand(s.mission.cargo, 40);
+          stand(s.mission.portal, 50);
+        }
+        // Misión 3: con la batería en el tren y el tren en C, la
+        // salida es por el portal.
+        if (n === 3) stand(s.mission.portal, 50);
         result.push({ early, atStart, end: s.st });
       }
       return result;
@@ -106,7 +126,7 @@ const path = require('node:path');
     ]);
     assert.deepEqual(errors, []);
     console.log(
-      'PASS route: separate final pad renders in WebGL; three missions reject early/start extraction and finish after rescues; no JS errors',
+      'PASS route: separate final pad renders in WebGL; three missions reject early/start extraction and finish after rescues, crate/battery winch and portal exit; no JS errors',
     );
   } finally {
     await browser.close();

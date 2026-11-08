@@ -69,7 +69,13 @@
       const dx = e.x - player.x,
         dz = e.z - player.z,
         d = Math.hypot(dx, dz);
-      if (e.dead || e.hp <= 0 || d < 4 || d > nearest) continue;
+      // Sin zona muerta a quemarropa: antes se ignoraba a los
+      // enemigos a menos de 4 u y el cañón disparaba recto sin
+      // apuntarles; parado encima de un tanque, el jugador vaciaba
+      // el cargador sin tocarlo mientras el tanque le disparaba.
+      // Solo se descarta el caso degenerado (enemigo encima del
+      // jugador, sin dirección a la que apuntar).
+      if (e.dead || e.hp <= 0 || d < 0.5 || d > nearest) continue;
       if ((dx * fx + dz * fz) / d >= Math.cos(GUN_ASSIST_ANGLE)) {
         target = e;
         nearest = d;
@@ -77,14 +83,21 @@
     }
     if (!target) return { vx: fx * BULLET_SPEED, vy: -16, vz: fz * BULLET_SPEED };
     const dx = target.x - muzzle.x,
-      dz = target.z - muzzle.z,
-      d = Math.hypot(dx, dz);
+      dz = target.z - muzzle.z;
     const targetY =
       target.y + (target.k === 'heli' ? 0 : target.k === 'base' ? 3 : 1.5);
+    // Dirección 3D hacia el centro del objetivo, a 170 u/s exactos:
+    // antes la velocidad vertical se calculaba como dy / (d / 170) y
+    // a quemarropa se disparaba (a 3 u, vy ≈ -240 u/s, la bala se
+    // clavaba en el suelo en un paso). Lejos el resultado es el
+    // mismo (dy es pequeño frente a d); cerca, la bala va al
+    // objetivo en vez de picar.
+    const dy = targetY - muzzle.y,
+      len = Math.hypot(dx, dy, dz) || 1;
     return {
-      vx: (dx / d) * BULLET_SPEED,
-      vy: (targetY - muzzle.y) / Math.max(0.01, d / BULLET_SPEED),
-      vz: (dz / d) * BULLET_SPEED,
+      vx: (dx / len) * BULLET_SPEED,
+      vy: (dy / len) * BULLET_SPEED,
+      vz: (dz / len) * BULLET_SPEED,
     };
   }
   function kill(
@@ -108,7 +121,7 @@
       state.bd++;
       state.mission.release?.(e.camp);
     }
-    if (e.k !== 'base' && random() < 0.25)
+    if (e.k !== 'base' && state.PK && random() < 0.25)
       state.PK.push({ x: e.x, z: e.z, ty: random() < 0.5 ? 'a' : 'm' });
     return true;
   }
