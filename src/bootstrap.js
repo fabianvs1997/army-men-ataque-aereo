@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'modelos-visibles-1';
+  const VERSION = 'sin-escombros-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -35,7 +35,6 @@
     'prefs',
     'audio',
     'input',
-    'debris',
     'combat',
     'compass',
     'ui',

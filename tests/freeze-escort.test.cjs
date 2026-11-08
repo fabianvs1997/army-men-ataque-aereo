@@ -5,7 +5,6 @@ const Perf = require('../src/perf.js');
 const MissionMap = require('../src/mission-map.js');
 const ToyWorld = require('../src/toy-world.js');
 const { game, seeded } = require('../support/fake-host.cjs');
-const Debris = require('../src/debris.js');
 
 // Congelamiento en la escolta B → C (misión 2): el A* de desatasco no
 // tenía presupuesto. Con la meta a 60 u y el terreno bloqueado agotaba
@@ -119,25 +118,14 @@ test('un A* con la meta dentro de un obstáculo vuelve al instante', () => {
   const { state } = mission2();
   const cover = require('../src/collision.js').create(state, state.world);
   const groundAt = (x, z) => state.world.height(x, z);
-  // Muro de escombros asentados: la meta queda dentro del muro.
+  // Muro de rocas del mundo: la meta queda dentro del muro. (Antes
+  // el muro era de escombros en state.DB; sin escombros, el obstáculo
+  // es roca, que sí bloquea.) Rocas cada 1,2 u: con s=2 el muro es
+  // continuo y la meta (0, 100) queda dentro de una roca.
   const wx = 0,
     wz = 100;
   for (let i = -8; i <= 8; i++)
-    state.DB.push({
-      kind: 'box',
-      x: wx + i * 1.2,
-      y: groundAt(wx + i * 1.2, wz) + 0.2,
-      z: wz,
-      sx: 1.2,
-      sy: 0.4,
-      sz: 1.2,
-      color: [0.76, 0.61, 0.36],
-      yaw: 0,
-      settled: true,
-      vx: 0,
-      vy: 0,
-      vz: 0,
-    });
+    state.world.rocks.push({ x: wx + i * 1.2, z: wz, s: 2 });
   // Mejor de 3, como en el test de la meta lejana: el reloj de pared
   // es ruidoso bajo la carga paralela de la suite.
   let best = Infinity;
@@ -166,24 +154,13 @@ test('el A* sigue encontrando ruta alrededor de un muro en terreno libre', () =>
   const route = state.mission.rules.routeBC;
   const wx = route[4][0],
     wz = route[4][1];
-  // Muro alto: las piezas bajas las pisan los soldados por diseño
-  // (soldierHalfHeight), así que el muro debe ser alto para bloquearlos.
+  // Muro alto de rocas: las piezas bajas las pisan los soldados por
+  // diseño (soldierHalfHeight), así que el muro debe ser alto para
+  // bloquearlos. (Antes era un muro de escombros en state.DB.) Las
+  // rocas van cada 1,2 u, como el muro viejo: con s=2 sus esferas se
+  // solapan y el muro es continuo, pero la meta (a 12 u) queda fuera.
   for (let i = -8; i <= 8; i++)
-    state.DB.push({
-      kind: 'box',
-      x: wx + i * 1.2,
-      y: groundAt(wx + i * 1.2, wz) + 1,
-      z: wz,
-      sx: 1.2,
-      sy: 2,
-      sz: 1.2,
-      color: [0.76, 0.61, 0.36],
-      yaw: 0,
-      settled: true,
-      vx: 0,
-      vy: 0,
-      vz: 0,
-    });
+    state.world.rocks.push({ x: wx + i * 1.2, z: wz, s: 2 });
   // La meta queda fuera del muro (el muro mide ~21 u de ancho): la ruta
   // debe rodearlo por un extremo, no atravesarlo.
   const r = Navigation.path(
@@ -278,7 +255,7 @@ test('el monitor de rendimiento degrada y recupera por niveles', () => {
   assert.equal(fresh.level, 0);
 });
 
-test('en nivel 2 de rendimiento se dibuja la mitad de escombros y humo', () => {
+test('en nivel 2 de rendimiento se dibuja la mitad del humo', () => {
   const Renderer = require('../src/toy-renderer.js');
   const counts = { draw: 0, bind: 0 };
   const gl = new Proxy(
@@ -332,15 +309,17 @@ test('en nivel 2 de rendimiento se dibuja la mitad de escombros y humo', () => {
       dy: 0.5,
       dz: 0,
     })),
-    DB: Array.from({ length: 320 }, (_, i) => ({
+    // Sin escombros, DB solo lleva marcas de aliado caído: pocas y
+    // siempre se dibujan todas; lo que se reduce a la mitad es el humo.
+    DB: Array.from({ length: 6 }, (_, i) => ({
       kind: 'box',
-      x: -60 + (i % 10) * 14,
+      x: -60 + i * 14,
       y: 0.2,
-      z: 100 + Math.floor(i / 10) * 12,
+      z: 100,
       sx: 0.3,
       sy: 0.2,
-      sz: 0.3,
-      color: [0.76, 0.61, 0.36],
+      sz: 0.65,
+      color: [0.24, 0.65, 0.16],
       yaw: 0,
     })),
     PK: [],
@@ -355,8 +334,12 @@ test('en nivel 2 de rendimiento se dibuja la mitad de escombros y humo', () => {
   scene.perfLevel = 2;
   counts.draw = 0;
   assert.equal(r.render(scene), true);
-  assert.ok(
-    counts.draw < full * 0.85,
+  // Solo el humo usa stride en nivel 2: de 160 bocanadas se dibujan
+  // 80, así que el nivel 2 dibuja exactamente 80 menos que el nivel 0
+  // (las marcas de aliado caído se dibujan todas siempre).
+  assert.equal(
+    full - counts.draw,
+    80,
     `level 2 draws ${counts.draw} vs level 0 ${full}`,
   );
 });

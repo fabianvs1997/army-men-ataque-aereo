@@ -1,12 +1,12 @@
-// Benchmark de la misión 2: simula la fase ESCOLTAR_BC con el campo de
-// escombros saturado (320 piezas, como en la captura) y mide el coste de
-// upd() por frame, con conteo de llamadas a cover.trace/move.
-// Uso: node scripts/bench-mission2.cjs [saturate=0|1] [frames=600]
+// Benchmark de la misión 2: simula la fase ESCOLTAR_BC tras matar a
+// los enemigos (antes el campo de escombros saturado, 320 piezas) y
+// mide el coste de upd() por frame, con conteo de llamadas a
+// cover.trace/move. Sin escombros, matar no debe degradar el frame.
+// Uso: node scripts/bench-mission2.cjs [kills=0|1] [frames=600]
 'use strict';
-const { game, seeded } = require('../support/fake-host.cjs');
-const Debris = require('../src/debris.js');
+const { game } = require('../support/fake-host.cjs');
 
-const saturate = process.argv[2] !== '0';
+const withKills = process.argv[2] !== '0';
 const FRAMES = Number(process.argv[3] || 600);
 
 function setup() {
@@ -35,37 +35,30 @@ function setup() {
   return { app, state, counts };
 }
 
-function saturateDebris(state) {
-  const rand = seeded(7);
-  const kinds = ['tank', 'tur', 'heli', 'inf', 'base'];
-  for (let i = 0; i < 30; i++) {
-    const k = kinds[i % kinds.length];
-    Debris.emit(
-      state,
-      { k, x: -60 + (i % 10) * 14, y: 2, z: 100 + Math.floor(i / 10) * 12 },
-      true,
-      rand,
-    );
+function killEnemies(app, state) {
+  // Matar a todos los enemigos presentes: antes cada baja dejaba
+  // piezas que se acumulaban en el camino; ahora no queda nada.
+  let kills = 0;
+  for (const e of [...state.E]) {
+    if (app.combat.kill(e)) kills++;
   }
-  // Asentar todos los escombros como en una partida larga.
-  const groundAt = (x, z) => state.world.height(x, z);
-  for (let i = 0; i < 600; i++) Debris.step(state, 1 / 60, groundAt);
-  return state.DB.filter((p) => p.settled).length;
+  state.E = state.E.filter((e) => !e.dead);
+  return kills;
 }
 
 function run() {
   const { app, state, counts } = setup();
-  const settled = saturate ? saturateDebris(state) : 0;
+  const kills = withKills ? killEnemies(app, state) : 0;
   app.fire = true;
   const t0 = process.hrtime.bigint();
   for (let i = 0; i < FRAMES; i++) app.upd(1 / 60);
   const t1 = process.hrtime.bigint();
   const ms = Number(t1 - t0) / 1e6;
   console.log(JSON.stringify({
-    saturate, frames: FRAMES,
+    kills, frames: FRAMES,
     msPerFrame: +(ms / FRAMES).toFixed(3),
     totalMs: +ms.toFixed(1),
-    DB: state.DB.length, settled,
+    DB: state.DB.length,
     E: state.E.length, BL: state.BL.length, EB: state.EB.length,
     MS: state.MS.length, SM: state.SM.length, FX: state.FX.length,
     tracePerFrame: +(counts.trace / FRAMES).toFixed(1),

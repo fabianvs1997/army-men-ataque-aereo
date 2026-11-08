@@ -11,7 +11,7 @@ oscuro con ruedas claras, torreta GRANDE en cúpula redondeada con
 escotilla plana y circular, cañón largo y fino con bocacha
 cilíndrica, glacis amarillo, dos faros redondos en la cubierta
 delantera y rejilla oscura en la trasera. No es lo que hoy dibuja
-el juego en `src/toy-renderer.js` y `src/debris.js` (que es más
+el juego en `src/toy-renderer.js` (que es más
 ancho que largo y lleva cúpula alta con banda rojiza y antena). No
 hay tanque verde del jugador en el juego (el jugador es el
 helicóptero), así que solo se modela la variante Tan.

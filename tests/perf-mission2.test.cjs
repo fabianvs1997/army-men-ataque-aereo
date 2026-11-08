@@ -1,74 +1,57 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Collision = require('../src/collision.js');
-const Debris = require('../src/debris.js');
 const Renderer = require('../src/toy-renderer.js');
-const { game, seeded } = require('../support/fake-host.cjs');
+const { game } = require('../support/fake-host.cjs');
 
-// Rendimiento de la misión 2 (congelamiento en iPhone): con el campo de
-// escombros saturado (320 piezas), cada trace/move recorría todos los
-// escombros. Ahora los asentados van a un índice espacial y solo las piezas
-// en el aire se revisan directas. Estos tests fijan el comportamiento y el
-// presupuesto de la simulación.
+// Rendimiento de la misión 2 (congelamiento en iPhone): antes cada baja
+// dejaba escombros (hasta 320 piezas) y cada trace/move los recorría
+// todos; el índice espacial lo mitigaba, pero los restos seguían
+// cerrando el camino al pelotón. Ahora no hay escombros: destruir un
+// enemigo solo deja explosión y humo, y state.DB solo guarda las
+// marcas de aliado caído (2 cajitas por baja, estáticas, que no
+// bloquean). Estos tests fijan el comportamiento y el presupuesto de
+// la simulación.
 
 function wallAt(x) {
   return { kind: 'box', x, y: 5, z: 0, sx: 0.25, sy: 5, sz: 8, yaw: 0 };
 }
 
-test('settled wreckage still blocks shots through the spatial grid', () => {
+test('world solids still block shots; fallen-ally markers never do', () => {
   const state = { DC: [], DB: [] };
   const world = {
-    yard: [],
+    yard: [wallAt(5)],
     rocks: [],
     height: () => 0,
     clearOfLandmarks: () => true,
   };
   const cover = Collision.create(state, world);
-  // 320 piezas asentadas lejos del disparo, más un muro de escombros en medio.
-  const rand = seeded(5);
-  for (let i = 0; i < 319; i++)
-    state.DB.push({
-      kind: 'box',
-      x: 200 + rand() * 50,
-      y: 0.2,
-      z: 200 + rand() * 50,
-      sx: 0.3,
-      sy: 0.2,
-      sz: 0.3,
-      settled: true,
-    });
-  state.DB.push({ ...wallAt(5), settled: true });
+  // El muro del mundo sí bloquea el disparo.
   assert.ok(cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }));
-  // Sin nada en el camino, el mismo campo de escombros no da falsos positivos.
+  // Sin nada en el camino, no hay falsos positivos.
   assert.equal(
     cover.trace({ x: 0, y: 5, z: 100 }, { x: 10, y: 5, z: 100 }),
     null,
   );
-  // Mover no se atasca en escombros lejanos.
+  // Las marcas de aliado caído no bloquean ni el disparo ni el paso,
+  // aunque estén justo en medio del camino (aquí, en la ruta libre).
+  state.DB.push({
+    kind: 'box',
+    x: 5,
+    y: 0.2,
+    z: 100,
+    sx: 0.3,
+    sy: 0.2,
+    sz: 0.65,
+    settled: true,
+  });
   assert.equal(
-    cover.move({ x: 0, y: 5, z: 100 }, { x: 10, y: 5, z: 100 }, 1, 1).x,
-    10,
-  );
-});
-
-test('airborne debris still blocks until it settles', () => {
-  const state = { DC: [], DB: [] };
-  const world = {
-    yard: [],
-    rocks: [],
-    height: () => 0,
-    clearOfLandmarks: () => true,
-  };
-  const cover = Collision.create(state, world);
-  const piece = { ...wallAt(5), settled: false };
-  state.DB.push(piece);
-  assert.ok(cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }));
-  piece.settled = true;
-  assert.ok(cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }));
-  state.DB.length = 0;
-  assert.equal(
-    cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }),
+    cover.trace({ x: 0, y: 1, z: 100 }, { x: 10, y: 1, z: 100 }),
     null,
+  );
+  assert.equal(
+    cover.move({ x: 0, y: 1, z: 100 }, { x: 10, y: 1, z: 100 }, 1, 1).x,
+    10,
   );
 });
 
@@ -85,7 +68,7 @@ test('damageSoldier ignores soldiers that are not part of the mission', () => {
   );
 });
 
-function mission2Setup(saturate) {
+function mission2Setup(withKills) {
   const { app, state } = game(123);
   app.start(2, true);
   state.mission.stage = 'ESCOLTAR_BC';
@@ -100,26 +83,12 @@ function mission2Setup(saturate) {
   state.P.x = route[3][0];
   state.P.z = route[3][1] - 12;
   for (const e of state.E) e.cd = 0;
-  if (saturate) {
-    const rand = seeded(7);
-    const kinds = ['tank', 'tur', 'heli', 'inf', 'base'];
-    // Emitir hasta saturar el tope (antes bastaban 30 emisiones
-    // porque cada baja dejaba 10 cubitos; ahora deja 4 y hacen
-    // falta más emisiones para llegar a 320).
-    for (let i = 0; state.DB.length < Debris.MAX_PIECES; i++)
-      Debris.emit(
-        state,
-        {
-          k: kinds[i % kinds.length],
-          x: -60 + (i % 10) * 14,
-          y: 2,
-          z: 100 + Math.floor(i / 10) * 12,
-        },
-        true,
-        rand,
-      );
-    const groundAt = (x, z) => state.world.height(x, z);
-    for (let i = 0; i < 600; i++) Debris.step(state, 1 / 60, groundAt);
+  if (withKills) {
+    // Matar a todos los enemigos presentes: antes cada baja dejaba
+    // piezas que se acumulaban en el camino; ahora no queda nada.
+    for (const e of [...state.E]) app.combat.kill(e);
+    state.E = state.E.filter((e) => !e.dead);
+    assert.equal(state.DB.length, 0, 'matar enemigos no deja restos');
   }
   return { app, state };
 }
@@ -135,23 +104,21 @@ function timeFrames(app, frames) {
   return best / frames;
 }
 
-test('mission 2 escort phase stays fast with a saturated debris field', () => {
+test('mission 2 escort phase stays fast after many kills leave no debris', () => {
   const FRAMES = 240;
   const empty = mission2Setup(false);
   const emptyMs = timeFrames(empty.app, FRAMES);
-  const full = mission2Setup(true);
-  assert.equal(full.state.DB.length, Debris.MAX_PIECES);
-  const fullMs = timeFrames(full.app, FRAMES);
-  // Antes del índice espacial, el campo saturado costaba ~4x el vacío
-  // (8,2 ms/frame frente a 2,1 ms/frame en Node); ahora debe costar
-  // prácticamente lo mismo. El margen 2,5x absorbe el ruido de la máquina.
+  const afterKills = mission2Setup(true);
+  const killsMs = timeFrames(afterKills.app, FRAMES);
+  // Sin escombros que acumular ni índice que mantener, matar no debe
+  // costar más que no matar. El margen 2,5x absorbe el ruido de la máquina.
   assert.ok(
-    fullMs < emptyMs * 2.5,
-    `saturated ${fullMs.toFixed(2)} ms/frame vs empty ${emptyMs.toFixed(2)} ms/frame`,
+    killsMs < emptyMs * 2.5,
+    `after kills ${killsMs.toFixed(2)} ms/frame vs empty ${emptyMs.toFixed(2)} ms/frame`,
   );
-  assert.ok(fullMs < 10, `saturated frame budget: ${fullMs.toFixed(2)} ms`);
-  assert.ok(full.state.DB.length <= Debris.MAX_PIECES);
-  assert.ok(full.state.SM.length <= 160);
+  assert.ok(killsMs < 10, `frame budget: ${killsMs.toFixed(2)} ms`);
+  assert.equal(afterKills.state.DB.length, 0);
+  assert.ok(afterKills.state.SM.length <= 160);
 });
 
 function glFixture() {
@@ -212,15 +179,16 @@ test('WebGL reuses mesh bindings and culls off-screen roads', () => {
       dy: 0.5,
       dz: 0,
     })),
-    DB: Array.from({ length: 320 }, (_, i) => ({
+    // Sin escombros, DB solo lleva marcas de aliado caído: pocas.
+    DB: Array.from({ length: 6 }, (_, i) => ({
       kind: 'box',
-      x: -60 + (i % 10) * 14,
+      x: -60 + i * 14,
       y: 0.2,
-      z: 100 + Math.floor(i / 10) * 12,
+      z: 100,
       sx: 0.3,
       sy: 0.2,
-      sz: 0.3,
-      color: [0.76, 0.61, 0.36],
+      sz: 0.65,
+      color: [0.24, 0.65, 0.16],
       yaw: 0,
     })),
     PK: [],

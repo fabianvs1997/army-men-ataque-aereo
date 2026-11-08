@@ -3,7 +3,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const Combat = require('../src/combat.js');
-const Debris = require('../src/debris.js');
 const Collision = require('../src/collision.js');
 const Renderer = require('../src/toy-renderer.js');
 const Maps = require('../src/original-maps.js');
@@ -176,33 +175,57 @@ test('la letra del helipuerto se dibuja con trazos continuos, no cubitos sueltos
   assert.ok(Math.abs(three[0].x - 0) < 1e-9);
 });
 
-test('cada baja deja 4 cubitos, no 10, y los escombros caducan', () => {
-  const s = { P: { x: 0, z: 0 }, DB: [] };
-  Debris.emit(s, { k: 'tank', x: 0, y: 0, z: 0 }, true, seeded(11));
-  const small = s.DB.filter((p) => !p.large);
-  assert.equal(small.length, 4);
-  assert.ok(s.DB.some((p) => p.large), 'el pecio grande sigue existiendo');
-  // Tras asentarse y pasar 40 s, no queda nada.
-  const ground = () => 0;
-  for (let i = 0; i < 2400; i++) Debris.step(s, 1 / 60, ground);
+// Sin escombros (2026-11-07, pedido de Fabian): cada baja ya no deja
+// cubitos ni pecio; solo quedan la bola de fuego y el humo, que se
+// apagan solos. El test viejo de "4 cubitos que caducan" se sustituye
+// por este: matar deja DB vacío y la explosión sigue existiendo.
+test('cada baja no deja ningún resto, solo explosión y humo', () => {
+  const s = {
+    P: { x: 0, z: 0, sc: 0 },
+    DB: [],
+    FX: [],
+    SM: [],
+    mission: { enemyEliminated() {} },
+  };
+  const env = {
+    state: s,
+    FX: s.FX,
+    SM: s.SM,
+    E: [],
+    BL: [],
+    EB: [],
+    MS: [],
+    groundAt: () => 0,
+    clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    sfx: {},
+    buzz: () => {},
+    ToyMissions: require('../src/toy-missions.js'),
+    cover: { trace: () => null },
+    hurt: () => {},
+    P: s.P,
+    st: 'play',
+  };
+  const combat = Combat.create(env);
+  for (const k of ['inf', 'tank', 'tur', 'heli', 'base']) {
+    const e = { x: 0, y: 0, z: 0, k, hp: 1, r: 2, p: 10, cd: 999 };
+    assert.equal(combat.kill(e), true);
+  }
   assert.equal(s.DB.length, 0);
-  assert.deepEqual(Debris.SETTLED_TTL, { small: 10, large: 30 });
+  assert.equal(s.FX.length, 5, 'una bola de fuego por baja');
+  assert.ok(s.SM.length > 0, 'humo de las explosiones');
 });
 
-test('los cubitos no bloquean al pelotón, el pecio grande sí', () => {
+// Las marcas de aliado caído (state.DB) no bloquean: son 2 cajitas
+// diminutas por baja, y el camino queda libre aunque haya caídos.
+test('las marcas de aliado caído no bloquean el camino', () => {
   const state = { DC: [], DB: [] };
   const world = { yard: [], rocks: [], height: () => 0, clearOfLandmarks: () => true };
   const cover = Collision.create(state, world);
-  // Cubito asentado a la altura del disparo: no estorba.
   state.DB.push({
-    kind: 'box', x: 5, y: 1, z: 0, sx: 0.3, sy: 0.2, sz: 0.3, settled: true,
+    kind: 'box', x: 5, y: 0.2, z: 0, sx: 0.3, sy: 0.2, sz: 0.65, settled: true,
   });
   assert.equal(cover.trace({ x: 0, y: 1, z: 0 }, { x: 10, y: 1, z: 0 }), null);
-  // Pieza grande en el mismo sitio: sí bloquea.
-  state.DB.push({
-    kind: 'box', x: 5, y: 1, z: 0, sx: 2.5, sy: 0.65, sz: 2.4, settled: true,
-  });
-  assert.ok(cover.trace({ x: 0, y: 1, z: 0 }, { x: 10, y: 1, z: 0 }));
+  assert.equal(cover.move({ x: 0, y: 1, z: 0 }, { x: 10, y: 1, z: 0 }, 1, 1).x, 10);
 });
 
 test('Bajas cuenta enemigos de verdad y el resumen no se duplica', () => {

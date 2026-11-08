@@ -121,7 +121,7 @@ test('movement sweeps and slides, respects height, and can escape an initial ove
     f.cover.move({ x: 0, y: 5, z: 0 }, { x: 4, y: 5, z: 0 }, 1, 1).x > 0,
   );
 });
-test('every yard part, rocks, shrubs and wreckage participates in collision', () => {
+test('every yard part, rocks and shrubs participates in collision; fallen-ally markers do not', () => {
   const state = { DC: World.shrubs, DB: [] },
     c = Collision.create(state, World);
   for (const p of World.yard) assert.ok(c.overlaps(p, 0.01, 0.01));
@@ -142,8 +142,21 @@ test('every yard part, rocks, shrubs and wreckage participates in collision', ()
       ),
     );
   const f = fixture([]);
-  f.state.DB.push({ ...wall });
-  assert.ok(f.cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }));
+  // El muro en el patio sí bloquea; la marca de aliado caído en el
+  // mismo sitio, no (sin escombros, state.DB no participa en colisión).
+  f.state.DB.push({
+    kind: 'box',
+    x: 5,
+    y: 0.2,
+    z: 0,
+    sx: 0.3,
+    sy: 0.2,
+    sz: 0.65,
+    settled: true,
+  });
+  assert.equal(f.cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }), null);
+  const walled = fixture();
+  assert.ok(walled.cover.trace({ x: 0, y: 5, z: 0 }, { x: 10, y: 5, z: 0 }));
 });
 test('hidden rescue-area vegetation has no invisible collider; terrain stops low shots', () => {
   const state = {

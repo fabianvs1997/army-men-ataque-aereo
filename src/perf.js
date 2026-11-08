@@ -6,11 +6,11 @@
   'use strict';
   // Válvula de seguridad de rendimiento: si los frames se alargan de
   // forma sostenida, el juego baja solo de detalle en pasos (resolución
-  // y cadencia de dibujo, luego también escombros/humo dibujados) en vez
-  // de quedarse congelado. Si vuelve a ir fluido, sube de nivel con
+  // y cadencia de dibujo, luego también humo dibujado) en vez de
+  // quedarse congelado. Si vuelve a ir fluido, sube de nivel con
   // histéresis para no oscilar. No toca la simulación ni la jugabilidad.
   // Niveles: 0 detalle completo, 1 resolución 1.25, 2 resolución 1 +
-  // dibujo a 30 fps + la mitad de escombros y humo dibujados.
+  // dibujo a 30 fps + la mitad de humo dibujado.
   const CAPS = [1.75, 1.25, 1];
   function create() {
     const state = {

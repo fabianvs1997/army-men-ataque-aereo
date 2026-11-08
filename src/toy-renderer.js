@@ -629,9 +629,10 @@ void main(){
       const gl = this.gl,
         m = this.meshes[kind],
         u = this.loc;
-      // Las piezas consecutivas del mismo tipo (escombros, humo, trazadoras)
-      // reutilizan el buffer y los punteros ya enlazados: en una escena con
-      // ~900 dibujos por frame eso ahorra varias llamadas GL por pieza.
+      // Las piezas consecutivas del mismo tipo (humo, trazadoras,
+      // marcas de aliado caído) reutilizan el buffer y los punteros ya
+      // enlazados: en una escena con ~900 dibujos por frame eso ahorra
+      // varias llamadas GL por pieza.
       if (this.boundMesh !== kind) {
         gl.bindBuffer(gl.ARRAY_BUFFER, m.buffer);
         gl.enableVertexAttribArray(this.position);
@@ -951,7 +952,8 @@ void main(){
           scene,
         gl = this.gl,
         u = this.loc;
-      // Nivel de degradado 2: se dibuja la mitad de escombros y de humo.
+      // Nivel de degradado 2: se dibuja la mitad del humo (las marcas
+      // de aliado caído de scene.DB son pocas y se dibujan todas).
       const stride = (scene.perfLevel || 0) >= 2 ? 2 : 1;
       const d = Math.min(
           root.devicePixelRatio || 1,
@@ -1437,7 +1439,9 @@ void main(){
         }
       }
       this.groundOffset = 0;
-      for (let di = 0; di < (scene.DB || []).length; di += stride) {
+      // Marcas de aliado caído (state.DB): ya no hay escombros de
+      // enemigo, así que son pocas y se dibujan todas, sin stride.
+      for (let di = 0; di < (scene.DB || []).length; di++) {
         const d = scene.DB[di];
         if (visible(d)) {
           this.part(
@@ -1589,8 +1593,8 @@ void main(){
           );
         // Tanque Tan: modelo de Blender (rev. 3) en vez del procedural.
         // La elipse oscura del suelo de arriba se conserva; si no hay
-        // modelo, cae al dibujado procedural de abajo. Los pecios de
-        // tanque destruido siguen siendo los de src/debris.js.
+        // modelo, cae al dibujado procedural de abajo. El tanque
+        // destruido no deja pecio: solo explosión y humo.
         if (isTank && this.tryDrawTankModel(e, yaw)) continue;
         if (e.k === 'base') {
           this.part('rounded', e.x, 2.5, e.z, 5, 2.5, 4, col);

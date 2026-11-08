@@ -1,12 +1,8 @@
 (function (root, factory) {
-  const api = factory(
-    typeof module === 'object' && module.exports
-      ? require('./debris.js')
-      : root.ToyDebris,
-  );
+  const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ToyCombat = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Debris) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   const GUN_ASSIST_ANGLE = (12 * Math.PI) / 180,
     GUN_ASSIST_RANGE = 130,
@@ -23,10 +19,13 @@
     // opacos gigantes (un tanque llegaba a 22 u de diámetro y crecía
     // durante su vida). Ahora son bolas de fuego más pequeñas que se
     // encogen y se apagan con la edad (el renderizador les da alfa),
-    // con humo y escombros. El tamaño es solo visual: el daño y el
-    // balance no cambian (el misil sigue haciendo 6 y la muerte del
-    // enemigo no daña a nadie más). La vida es el tiempo que la bola
-    // tarda en consumirse.
+    // con humo. El tamaño es solo visual: el daño y el balance no
+    // cambian (el misil sigue haciendo 6 y la muerte del enemigo no
+    // daña a nadie más). La vida es el tiempo que la bola tarda en
+    // consumirse. No quedan escombros: al destruir un enemigo solo
+    // quedan la bola de fuego y el humo, que desaparecen solos; nada
+    // sólido queda en el suelo (los restos saturaban el juego y
+    // cerraban el camino al pelotón).
     EXPLOSION_LIFE = 0.55,
     EXPLOSION_SIZE = Object.freeze({
       inf: 2.5,
@@ -93,7 +92,6 @@
     e,
     {
       random = Math.random,
-      visualRandom = Math.random,
       onBreak = () => {},
       onBuzz = () => {},
     } = {},
@@ -101,7 +99,8 @@
     if (e.dead) return false;
     e.dead = 1;
     state.mission?.enemyEliminated?.(e);
-    Debris.emit(state, e, true, visualRandom);
+    // Sin escombros: la explosión (bola de fuego + humo) la pone
+    // hitEnemy/killEnemy; aquí no queda ningún resto en el suelo.
     onBreak(true);
     onBuzz(30);
     state.P.sc += e.p;
@@ -119,7 +118,17 @@
     e.fl = 0;
     e.chips = Math.min(6, (e.chips || 0) + 1);
     if (e.hp <= 0) return kill(state, e, effects);
-    Debris.emit(state, e, false, effects.visualRandom, point);
+    // Daño visible sin restos: al llegar al umbral el enemigo pierde
+    // la pieza que el renderizador dibujaba como desprendida (rotor
+    // del helicóptero, techo de la base), pero la pieza no cae al
+    // suelo ni deja cubitos: antes cada impacto dejaba 4 cubitos que
+    // alfombraban el camino. Umbrales iguales que antes (base 4,
+    // resto con pieza desprendible 2).
+    if (
+      !e.detached &&
+      (e.k === 'heli' ? e.chips >= 2 : e.k === 'base' ? e.chips >= 4 : false)
+    )
+      e.detached = true;
     if (effects.onBreak) effects.onBreak(false);
     return false;
   }
@@ -143,9 +152,8 @@
       },
       // Matar a un enemigo es una explosión: la bola de fuego (FX, la
       // dibuja el renderer con los colores del original) más varias
-      // bocanadas de humo oscuro que suben. Los escombros ya los pone
-      // Debris.emit dentro de kill(); aquí solo se añade el fuego y
-      // el humo.
+      // bocanadas de humo oscuro que suben. No quedan escombros: ni
+      // pecio ni cubitos (ver kill()).
       killEnemy = (e) => {
         if (e.dead) return false;
         const ok = kill(context, e, effects);
@@ -379,7 +387,6 @@
       gunVelocity,
       bulletKindFor,
       stepProjectiles,
-      stepDebris: (dt) => Debris.step(context, dt, env.groundAt),
     };
   }
   return {

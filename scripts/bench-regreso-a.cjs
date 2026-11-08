@@ -228,7 +228,7 @@ function run(mission, seed, variant) {
     boarded,
     stageFinal: m.stage,
     gameState: state.st,
-    debris: state.DB.length,
+    fallenMarkers: state.DB.length,
     enemiesLeft: state.E.length,
     worstFrame: worst,
     legs,

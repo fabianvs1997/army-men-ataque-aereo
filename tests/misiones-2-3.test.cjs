@@ -217,11 +217,12 @@ function rescue(g, keep = () => false) {
 }
 
 // Todos los del pelotón están contabilizados: a salvo en C o caídos.
-// Un soldado puede morir de atasco si los escombros de los enemigos
-// abatidos le cierran el camino y el A* se corta por presupuesto
-// (reloj de pared) en una máquina cargada; la misión sigue adelante
-// con los supervivientes, así que el conteo exacto no es exigible:
-// lo que garantiza la misión es que todos los supervivientes lleguen.
+// Sin escombros (2026-11-07), ningún soldado puede morir de atasco
+// por restos de enemigos abatidos cerrándole el camino: al destruir
+// un enemigo no queda nada en el suelo y el camino queda libre. Si
+// un soldado cayera por otra causa, la misión sigue adelante con los
+// supervivientes; lo que garantiza la misión es que todos los
+// supervivientes lleguen.
 function allAccountedFor(m) {
   const fallen = m.allies.filter((a) => a.state === 'CAIDO').length;
   return m.delivered + fallen === m.allies.length;
@@ -242,6 +243,12 @@ test('Misión 2 completa en el juego real: garajes destruidos, rescate y entrega
   assert.ok(
     allAccountedFor(m),
     `m2: entregados ${m.delivered}, fase ${m.stage}`,
+  );
+  // Sin escombros en el camino, ningún soldado muere de atasco.
+  assert.equal(
+    m.allies.filter((a) => a.cause === 'atasco').length,
+    0,
+    'ningún soldado murió de atasco',
   );
   assert.equal(m.stage, 'COMPLETADA');
   assert.equal(s.st, 'win');

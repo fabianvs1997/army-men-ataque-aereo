@@ -1,13 +1,14 @@
 // Benchmark del congelamiento en la escolta B → C (misión 2).
 // Reproduce el escenario que colgaba el juego: pelotón marchando hacia C
-// con un muro de escombros en la ruta, más el coste de arrancar la misión.
+// con un muro en la ruta, más el coste de arrancar la misión. Antes el
+// muro era de escombros (ya no existen: ningún enemigo deja restos), así
+// que el muro ahora es de rocas del mundo, que sí bloquean.
 // Uso: node scripts/bench-escort-freeze.cjs
 // Imprime JSON: peor frame, llamadas a Navigation.path (total/máx) y
 // coste de generar el mundo + la malla de terreno.
 'use strict';
-const { game, seeded } = require('../support/fake-host.cjs');
+const { game } = require('../support/fake-host.cjs');
 const Navigation = require('../src/escort-navigation.js');
-const Debris = require('../src/debris.js');
 const MissionMap = require('../src/mission-map.js');
 const ToyWorld = require('../src/toy-world.js');
 
@@ -31,26 +32,19 @@ function wallScenario() {
   const { app, state } = game(123);
   app.start(2, true);
   const route = state.mission.rules.routeBC;
-  const groundAt = (x, z) => state.world.height(x, z);
   const wx = route[4][0],
     wz = route[4][1];
+  // Muro de rocas cruzando la ruta (antes era un muro de escombros en
+  // state.DB; sin escombros, las rocas del mundo son el obstáculo).
+  // Se reasigna state.DC para que Collision.rebuild() reindexe el mundo.
   for (let i = -8; i <= 8; i++) {
-    state.DB.push({
-      kind: 'box',
+    state.world.rocks.push({
       x: wx + i * 1.2,
-      y: groundAt(wx + i * 1.2, wz) + 0.2,
       z: wz,
-      sx: 1.2,
-      sy: 0.4,
-      sz: 1.2,
-      color: [0.76, 0.61, 0.36],
-      yaw: 0,
-      settled: true,
-      vx: 0,
-      vy: 0,
-      vz: 0,
+      s: 2,
     });
   }
+  state.DC = [...state.DC];
   state.mission.stage = 'ESCOLTAR_BC';
   state.mission.allies.forEach((a, i) => {
     if (a.wounded) return;

@@ -380,7 +380,7 @@ test('?perf=1&modelos=1 muestra FPS y modelos en la misma línea', () => {
 
 test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'modelos-visibles-1');
+  assert.equal(bootstrap.VERSION, 'sin-escombros-1');
   const order = bootstrap.scripts;
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('toy-renderer'));
   assert.ok(order.indexOf('modelo-helicoptero') < order.indexOf('toy-renderer'));
