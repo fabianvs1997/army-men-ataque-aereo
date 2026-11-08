@@ -30,6 +30,16 @@ const MODELS = [
     out: path.join(ROOT, 'src', 'modelo-tanque.js'),
     global: 'ToyModeloTanque',
   },
+  {
+    gltf: path.join(ROOT, 'assets', 'jeep-tan.gltf'),
+    out: path.join(ROOT, 'src', 'modelo-jeep.js'),
+    global: 'ToyModeloJeep',
+  },
+  {
+    gltf: path.join(ROOT, 'assets', 'caja-suministros.gltf'),
+    out: path.join(ROOT, 'src', 'modelo-caja.js'),
+    global: 'ToyModeloCaja',
+  },
 ];
 
 function main() {

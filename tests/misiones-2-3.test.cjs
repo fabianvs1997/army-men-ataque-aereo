@@ -533,12 +533,19 @@ test('la dificultad crece de la 1 a la 3: vida, tanques y aire', () => {
     };
   });
   assert.deepEqual(totals, [
-    { hp: 117, tanks: 3, air: 1 },
+    // Misión 1 del vídeo: sin helicóptero Tan, 3 tanques guardando
+    // la caja, 1 jeep al norte y 7 de infantería en grupos (147 HP).
+    { hp: 147, tanks: 6, air: 0 },
     { hp: 162, tanks: 6, air: 2 },
     { hp: 164, tanks: 9, air: 4 },
   ]);
   assert.ok(totals[0].hp < totals[1].hp && totals[1].hp < totals[2].hp);
-  assert.ok(totals[0].tanks < totals[1].tanks && totals[1].tanks < totals[2].tanks);
+  // M1 y M2 tienen 6 tanques cada una (la primera ya trae los 3
+  // guardias de la caja del vídeo): la dificultad crece en vida y
+  // aire, y en tanques de la 2 a la 3.
+  assert.ok(
+    totals[0].tanks <= totals[1].tanks && totals[1].tanks < totals[2].tanks,
+  );
 });
 
 test('positionAlong recorre una polilínea a velocidad constante', () => {

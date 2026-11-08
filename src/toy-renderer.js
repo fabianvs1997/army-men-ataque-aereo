@@ -344,6 +344,8 @@ void main(){
     initModels() {
       this.modelHeli = null;
       this.modelTank = null;
+      this.modelJeep = null;
+      this.modelCaja = null;
       // Estado de cada modelo para ?modelos=1 y para el Registro: qué se
       // dibuja (Blender o procedural) y, si cae al respaldo, por qué.
       // Sin datos embebidos el motivo es provisional: _fetchModels
@@ -351,6 +353,8 @@ void main(){
       this.modelStatus = {
         heli: { source: 'procedural', reason: 'sin datos embebidos' },
         tank: { source: 'procedural', reason: 'sin datos embebidos' },
+        jeep: { source: 'procedural', reason: 'sin datos embebidos' },
+        caja: { source: 'procedural', reason: 'sin datos embebidos' },
       };
       if (!this.loader) return;
       try {
@@ -388,6 +392,36 @@ void main(){
           reason: e && e.message ? e.message : String(e),
         };
       }
+      try {
+        if (root.ToyModeloJeep) {
+          this.modelJeep = this.loader.parse(root.ToyModeloJeep);
+          this.modelStatus.jeep = { source: 'blender', reason: '' };
+        }
+      } catch (e) {
+        console.error(
+          '[modelos] jeep Blender no disponible, uso procedural: ' +
+            (e && e.message ? e.message : e),
+        );
+        this.modelStatus.jeep = {
+          source: 'procedural',
+          reason: e && e.message ? e.message : String(e),
+        };
+      }
+      try {
+        if (root.ToyModeloCaja) {
+          this.modelCaja = this.loader.parse(root.ToyModeloCaja);
+          this.modelStatus.caja = { source: 'blender', reason: '' };
+        }
+      } catch (e) {
+        console.error(
+          '[modelos] caja Blender no disponible, uso procedural: ' +
+            (e && e.message ? e.message : e),
+        );
+        this.modelStatus.caja = {
+          source: 'procedural',
+          reason: e && e.message ? e.message : String(e),
+        };
+      }
     }
     // Línea para ?modelos=1: qué se dibuja y por qué cayó al respaldo.
     modelStatusText() {
@@ -398,14 +432,18 @@ void main(){
           : label +
             ': procedural' +
             (st && st.reason ? ' (' + st.reason + ')' : '');
-      return 'Modelos · ' + part('helicóptero', s.heli) + ' · ' + part('tanques', s.tank);
+      return 'Modelos · ' + part('helicóptero', s.heli) + ' · ' + part('tanques', s.tank) + ' · ' + part('jeep', s.jeep) + ' · ' + part('caja', s.caja);
     }
     // Respaldo por red (GitHub Pages): solo si falta algún modelo y
     // hay fetch disponible; se intenta una sola vez por sesión. Los
     // fallos no rompen el juego, pero sí quedan registrados (ver
     // modelStatus) en vez de tragarse en silencio.
     _fetchModels() {
-      if (this._fetchTried || (this.modelHeli && this.modelTank)) return;
+      if (
+        this._fetchTried ||
+        (this.modelHeli && this.modelTank && this.modelJeep && this.modelCaja)
+      )
+        return;
       this._fetchTried = true;
       const fetchFn = root && root.fetch;
       if (!this.loader || typeof fetchFn !== 'function') return;
@@ -413,6 +451,8 @@ void main(){
       const jobs = [
         ['assets/helicoptero.gltf', 'modelHeli', 'heli', 'helicóptero'],
         ['assets/tanque-tan.gltf', 'modelTank', 'tank', 'tanque'],
+        ['assets/jeep-tan.gltf', 'modelJeep', 'jeep', 'jeep'],
+        ['assets/caja-suministros.gltf', 'modelCaja', 'caja', 'caja'],
       ];
       for (const [url, key, statusKey, label] of jobs) {
         if (self[key]) continue;
@@ -610,6 +650,34 @@ void main(){
         turretAngle: 0,
         flash: e.fl > 0,
       });
+    }
+    // Jeep/camión Tan (Misión 1): mismo patrón que el tanque, sin
+    // torreta que girar. El modelo mide ~4,4 m de largo, como el
+    // procedural de abajo (radio de colisión 2,5 u).
+    tryDrawJeepModel(e, yaw) {
+      if (!this.loader || !this.modelJeep) return false;
+      const ground = this.world ? this.world.height(e.x, e.z) : 0,
+        L = this.loader,
+        rootMat = L.mat4Multiply(
+          L.mat4Translation(e.x, ground, e.z),
+          L.mat4RotationY(yaw + L.NOSE_YAW_OFFSET),
+        );
+      return this.drawModel(this.modelJeep, rootMat, {
+        flash: e.fl > 0,
+      });
+    }
+    // Caja de suministros verde brillante con flecha blanca (Misión
+    // 1): el modelo se construyó a escala 1:1 del juego (6 x 3,6 x
+    // 6 u, base en y = 0), así que la raíz va en el suelo o colgando
+    // bajo el helicóptero sin escalar. `y` es la base de la caja.
+    tryDrawCrateModel(x, y, z, yaw) {
+      if (!this.loader || !this.modelCaja) return false;
+      const L = this.loader,
+        rootMat = L.mat4Multiply(
+          L.mat4Translation(x, y, z),
+          L.mat4RotationY((yaw || 0) + L.NOSE_YAW_OFFSET),
+        );
+      return this.drawModel(this.modelCaja, rootMat, {});
     }
     setWorld(world, restoring = false) {
       this.world = world;
@@ -1289,11 +1357,17 @@ void main(){
           this.part('box', cx, cy + 1.05, cz, 1.9, 0.1, 1.9, [0.35, 0.38, 0.45], 0, 0);
           this.part('box', cx - 0.6, cy + 1.3, cz, 0.3, 0.5, 0.3, [0.95, 0.8, 0.2], 0, 0);
           this.part('box', cx + 0.6, cy + 1.3, cz, 0.3, 0.5, 0.3, [0.95, 0.8, 0.2], 0, 0);
-        } else {
-          this.part('box', cx, cy + 1.8, cz, 6, 3.6, 6, [0.13, 0.42, 0.14], 0, 0);
-          this.part('box', cx, cy + 3.9, cz, 6.5, 0.7, 6.5, [0.18, 0.52, 0.18], 0, 0);
+        } else if (!this.tryDrawCrateModel(cx, cy, cz, 0)) {
+          // Caja de suministros VERDE BRILLANTE con flecha blanca
+          // hacia arriba, como en el vídeo del original (la caja se
+          // levanta con el winch). La flecha es una pieza blanca
+          // fina sobre la tapa: mástil + cabeza, vista desde arriba.
+          this.part('box', cx, cy + 1.8, cz, 6, 3.6, 6, [0.08, 0.68, 0.12], 0, 0);
+          this.part('box', cx, cy + 3.9, cz, 6.5, 0.7, 6.5, [0.12, 0.82, 0.16], 0, 0);
           this.part('box', cx, cy + 4.3, cz, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1], 0, 0);
           this.part('box', cx, cy + 4.3, cz, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1], 0, 0);
+          this.part('box', cx, cy + 4.55, cz - 0.7, 0.8, 0.15, 2.6, [0.95, 0.95, 0.9], 0, 0);
+          this.part('box', cx, cy + 4.55, cz + 1.1, 2, 0.15, 1.4, [0.95, 0.95, 0.9], 0, 0);
         }
         // Marcador flotante sobre la carga que hay que levantar con
         // el winch: en la grabación la caja no se distinguía de los
@@ -1606,6 +1680,49 @@ void main(){
               0.25,
               0.25,
               0.4,
+              [0.15, 0.15, 0.13],
+              yaw,
+            );
+          continue;
+        }
+        if (e.k === 'jeep') {
+          // Jeep/camión Tan amarillo (Misión 1, del vídeo): chasis
+          // amarillo vivo, cabina caqui con parabrisas oscuro, caja
+          // trasera con lona y 4 ruedas. Armado (dispara como un
+          // tanque, ver src/game.js), más ligero que el tanque.
+          this.groundOffset = world ? world.height(e.x, e.z) : 0;
+          this.part('sphere', e.x, 0.13, e.z, 2.8, 0.16, 2.1, [0.25, 0.22, 0.18], yaw);
+          // Jeep/camión Tan: modelo de Blender en vez del procedural.
+          // La elipse oscura del suelo de arriba se conserva; si no
+          // hay modelo, cae al dibujado procedural de abajo.
+          if (this.tryDrawJeepModel(e, yaw)) continue;
+          this.part('rounded', e.x, 0.75, e.z, 1.5, 0.75, 3.4, TAN_TANK_BODY, yaw);
+          const cabJ = {
+              x: e.x + Math.sin(yaw) * -1.0,
+              z: e.z + Math.cos(yaw) * -1.0,
+            },
+            bedJ = {
+              x: e.x + Math.sin(yaw) * 0.9,
+              z: e.z + Math.cos(yaw) * 0.9,
+            };
+          this.part('box', cabJ.x, 1.6, cabJ.z, 1.3, 0.7, 1.1, [0.76, 0.61, 0.36], yaw);
+          this.part('box', cabJ.x + Math.sin(yaw) * -0.4, 1.7, cabJ.z + Math.cos(yaw) * -0.4, 1.1, 0.4, 0.15, [0.2, 0.22, 0.25], yaw);
+          this.part('box', bedJ.x, 1.5, bedJ.z, 1.4, 0.6, 1.6, [0.62, 0.48, 0.25], yaw);
+          this.part('box', bedJ.x, 1.9, bedJ.z, 1.45, 0.25, 1.65, [0.45, 0.38, 0.2], yaw);
+          for (const [lx, lz] of [
+            [-1.35, -1.3],
+            [1.35, -1.3],
+            [-1.35, 1.3],
+            [1.35, 1.3],
+          ])
+            this.part(
+              'box',
+              e.x + Math.sin(yaw) * lz + Math.cos(yaw) * lx,
+              0.35,
+              e.z + Math.cos(yaw) * lz - Math.sin(yaw) * lx,
+              0.3,
+              0.7,
+              0.7,
               [0.15, 0.15, 0.13],
               yaw,
             );
@@ -2110,7 +2227,10 @@ void main(){
                 0,
                 0,
               );
-            } else {
+            } else if (!this.tryDrawCrateModel(P.x, P.y - 5.5, P.z, 0)) {
+              // Caja verde brillante colgando (mismo verde que en el
+              // suelo, con la flecha blanca en la tapa no visible
+              // desde el lado: la caja va pegada a la panza).
               this.part(
                 'box',
                 P.x,
@@ -2119,7 +2239,7 @@ void main(){
                 3,
                 1.8,
                 3,
-                [0.13, 0.42, 0.14],
+                [0.08, 0.68, 0.12],
                 0,
                 0,
               );
@@ -2131,7 +2251,7 @@ void main(){
                 3.25,
                 0.35,
                 3.25,
-                [0.18, 0.52, 0.18],
+                [0.12, 0.82, 0.16],
                 0,
                 0,
               );

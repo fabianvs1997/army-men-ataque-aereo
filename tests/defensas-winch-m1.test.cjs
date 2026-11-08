@@ -173,15 +173,15 @@ test('las defensas son cobertura real: paran balas y movimiento, sin tapar la ru
 // --- Winch y reglas de la Misión 1 ---
 
 function driveToCargoPhase(mission) {
-  // Conduce una misión directa hasta CARGA_PORTAL (Misión 1) o hasta
-  // COMPLETADA (misiones sin carga), como los tests de mapas.
+  // Conduce una misión directa hasta CARGA_PORTAL (Misión 1, sin
+  // escolta: el jugador vuela a B y, sin amenazas, pasa directo a
+  // la caja y el portal) o hasta COMPLETADA (misiones sin carga),
+  // como los tests de mapas.
   const map = Maps.generate(mission.number),
     world = World.create(map),
     cover = Collision.create({ DC: world.shrubs, DB: [], mission }, world),
-    env = { groundAt: world.height, cover, enemies: [] };
-  for (const a of mission.allies.filter((a) => a.wounded))
-    for (let i = 0; i < 40; i++) mission.update(0.05, a, env);
-  const player = { ...mission.finish };
+    env = { groundAt: world.height, cover, enemies: [] },
+    player = { ...mission.rules.B };
   for (let i = 0; i < 2000 && mission.stage !== 'COMPLETADA'; i++) {
     if (mission.stage === 'CARGA_PORTAL' && mission.cargo) break;
     mission.update(0.05, player, env);
@@ -189,25 +189,52 @@ function driveToCargoPhase(mission) {
   return { env, player };
 }
 
-test('la Misión 1 no se puede levantar la caja antes de escoltar: el winch espera a su fase', () => {
+test('la Misión 1 no se puede levantar la caja antes de despejar: el winch espera a CARGA_PORTAL', () => {
   const map = Maps.generate(1),
     m = new Escort.Mission(1, map.rules);
   assert.equal(m.cargo.state, 'waiting');
   assert.equal(m.cargoView().state, 'waiting');
-  // Sobre la caja durante el embarque de heridos: no engancha.
-  const env = { groundAt: () => 0, enemies: [] };
-  for (const a of m.allies.filter((a) => a.wounded))
-    for (let i = 0; i < 40; i++) m.update(0.05, a, env);
-  assert.equal(m.stage, 'ESCOLTAR_BC');
-  // En cuanto empieza la escolta, el winch ya funciona: el jugador
-  // está en B, junto a la caja.
+  assert.equal(m.allies.length, 0, 'sin pelotón que escoltar');
+  assert.equal(m.guards.length, 0, 'sin guardias en la base');
+  // Sobre la caja con los tanques vivos: no engancha (todavía no
+  // es la fase de la caja) y la brújula apunta a la caja, no a C.
+  const env = {
+    groundAt: () => 0,
+    enemies: m.enemyPlan.map((e) => ({ ...e, dead: 0 })),
+  };
+  for (let i = 0; i < 40; i++) m.update(0.05, m.cargo, env);
+  assert.equal(m.stage, 'DESPEJAR_B');
+  assert.equal(m.cargo.state, 'waiting');
+  assert.ok(m.message.includes('tanques'), m.message);
+  assert.deepEqual(m.target({ x: 0, z: 0 }), {
+    x: m.cargo.x,
+    z: m.cargo.z,
+  });
+  // Al destruir las amenazas de B y de la caja, la fase abre.
+  for (const t of m.threats(env.enemies)) {
+    t.dead = 1;
+    t.hp = 0;
+    m.enemyEliminated(t);
+  }
+  m.update(0.05, m.cargo, env);
+  assert.equal(m.stage, 'CARGA_PORTAL');
+  // De las 4 amenazas de B solo 2 son tanques (b-west y
+  // crate-tank-2): b-north es torreta y b-east infantería.
+  assert.equal(m.tankKills, 2, 'los 2 tanques de B y de la caja');
+  // En CARGA_PORTAL los guardias de la caja siguen bloqueando el
+  // winch: hay que destruirlos antes de levantarla.
+  for (const t of m.threats(env.enemies)) {
+    t.dead = 1;
+    t.hp = 0;
+    m.enemyEliminated(t);
+  }
+  // Ahora el winch sí funciona sobre la caja.
   for (let i = 0; i < 40; i++) m.update(0.05, m.cargo, env);
   assert.equal(m.cargo.state, 'carried');
   assert.equal(m.drainEvents().some((e) => e.type === 'cargo-lifted'), true);
-  // Durante la escolta la brújula sigue apuntando a C, no a la caja:
-  // el pelotón manda; la caja se recuerda en el mensaje.
-  assert.deepEqual(m.target({ x: 0, z: 0 }), m.finish);
-  assert.ok(m.message.includes('Caja colgando'));
+  // Con la caja colgando, la brújula apunta al portal.
+  assert.deepEqual(m.target({ x: 0, z: 0 }), m.portal);
+  assert.ok(m.message.includes('portal'));
   assert.ok(m.hudSummary().includes('Caja colgando'));
 });
 
@@ -247,7 +274,7 @@ test('el winch exige quedarse quieto: moverse o disparar reinicia el enganche', 
   assert.ok(m.hudSummary().includes('Caja entregada'));
 });
 
-test('las transiciones de la carga: C abre la fase y el portal la cierra; sin carga no existe', () => {
+test('las transiciones de la carga: despejar B abre la fase y el portal la cierra; sin carga no existe', () => {
   const withCargo = new Escort.Mission(1, Maps.generate(1).rules);
   assert.equal(withCargo.transition('CARGA_PORTAL'), false);
   const noCargo = new Escort.Mission(2, Maps.generate(2).rules);
@@ -259,23 +286,24 @@ test('las transiciones de la carga: C abre la fase y el portal la cierra; sin ca
   assert.equal(withCargo.config.name, 'Pandemonio de Plástico');
 });
 
-test('la Misión 1 completa en el juego real: rescate, winch en B, escolta a C y portal', () => {
+test('la Misión 1 completa en el juego real: despejar B, winch en la caja y portal', () => {
   const g = game();
   g.app.start(1, true);
   const s = g.state,
     m = s.mission;
   assert.equal(m.config.name, 'Pandemonio de Plástico');
+  assert.equal(m.allies.length, 0, 'sin pelotón en la Misión 1 del vídeo');
+  assert.equal(m.guards.length, 0);
   for (const e of s.E) g.app.combat.kill(e);
   s.E = [];
   s.EB = [];
-  for (const a of m.allies.filter((a) => a.wounded)) {
-    s.P.x = a.x;
-    s.P.z = a.z;
-    for (let i = 0; i < 30; i++) g.app.upd(0.05);
-  }
-  assert.equal(m.rescued, 3);
-  assert.equal(m.stage, 'ESCOLTAR_BC');
-  // Winch nada más salir de B, con el pelotón en marcha.
+  // A B, sin amenazas: directo a la fase de la caja.
+  s.P.x = m.rules.B.x;
+  s.P.z = m.rules.B.z;
+  for (let i = 0; i < 200 && m.stage !== 'CARGA_PORTAL'; i++) g.app.upd(0.05);
+  assert.equal(m.stage, 'CARGA_PORTAL');
+  assert.equal(m.tankKills, 6, 'los 6 tanques destruidos');
+  // Winch sobre la caja.
   const scoreBefore = s.P.sc;
   s.P.x = m.cargo.x;
   s.P.z = m.cargo.z;
@@ -283,14 +311,7 @@ test('la Misión 1 completa en el juego real: rescate, winch en B, escolta a C y
   assert.equal(m.cargo.state, 'carried');
   assert.equal(s.P.sc, scoreBefore + 50, 'levantar la caja suma 50');
   assert.ok(m.hudSummary().includes('Caja colgando'));
-  // Escolta a C con la caja colgando: el pelotón llega entero.
-  s.P.x = m.finish.x;
-  s.P.z = m.finish.z;
-  for (let i = 0; i < 3600 && m.stage !== 'CARGA_PORTAL'; i++)
-    g.app.upd(0.05);
-  assert.equal(m.stage, 'CARGA_PORTAL');
-  assert.equal(m.delivered, 7, 'toda la escolta llega a C');
-  assert.equal(m.cargo.state, 'carried', 'la caja sigue colgando');
+  assert.ok(m.hudSummary().includes('Tanques 6/6'));
   // La brújula y el objetivo apuntan al portal, no a C.
   assert.deepEqual(m.target(s.P), m.portal);
   assert.ok(
@@ -298,17 +319,18 @@ test('la Misión 1 completa en el juego real: rescate, winch en B, escolta a C y
     g.element('objective').textContent,
   );
   assert.ok(g.element('inf').textContent.includes('Caja colgando'));
-  // Por el portal, con la caja: victoria.
+  // Por el portal, con la caja: victoria, 3 estrellas (sin pelotón
+  // que perder).
   s.P.x = m.portal.x;
   s.P.z = m.portal.z;
   for (let i = 0; i < 600 && s.st === 'play'; i++) g.app.upd(0.05);
   assert.equal(s.st, 'win');
   assert.equal(m.stage, 'COMPLETADA');
   assert.equal(m.cargo.state, 'delivered');
-  assert.ok(m.stars >= 1);
+  assert.equal(m.stars, 3);
 });
 
-test('sin winch, la Misión 1 no cierra en C: espera la caja y el portal', () => {
+test('sin winch, la Misión 1 no cierra en el portal: espera la caja', () => {
   const g = game();
   g.app.start(1, true);
   const s = g.state,
@@ -316,17 +338,11 @@ test('sin winch, la Misión 1 no cierra en C: espera la caja y el portal', () =>
   for (const e of s.E) g.app.combat.kill(e);
   s.E = [];
   s.EB = [];
-  for (const a of m.allies.filter((a) => a.wounded)) {
-    s.P.x = a.x;
-    s.P.z = a.z;
-    for (let i = 0; i < 30; i++) g.app.upd(0.05);
-  }
-  s.P.x = m.finish.x;
-  s.P.z = m.finish.z;
-  for (let i = 0; i < 3600 && m.stage !== 'CARGA_PORTAL'; i++)
-    g.app.upd(0.05);
+  s.P.x = m.rules.B.x;
+  s.P.z = m.rules.B.z;
+  for (let i = 0; i < 200 && m.stage !== 'CARGA_PORTAL'; i++) g.app.upd(0.05);
   assert.equal(m.stage, 'CARGA_PORTAL');
-  assert.equal(s.st, 'play', 'en C no hay victoria sin la caja');
+  assert.equal(s.st, 'play', 'en la fase de la caja no hay victoria');
   assert.equal(m.cargo.state, 'waiting');
   assert.ok(g.element('objective').textContent.includes('caja'));
   // El portal sin la caja no cierra la misión.
@@ -417,7 +433,7 @@ test('el renderer dibuja la caja en el suelo, el cable al enganchar y la caja co
     t: 0,
     cargo,
   });
-  const crateGreen = [0.13, 0.42, 0.14],
+  const crateGreen = [0.08, 0.68, 0.12],
     cableDark = [0.12, 0.12, 0.1],
     // Suelo en la caja: 3,1; cuerpo de la caja en el suelo a 3,1+1,8.
     groundCrate = [-170, 4.9, 140],

@@ -52,7 +52,9 @@ test('la dificultad crece con la misión: más vida y más tanques en la 3 que e
     };
   });
   assert.deepEqual(totals, [
-    { hp: 117, tanks: 3, turrets: 4, air: 0 },
+    // Misión 1 del vídeo: sin helicóptero Tan, 3 tanques guardando
+    // la caja, 1 jeep al norte y 7 de infantería en grupos (147 HP).
+    { hp: 147, tanks: 6, turrets: 4, air: 0 },
     // Misión 2: 132 + 30 de los 3 garajes Tan (10 HP cada uno).
     { hp: 162, tanks: 6, turrets: 4, air: 1 },
     // Misión 3: 156 + 8 del helicóptero Tan que robó la batería.
@@ -106,7 +108,10 @@ test('los tres mapas fijos son jugables: ruta transitable y escolta completa', (
     // garajes Tan (Misión 2) y la batería, el tren y el portal
     // (Misión 3). El tren tarda ~67 s en llegar a C, así que el
     // tope es generoso (150 s de juego).
-    const player = { ...m.finish };
+    const player = mission === 1 ? { ...m.rules.B } : { ...m.finish };
+    // Misión 1 del vídeo: sin escolta, el jugador va a B y, sin
+    // amenazas, pasa directo a la caja y el portal (la rama de
+    // CARGA_PORTAL del bucle lo lleva de la caja al portal).
     const tanHeli = map.rules.enemies.find((e) => e.id === 'tan-heli');
     for (let i = 0; i < 3000 && m.stage !== 'COMPLETADA'; i++) {
       if (m.stage === 'CARGA_PORTAL' && m.cargo) {
@@ -146,7 +151,9 @@ test('los tres mapas fijos son jugables: ruta transitable y escolta completa', (
       }
       m.update(0.05, player, env);
     }
-    assert.equal(m.delivered, 7, `m${mission}: ${m.stage}`);
+    // Misión 1 del vídeo: sin pelotón, nadie que entregar (0); las
+    // misiones 2 y 3 entregan a los 7.
+    assert.equal(m.delivered, mission === 1 ? 0 : 7, `m${mission}: ${m.stage}`);
     assert.equal(m.stage, 'COMPLETADA');
   }
 });
@@ -206,5 +213,5 @@ test('no queda rastro del motor random: ni mapgen, ni Mapa nuevo, ni semillas de
   const bootstrap = require('../src/bootstrap.js');
   assert.ok(bootstrap.scripts.includes('original-maps'));
   assert.ok(!bootstrap.scripts.includes('mapgen'));
-  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
+  assert.equal(bootstrap.VERSION, 'mision1-video-1');
 });

@@ -1,0 +1,22 @@
+{
+  "limite": 1000,
+  "por_objeto": {
+    "Cuerpo": 12,
+    "FlechaCabeza": 8,
+    "FlechaDerCabeza": 8,
+    "FlechaDerMastil": 12,
+    "FlechaIzqCabeza": 8,
+    "FlechaIzqMastil": 12,
+    "FlechaMastil": 12,
+    "FlechaMorroCabeza": 8,
+    "FlechaMorroMastil": 12,
+    "FlechaTraseraCabeza": 8,
+    "FlechaTraseraMastil": 12,
+    "Refuerzo_-1_-1": 12,
+    "Refuerzo_-1_1": 12,
+    "Refuerzo_1_-1": 12,
+    "Refuerzo_1_1": 12,
+    "Tapa": 12
+  },
+  "tris": 172
+}

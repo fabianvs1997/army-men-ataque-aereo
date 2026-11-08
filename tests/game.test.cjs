@@ -13,6 +13,14 @@ function completeMission(g) {
     s.P.z = a.z;
     for (let i = 0; i < 30; i++) app.upd(0.05);
   }
+  // Misión 1 del vídeo, sin heridos: sin embarque, el jugador nunca
+  // pasaría por B y la fase se quedaría en COMBATE_RUTA_AB (para
+  // llegar a DESPEJAR_B hay que acercarse a B a menos de 40 u).
+  if (s.mission.noEscort) {
+    s.P.x = s.mission.rules.B.x;
+    s.P.z = s.mission.rules.B.z;
+    for (let i = 0; i < 30; i++) app.upd(0.05);
+  }
   s.P.x = s.mission.finish.x;
   s.P.z = s.mission.finish.z;
   for (let i = 0; i < 1800 && s.st === 'play'; i++) app.upd(0.05);

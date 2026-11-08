@@ -2,7 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { game } = require('../support/fake-host.cjs');
 
-// Congelamiento al regresar al punto A (misión 1, dos variantes):
+// Congelamiento al regresar al punto A (dos variantes, en la misión 2:
+// la misión 1 del vídeo ya no tiene heridos ni escolta, así que el
+// escenario vive donde queda pelotón):
 // 1) liberar B, limpiar enemigos hasta C, NO embarcar heridos y volver a A.
 // 2) embarcar heridos, ir a C, NO entregarlos y volver a A con ellos.
 // Causa: en upd() cada enemigo trazaba línea de visión a cada soldado
@@ -96,7 +98,7 @@ function reachB(app, state, m) {
 test('variante 1: volver a A sin heridos no traza visión a larga distancia', () => {
   for (const seed of [1]) {
     const { app, state } = game(seed);
-    app.start(1, true);
+    app.start(2, true);
     const m = state.mission;
     reachB(app, state, m);
     flyTo(app, state, m.finish.x, m.finish.z);
@@ -131,7 +133,7 @@ test('variante 1: volver a A sin heridos no traza visión a larga distancia', ()
 test('variante 2: volver a A con heridos a bordo no traza visión a larga distancia', () => {
   for (const seed of [1]) {
     const { app, state } = game(seed);
-    app.start(1, true);
+    app.start(2, true);
     const m = state.mission;
     reachB(app, state, m);
     boardWounded(app, state, m);
@@ -171,11 +173,15 @@ test('variante 2: volver a A con heridos a bordo no traza visión a larga distan
 
 test('la entrega en C sigue funcionando tras el arreglo', () => {
   const { app, state } = game(1);
-  app.start(1, true);
+  app.start(2, true);
   const m = state.mission;
   reachB(app, state, m);
   boardWounded(app, state, m);
   assert.equal(m.stage, 'ESCOLTAR_BC');
+  // Garajes destruidos: tras la entrega en C no queda fase GARAJES.
+  for (const e of [...state.E].filter((e) => e.k === 'garage'))
+    app.combat.kill(e);
+  state.EB = [];
   flyTo(app, state, m.finish.x, m.finish.z);
   for (const e of [...state.E].filter((e) => e.zone === 'BC'))
     app.combat.kill(e);
@@ -190,22 +196,13 @@ test('la entrega en C sigue funcionando tras el arreglo', () => {
     app.upd(0.05);
     frames++;
   }
-  // Misión 1: tras la entrega en C queda la caja y el portal.
-  if (m.stage === 'CARGA_PORTAL') {
-    state.P.x = m.cargo.x;
-    state.P.z = m.cargo.z;
-    for (let i = 0; i < 200 && m.cargo.state === 'waiting'; i++) app.upd(0.05);
-    state.P.x = m.portal.x;
-    state.P.z = m.portal.z;
-    for (let i = 0; i < 600 && state.st === 'play'; i++) app.upd(0.05);
-  }
   assert.equal(state.st, 'win', `fase ${m.stage}, entregados ${m.delivered}`);
   assert.equal(m.delivered, 7);
 });
 
 function targetingSetup() {
   const { app, state } = game(123);
-  app.start(1, true);
+  app.start(2, true);
   const m = state.mission;
   state.E.length = 0;
   // Tanque sobre la ruta AB (terreno llano, línea de visión despejada)

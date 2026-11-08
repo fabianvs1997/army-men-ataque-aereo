@@ -629,6 +629,7 @@
           heli: 1.8,
           garage: 6,
           car: 2.5,
+          jeep: 2.5,
         }[k];
         const start = state.mission?.start || ToyMissions.layout.start;
         const safeDistance =
@@ -685,10 +686,10 @@
           x,
           y: k === 'heli' ? 8 : groundAt(x, z),
           z,
-          hp: { heli: 4, tank: 6, tur: 5, base: 10, inf: 2, garage: 10, car: 3 }[k],
-          r: { heli: 3, tank: 3.5, tur: 2.5, base: 6, inf: 1.5, garage: 6, car: 2.5 }[k],
+          hp: { heli: 4, tank: 6, tur: 5, base: 10, inf: 2, garage: 10, car: 3, jeep: 5 }[k],
+          r: { heli: 3, tank: 3.5, tur: 2.5, base: 6, inf: 1.5, garage: 6, car: 2.5, jeep: 2.5 }[k],
           cd: R(1, 3),
-          p: { heli: 50, tank: 30, tur: 20, base: 100, inf: 10, garage: 100, car: 10 }[k],
+          p: { heli: 50, tank: 30, tur: 20, base: 100, inf: 10, garage: 100, car: 10, jeep: 20 }[k],
           fl: 0,
         };
         state.E.push(enemy);
@@ -969,11 +970,13 @@
               ? 65
               : e.k === 'tank'
                 ? 75
-                : e.k === 'heli'
-                  ? 70
-                  : e.k === 'inf'
-                    ? 45
-                    : 0;
+                : e.k === 'jeep'
+                  ? 55
+                  : e.k === 'heli'
+                    ? 70
+                    : e.k === 'inf'
+                      ? 45
+                      : 0;
           let target = state.P,
             nearest = Math.hypot(state.P.x - e.x, state.P.z - e.z);
           // La lista de soldados activos es la misma para todos los
@@ -1012,7 +1015,11 @@
             e.x += (Math.sin(a) * 18 * q + Math.cos(a) * 10 * (1 - q)) * dt;
             e.z += (Math.cos(a) * 18 * q - Math.sin(a) * 10 * (1 - q)) * dt;
             e.y = 8 + Math.sin(state.t * 2 + e.cd) * 0.4;
-          } else if (e.k === 'tank' && d > 25 && d < 150) {
+          } else if (
+            (e.k === 'tank' || e.k === 'jeep') &&
+            d > 25 &&
+            d < 150
+          ) {
             e.x += Math.sin(a) * 6 * dt;
             e.z += Math.cos(a) * 6 * dt;
           }

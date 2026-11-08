@@ -199,10 +199,12 @@ test('con datos embebidos el estado es Blender y los modelos se dibujan', () => 
   assert.deepEqual(renderer.modelStatus, {
     heli: { source: 'blender', reason: '' },
     tank: { source: 'blender', reason: '' },
+    jeep: { source: 'procedural', reason: 'sin datos embebidos' },
+    caja: { source: 'procedural', reason: 'sin datos embebidos' },
   });
   assert.equal(
     renderer.modelStatusText(),
-    'Modelos · helicóptero: Blender · tanques: Blender',
+    'Modelos · helicóptero: Blender · tanques: Blender · jeep: procedural (sin datos embebidos) · caja: procedural (sin datos embebidos)',
   );
   counts.drawElements = 0;
   counts.indices = 0;
@@ -225,10 +227,12 @@ test('sin datos embebidos el estado es procedural con el motivo', async () => {
   assert.deepEqual(renderer.modelStatus, {
     heli: { source: 'procedural', reason: 'sin datos embebidos' },
     tank: { source: 'procedural', reason: 'sin datos embebidos' },
+    jeep: { source: 'procedural', reason: 'sin datos embebidos' },
+    caja: { source: 'procedural', reason: 'sin datos embebidos' },
   });
   assert.equal(
     renderer.modelStatusText(),
-    'Modelos · helicóptero: procedural (sin datos embebidos) · tanques: procedural (sin datos embebidos)',
+    'Modelos · helicóptero: procedural (sin datos embebidos) · tanques: procedural (sin datos embebidos) · jeep: procedural (sin datos embebidos) · caja: procedural (sin datos embebidos)',
   );
   assert.equal(renderer.tryDrawHeliModel(0, 8, 0, 0, 0, 0, false), false);
   assert.equal(renderer.render(sceneWithTanks(9)), true);
@@ -301,10 +305,12 @@ test('el respaldo por red actualiza el estado a Blender cuando descarga', async 
     assert.deepEqual(renderer.modelStatus, {
       heli: { source: 'blender', reason: '' },
       tank: { source: 'blender', reason: '' },
+      jeep: { source: 'blender', reason: '' },
+      caja: { source: 'blender', reason: '' },
     });
     assert.equal(
       renderer.modelStatusText(),
-      'Modelos · helicóptero: Blender · tanques: Blender',
+      'Modelos · helicóptero: Blender · tanques: Blender · jeep: Blender · caja: Blender',
     );
   } finally {
     globalThis.fetch = originalFetch;
@@ -322,7 +328,7 @@ test('modelStatusText mezcla Blender y procedural con el motivo', () => {
   };
   assert.equal(
     renderer.modelStatusText(),
-    'Modelos · helicóptero: Blender · tanques: procedural (root is not defined)',
+    'Modelos · helicóptero: Blender · tanques: procedural (root is not defined) · jeep: procedural (sin datos embebidos) · caja: procedural (sin datos embebidos)',
   );
   clearEmbedded();
 });
@@ -381,7 +387,7 @@ test('?perf=1&modelos=1 muestra FPS y modelos en la misma línea', () => {
 
 test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
+  assert.equal(bootstrap.VERSION, 'mision1-video-1');
   const order = bootstrap.scripts;
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('toy-renderer'));
   assert.ok(order.indexOf('modelo-helicoptero') < order.indexOf('toy-renderer'));

@@ -95,9 +95,10 @@ test('impactos que no matan tampoco dejan cubitos, pero el daño se sigue viendo
 });
 
 test('en el juego real, matar enemigos no deja restos y el aliado caído sigue marcándose', () => {
+  // El pelotón vive en la Misión 2 desde la Misión 1 del vídeo.
   const { app, state: s } = game(42);
-  app.start(1, true);
-  // Matar a todos los enemigos presentes en la misión 1.
+  app.start(2, true);
+  // Matar a todos los enemigos presentes en la misión 2.
   for (const e of [...s.E]) app.combat.kill(e);
   s.E = s.E.filter((e) => !e.dead);
   for (let i = 0; i < 10; i++) app.upd(0.05);
