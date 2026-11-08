@@ -14,6 +14,14 @@ Cada misión sigue A → B → C: despega de A con guardias aliados, despeja el 
 
 El patio mide 960 × 960 unidades. Cada misión tiene su mapa fijo, recreado de los escenarios del Army Men: Air Attack original (1999): el valle alpino, el picnic y la playa, con sus posiciones de A, B y C, veredas, cerros, vegetación, puntos de interés y composición enemiga. Reintentar conserva el mapa de esa misión. Enemigos y objetivos se colocan al comenzar; la ruta terrestre permanece conectada.
 
+## Versión nativa (Godot, en desarrollo)
+
+Además de la versión web, hay un proyecto Godot 4.4.1 en
+[`native/godot/`](native/godot/) (ver su `README.md`): primera plataforma
+Windows con teclado y mouse, mismo helicóptero y sistema de combate para
+los modos Rescate A–B–C y Battle Royale. Fase 1: vuelo, puntería y
+cobertura en una arena con 3 blancos destructibles.
+
 ## Desarrollar
 
 Ejecuta `node --test` (CI usa Node 22). Los scripts son clásicos con exportación UMD/CommonJS;

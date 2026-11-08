@@ -1,0 +1,253 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://scripts/arena.gd" id="1_arena"]
+[ext_resource type="PackedScene" path="res://scenes/helicopter.tscn" id="2_heli"]
+[ext_resource type="PackedScene" path="res://scenes/target.tscn" id="3_target"]
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.25, 0.62, 0.28, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="mat_dirt"]
+albedo_color = Color(0.72, 0.55, 0.32, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="mat_pad"]
+albedo_color = Color(0.22, 0.27, 0.31, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="mat_pad_yellow"]
+albedo_color = Color(0.95, 0.8, 0.15, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="mat_obstacle"]
+albedo_color = Color(0.55, 0.5, 0.44, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="mat_obstacle_top"]
+albedo_color = Color(0.68, 0.63, 0.55, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="mat_reticle"]
+albedo_color = Color(1, 0.45, 0.1, 1)
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="box_ground"]
+size = Vector3(60, 1, 44)
+
+[sub_resource type="CylinderMesh" id="cyl_dirt"]
+top_radius = 4.0
+bottom_radius = 4.0
+height = 0.06
+
+[sub_resource type="CylinderMesh" id="cyl_pad"]
+top_radius = 5.0
+bottom_radius = 5.0
+height = 0.12
+
+[sub_resource type="BoxMesh" id="box_pad_strip"]
+size = Vector3(0.4, 0.04, 2.2)
+
+[sub_resource type="BoxMesh" id="box_pad_bar"]
+size = Vector3(1.8, 0.04, 0.4)
+
+[sub_resource type="BoxMesh" id="box_obstacle"]
+size = Vector3(7, 5, 4)
+
+[sub_resource type="BoxMesh" id="box_obstacle_top"]
+size = Vector3(7.4, 0.3, 4.4)
+
+[sub_resource type="BoxMesh" id="box_reticle_x"]
+size = Vector3(1.4, 0.06, 0.15)
+
+[sub_resource type="BoxMesh" id="box_reticle_z"]
+size = Vector3(0.15, 0.06, 1.4)
+
+[sub_resource type="CylinderMesh" id="cyl_reticle"]
+top_radius = 0.25
+bottom_radius = 0.25
+height = 0.06
+
+[sub_resource type="BoxShape3D" id="shape_ground"]
+size = Vector3(60, 1, 44)
+
+[sub_resource type="BoxShape3D" id="shape_obstacle"]
+size = Vector3(7, 5, 4)
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.529, 0.808, 0.922, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.75
+
+[node name="Arena" type="Node3D"]
+script = ExtResource("1_arena")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.872665, -0.523599, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+position = Vector3(0, -0.5, 0)
+shape = SubResource("shape_ground")
+
+[node name="Visual" type="MeshInstance3D" parent="Ground"]
+position = Vector3(0, -0.5, 0)
+mesh = SubResource("box_ground")
+surface_material_override/0 = SubResource("mat_ground")
+
+[node name="Dirt1" type="MeshInstance3D" parent="."]
+position = Vector3(-18, 0.03, -8)
+mesh = SubResource("cyl_dirt")
+surface_material_override/0 = SubResource("mat_dirt")
+
+[node name="Dirt2" type="MeshInstance3D" parent="."]
+position = Vector3(18, 0.03, -6)
+mesh = SubResource("cyl_dirt")
+surface_material_override/0 = SubResource("mat_dirt")
+
+[node name="Dirt3" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.03, -10)
+mesh = SubResource("cyl_dirt")
+surface_material_override/0 = SubResource("mat_dirt")
+
+[node name="Pad" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.06, 16)
+mesh = SubResource("cyl_pad")
+surface_material_override/0 = SubResource("mat_pad")
+
+[node name="PadH1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7, 0.13, 16)
+mesh = SubResource("box_pad_strip")
+surface_material_override/0 = SubResource("mat_pad_yellow")
+
+[node name="PadH2" type="MeshInstance3D" parent="."]
+position = Vector3(0.7, 0.13, 16)
+mesh = SubResource("box_pad_strip")
+surface_material_override/0 = SubResource("mat_pad_yellow")
+
+[node name="PadH3" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.13, 16)
+mesh = SubResource("box_pad_bar")
+surface_material_override/0 = SubResource("mat_pad_yellow")
+
+[node name="ObstacleA" type="StaticBody3D" parent="."]
+position = Vector3(-7, 2.5, 2)
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleA"]
+shape = SubResource("shape_obstacle")
+
+[node name="Visual" type="MeshInstance3D" parent="ObstacleA"]
+mesh = SubResource("box_obstacle")
+surface_material_override/0 = SubResource("mat_obstacle")
+
+[node name="Top" type="MeshInstance3D" parent="ObstacleA"]
+position = Vector3(0, 2.6, 0)
+mesh = SubResource("box_obstacle_top")
+surface_material_override/0 = SubResource("mat_obstacle_top")
+
+[node name="ObstacleB" type="StaticBody3D" parent="."]
+position = Vector3(7, 2.5, 2)
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleB"]
+shape = SubResource("shape_obstacle")
+
+[node name="Visual" type="MeshInstance3D" parent="ObstacleB"]
+mesh = SubResource("box_obstacle")
+surface_material_override/0 = SubResource("mat_obstacle")
+
+[node name="Top" type="MeshInstance3D" parent="ObstacleB"]
+position = Vector3(0, 2.6, 0)
+mesh = SubResource("box_obstacle_top")
+surface_material_override/0 = SubResource("mat_obstacle_top")
+
+[node name="Helicopter" parent="." instance=ExtResource("2_heli")]
+position = Vector3(0, 3, 16)
+
+[node name="Target1" parent="." instance=ExtResource("3_target")]
+position = Vector3(-16, 0, -14)
+
+[node name="Target2" parent="." instance=ExtResource("3_target")]
+position = Vector3(0, 0, -17)
+
+[node name="Target3" parent="." instance=ExtResource("3_target")]
+position = Vector3(16, 0, -14)
+
+[node name="CameraRig" type="Node3D" parent="."]
+position = Vector3(0, 0, 16)
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+position = Vector3(0, 26, 17)
+rotation = Vector3(-0.994838, 0, 0)
+current = true
+fov = 55.0
+far = 200.0
+
+[node name="Reticle" type="Node3D" parent="."]
+
+[node name="BarX" type="MeshInstance3D" parent="Reticle"]
+mesh = SubResource("box_reticle_x")
+surface_material_override/0 = SubResource("mat_reticle")
+
+[node name="BarZ" type="MeshInstance3D" parent="Reticle"]
+mesh = SubResource("box_reticle_z")
+surface_material_override/0 = SubResource("mat_reticle")
+
+[node name="Dot" type="MeshInstance3D" parent="Reticle"]
+mesh = SubResource("cyl_reticle")
+surface_material_override/0 = SubResource("mat_reticle")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TargetsLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 320.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 28
+text = "Blancos: 0 / 3"
+
+[node name="HelpLabel" type="Label" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -64.0
+offset_right = 900.0
+offset_bottom = -16.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 18
+text = "WASD mover · Mouse apuntar · Clic izquierdo disparar · R reiniciar"
+
+[node name="MessageLabel" type="Label" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.35
+anchor_right = 0.5
+anchor_bottom = 0.35
+offset_left = -320.0
+offset_top = -30.0
+offset_right = 320.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 32
+text = "¡Arena despejada! Pulsa R para reiniciar"
+horizontal_alignment = 1
