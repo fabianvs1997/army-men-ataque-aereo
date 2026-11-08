@@ -1,5 +1,19 @@
 # Changelog
 
+## Sin publicar — Integrar modelos de Blender (helicóptero y tanque Tan)
+
+- Pedido de Fabian (2026-11-07): integrar los modelos de Blender en el juego, para que por fin se vean jugando. Solo cambia CÓMO se dibujan el helicóptero del jugador y los tanques Tan: mismas reglas, misiones, colores de juego y HUD. Detalle en `docs/MODELOS-INTEGRADOS.md`.
+- **Cargador glTF mínimo** (`src/gltf-loader.js`, sin dependencias, UMD clásico): parsea el JSON glTF (buffer base64, accessors POSITION/NORMAL/índices con componentType 5123/5125/5126 y byteStride), materiales (`baseColorFactor`, `alphaMode`) y jerarquía de nodos TRS/cuaternión; expone `parse`, `countTris`, `findNode`, `modelExtents` y `nodeWorldMatrices(model, {rotorAngle, turretAngle})` con matemática mat4/cuaternión propia. Sin texturas, skins, animaciones ni KHR: lo no soportado se ignora sin romper.
+- **Datos embebidos para `file://`**: `scripts/embed-gltf.cjs` (`node scripts/embed-gltf.cjs`) genera `src/modelo-helicoptero.js` y `src/modelo-tanque.js` desde los `.gltf`; `src/bootstrap.js` los carga (con el cargador) ANTES de `toy-renderer`. Si faltan o el parseo falla, el juego intenta `fetch('assets/*.gltf')` (GitHub Pages, una sola vez) y, si eso también falla, sigue con los procedurales de antes. Nunca en negro, nunca roto.
+- **Renderer** (`src/toy-renderer.js`): segundo programa de shader que comparte el fragment shader (misma luz y niebla) con un vertex shader que recibe `uniform mat4 uModel`; `drawModel` dibuja cada primitiva con el color de su material (gloss 0,6; `flash` → blanco). Cada modelo fusiona sus primitivas en 3 buffers GPU (posiciones, normales, índices), creados una sola vez y compartidos entre instancias.
+- **Helicóptero del jugador**: modelo de Blender rev. 3 (3.540 tris) con `rotorAngle = rot`, tilt/pitch en la matriz raíz, sombra de contacto y winch/cable/caja intactos. El helicóptero enemigo Tan sigue procedural (no hay modelo Tan de helicóptero).
+- **Tanques Tan**: modelo de Blender rev. 3 (1.680 tris) con yaw + π y torreta a 0 (el `yaw` ya es la puntería); se conserva la elipse oscura del suelo. Los pecios siguen siendo los de `src/debris.js`.
+- **Orientación**: los dos modelos llevan el morro a -Z en glTF y el procedural a +Z, así que se giran yaw + π (verificado con test). Escala 1:1, sin factor de escala: rotor ~15 u, tanque 5,6 × 3,85 × 2,4 u con base en y≈0.
+- **Coste medido** (mock de WebGL en los tests): 9 tanques + helicóptero = 18.660 tris/cuadro (55.980 índices, 501 `drawElements`); 6 buffers GPU en total (3 por modelo), 0 creados en el segundo render; 10 dibujos (9 tanques + helicóptero) enlazan 6 veces, no por pieza ni por tanque.
+- **HUD**: el botón «Misión» y la etiqueta «SALUD» con su barra se solapaban arriba en el centro (captura de Fabian, 18:00). La salud va ahora en su propia fila (top 60, a la derecha), entre Misión (termina en 56) y Pausa/Silenciar (empiezan en 76); el aviso `#toast` baja a top 124 para no tapar esa fila. Nada más del HUD cambia.
+- Pruebas nuevas en `tests/integracion-modelos.test.cjs` (16): parseo de los dos `.gltf` (tris 3.540 y 1.680), nodos `Rotor`/`Torreta`, orientación del morro, rotor y torreta que giran, respaldo procedural sin datos y con datos corruptos, tris por cuadro y buffers creados una sola vez, helicóptero Tan procedural, regeneración de los datos embebidos, orden del bootstrap y separación del CSS. Se actualizan 2 tests de `tests/renderer.test.cjs` (segundo programa: 6 compilaciones tras restaurar, varying declarado 3 veces) y la VERSION en 3 tests. `node --test`: 276 pasan, 0 fallan, 4 saltados (base: 260/0/4). `VERSION` pasa a `integrar-modelos-1`.
+- Sin verificar (sin navegador real ni iPhone en este entorno): cómo se ven los modelos en WebGL real ni los FPS en el iPhone con 9 tanques en la Misión 3.
+
 ## Sin publicar — Tanque Tan modelado en Blender
 
 - Pedido de Fabian (2026-11-07): «Ahora modelo los tanques».

@@ -159,9 +159,11 @@ h1 {
 
 /* Separate mobile HUD rows: health/mode, mission, then actions. */
 
-/* Barra de salud amarilla como la del original: a la derecha, bajo
-   el botón de sonido. La ametralladora no gasta munición: la salud
-   (P.arm, 10) es lo que baja al recibir daño. */
+/* Barra de salud amarilla como la del original: a la derecha, en su
+   propia fila (top 60) entre el botón Misión (que termina en 56) y
+   los botones Pausa/Silenciar (que empiezan en 76). Antes iba en
+   top 36 y la etiqueta SALUD se solapaba con el botón «Misión»
+   centrado en pantallas estrechas (captura de Fabian, 2026-11-07). */
 #arm {
   position: absolute;
   background: rgba(0, 0, 0, 0.45);
@@ -169,7 +171,7 @@ h1 {
   overflow: hidden;
   border: 2px solid #e7e9cc88;
   box-shadow: 0 2px 12px #0006;
-  top: 36px;
+  top: 60px;
   right: 12px;
   left: auto;
   width: 140px;
@@ -178,10 +180,11 @@ h1 {
 
 /* Etiqueta visible de la barra de salud: en la grabación la barra
    naranja de arriba no tenía texto y no se sabía qué medía (además
-   se rellenaba sola al recoger salud y parecía un fallo). */
+   se rellenaba sola al recoger salud y parecía un fallo). En la
+   misma fila que la barra (top 61), a su izquierda. */
 #armLabel {
   position: absolute;
-  top: 37px;
+  top: 61px;
   right: 158px;
   font-size: 11px;
   font-weight: 700;
@@ -364,7 +367,9 @@ h1 {
    arriba, bajo los botones, y se esconde solo. */
 #toast {
   position: absolute;
-  top: 64px;
+  /* Debajo de la fila de salud (60-72) y de Pausa/Silenciar (76-120):
+     antes iba en top 64 y tapaba la barra de salud al aparecer. */
+  top: 124px;
   left: 50%;
   transform: translateX(-50%);
   max-width: calc(100% - 24px);

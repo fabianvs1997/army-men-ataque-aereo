@@ -5,10 +5,20 @@
       require('./toy-world.js'),
       root,
       require('./toy-helicopter.js'),
+      require('./gltf-loader.js'),
     );
-  else root.ToyRenderer = factory(root.ToyWorld, root, root.ToyHelicopter);
-})(globalThis, function (ToyWorld, root, PlayerModel) {
+  else
+    root.ToyRenderer = factory(
+      root.ToyWorld,
+      root,
+      root.ToyHelicopter,
+      root.ToyGltfLoader,
+    );
+})(globalThis, function (ToyWorld, root, PlayerModel, Loader) {
   'use strict';
+  // Cargador glTF (src/gltf-loader.js): puede faltar si el bootstrap
+  // no lo cargó; en ese caso todo sigue procedural.
+  const GltfLoader = Loader || (root && root.ToyGltfLoader) || null;
   const VS = `
 attribute vec3 position; attribute vec3 normal;
 uniform vec3 origin, size; uniform float yaw;
@@ -50,6 +60,28 @@ void main(){
  if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*0.5),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -2.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.30,.60,.16),vec3(.16,.38,.12),hill);float dirt=smoothstep(.55,.85,sin(worldPosition.x*.055+sin(worldPosition.z*.035))*cos(worldPosition.z*.045+worldPosition.x*.025));base=mix(base,vec3(.50,.38,.21),dirt*.6);float mottle=smoothstep(.25,.75,sin(worldPosition.x*.021+2.0)*cos(worldPosition.z*.017+1.0));base=mix(base,vec3(.36,.62,.19),mottle*.28);float rock2=smoothstep(12.0,22.0,worldPosition.y);base=mix(base,vec3(.48,.45,.38),rock2*.6);float snow=smoothstep(20.0,30.0,worldPosition.y);base=mix(base,vec3(.93,.94,.96),snow*.8);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.45,.42,.36),cliff*.4);}else if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.95+grain*.05+patch*.16;}
  float amb=gloss < -2.5 ? 0.68 : 0.48;
  gl_FragColor=vec4(base*(amb+(1.0-amb)*diffuse)+vec3(shine+rim),alpha);
+}`;
+  // Segundo programa para los modelos de Blender: comparte el fragment
+  // shader (misma luz y niebla) pero recibe la matriz modelo completa
+  // (posición + yaw + tilt + jerarquía del nodo) en vez de
+  // origin/size/yaw. La normal se transforma con la matriz modelo y se
+  // normaliza, como el shader principal hace con normal/size.
+  const VS_MODEL = `
+attribute vec3 position; attribute vec3 normal;
+uniform mat4 uModel;
+uniform vec2 camera, viewport; uniform float cameraYaw, pitch, scale, centerY;
+varying mediump vec3 surfaceNormal;
+varying mediump vec3 worldPosition;
+void main(){
+ vec4 wp=uModel*vec4(position,1.0);
+ worldPosition=wp.xyz;
+ surfaceNormal=normalize(mat3(uModel)*normal);
+ vec3 p=wp.xyz;
+ vec2 d=p.xz-camera;float f=d.x*sin(cameraYaw)+d.y*cos(cameraYaw);
+ float r=-d.x*cos(cameraYaw)+d.y*sin(cameraYaw);
+ float u=p.y*cos(pitch)+f*sin(pitch);
+ float depth=f*cos(pitch)-p.y*sin(pitch);
+ gl_Position=vec4(r*scale*2.0/viewport.x,(viewport.y/2.0-centerY+u*scale)*2.0/viewport.y,depth/600.0,1.0);
 }`;
   // Tanque Tan: amarillo vivo/tostado, distinto del verde del jugador
   // y del caqui de la infantería Tan ([0.77, 0.62, 0.36]). Las orugas
@@ -172,7 +204,13 @@ void main(){
         });
       if (!this.gl) throw new Error('WebGL no disponible');
       this.lost = false;
+      this.loader = GltfLoader;
+      this.modelHeli = null;
+      this.modelTank = null;
+      this._fetchTried = false;
+      this.drawCalls = 0;
       this.init();
+      this.initModels();
       canvas.addEventListener('webglcontextlost', (e) => {
         e.preventDefault();
         this.lost = true;
@@ -203,15 +241,43 @@ void main(){
       };
       const vs = shader(gl.VERTEX_SHADER, VS),
         fs = shader(gl.FRAGMENT_SHADER, FS),
-        program = gl.createProgram();
+        vsModel = shader(gl.VERTEX_SHADER, VS_MODEL),
+        program = gl.createProgram(),
+        modelProgram = gl.createProgram();
       gl.attachShader(program, vs);
       gl.attachShader(program, fs);
       gl.linkProgram(program);
+      // El mismo fragment shader sirve para los dos programas (misma
+      // luz y niebla): se enlaza en ambos antes de borrarlo.
+      gl.attachShader(modelProgram, vsModel);
+      gl.attachShader(modelProgram, fs);
+      gl.linkProgram(modelProgram);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
+      gl.deleteShader(vsModel);
       if (!gl.getProgramParameter(program, gl.LINK_STATUS))
         throw Error(gl.getProgramInfoLog(program));
+      if (!gl.getProgramParameter(modelProgram, gl.LINK_STATUS))
+        throw Error(gl.getProgramInfoLog(modelProgram));
       this.program = program;
+      this.modelProgram = modelProgram;
+      this.modelLoc = {};
+      for (const name of [
+        'uModel',
+        'camera',
+        'viewport',
+        'cameraYaw',
+        'pitch',
+        'scale',
+        'centerY',
+        'color',
+        'gloss',
+        'eyeDirection',
+        'alpha',
+      ])
+        this.modelLoc[name] = gl.getUniformLocation(modelProgram, name);
+      this.modelPosition = gl.getAttribLocation(modelProgram, 'position');
+      this.modelNormal = gl.getAttribLocation(modelProgram, 'normal');
       this.loc = {};
       for (const name of [
         'tiltPivot',
@@ -253,6 +319,236 @@ void main(){
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.clearColor(0.27, 0.36, 0.23, 1);
       this.boundMesh = null;
+      // Al perder el contexto los buffers GPU del modelo quedan
+      // inválidos: se recrean (una sola vez por modelo) al volver a
+      // dibujar. Los modelos parseados (CPU) se conservan.
+      this.modelGpu = new WeakMap();
+      this._modelBound = null;
+      if (!this._view)
+        this._view = {
+          camera: [0, 0],
+          viewport: [390, 844],
+          cameraYaw: 0,
+          pitch: Math.PI / 3,
+          scale: 1,
+          centerY: 0,
+          eyeDirection: [0, 0, -1],
+        };
+    }
+    // Modelos de Blender desde los datos embebidos
+    // (src/modelo-helicoptero.js / src/modelo-tanque.js, generados con
+    // `node scripts/embed-gltf.cjs`): sin red y funcionando desde
+    // `file://`. Si faltan o el parseo falla, el modelo queda en null
+    // y el juego sigue con el procedural de antes (ver drawModel y
+    // _fetchModels).
+    initModels() {
+      this.modelHeli = null;
+      this.modelTank = null;
+      if (!this.loader) return;
+      try {
+        if (root.ToyModeloHelicoptero)
+          this.modelHeli = this.loader.parse(root.ToyModeloHelicoptero);
+      } catch (e) {
+        this.modelHeli = null;
+      }
+      try {
+        if (root.ToyModeloTanque)
+          this.modelTank = this.loader.parse(root.ToyModeloTanque);
+      } catch (e) {
+        this.modelTank = null;
+      }
+    }
+    // Respaldo por red (GitHub Pages): solo si falta algún modelo y
+    // hay fetch disponible; se intenta una sola vez por sesión y los
+    // fallos se tragan: el juego nunca se rompe por esto.
+    _fetchModels() {
+      if (this._fetchTried || (this.modelHeli && this.modelTank)) return;
+      this._fetchTried = true;
+      const fetchFn = root && root.fetch;
+      if (!this.loader || typeof fetchFn !== 'function') return;
+      const self = this;
+      const jobs = [
+        ['assets/helicoptero.gltf', 'modelHeli'],
+        ['assets/tanque-tan.gltf', 'modelTank'],
+      ];
+      for (const [url, key] of jobs) {
+        if (self[key]) continue;
+        fetchFn(url)
+          .then((r) => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          })
+          .then((g) => {
+            try {
+              self[key] = self.loader.parse(g);
+            } catch (e) {
+              self[key] = null;
+            }
+          })
+          .catch(() => {});
+      }
+    }
+    // Fusiona todas las primitivas del modelo en UN solo buffer de
+    // posiciones, UNO de normales y UNO de índices por modelo (con
+    // desplazamiento por primitiva). Se crea una sola vez por modelo
+    // y se comparte entre todas las instancias: los 9 tanques dibujan
+    // los mismos 3 buffers, sin crear ni enlazar nada por tanque.
+    _prepareModel(model) {
+      if (!model || !model.drawList || !model.drawList.length) return null;
+      const cached = this.modelGpu.get(model);
+      if (cached) return cached;
+      const gl = this.gl;
+      let totalVerts = 0,
+        totalIdx = 0;
+      for (const p of model.drawList) {
+        totalVerts += p.positions.length / 3;
+        totalIdx += p.indices.length;
+      }
+      const positions = new Float32Array(totalVerts * 3),
+        normals = new Float32Array(totalVerts * 3),
+        IndexArray = totalVerts < 65536 ? Uint16Array : Uint32Array,
+        indices = new IndexArray(totalIdx),
+        prims = [];
+      let vBase = 0,
+        iBase = 0;
+      for (const p of model.drawList) {
+        const n = p.positions.length / 3;
+        positions.set(p.positions, vBase * 3);
+        normals.set(p.normals, vBase * 3);
+        for (let i = 0; i < p.indices.length; i++)
+          indices[iBase + i] = p.indices[i] + vBase;
+        prims.push({
+          nodeIndex: p.nodeIndex,
+          materialIndex: p.materialIndex,
+          indexOffset: iBase,
+          indexCount: p.indices.length,
+        });
+        vBase += n;
+        iBase += p.indices.length;
+      }
+      const makeBuffer = (target, data) => {
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(target, buffer);
+        gl.bufferData(target, data, gl.STATIC_DRAW);
+        return buffer;
+      };
+      const gpu = {
+        posBuf: makeBuffer(gl.ARRAY_BUFFER, positions),
+        nrmBuf: makeBuffer(gl.ARRAY_BUFFER, normals),
+        idxBuf: makeBuffer(gl.ELEMENT_ARRAY_BUFFER, indices),
+        indexType:
+          IndexArray === Uint16Array ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT,
+        indexBytes: IndexArray.BYTES_PER_ELEMENT,
+        prims,
+        tris: totalIdx / 3,
+      };
+      this.modelGpu.set(model, gpu);
+      return gpu;
+    }
+    // Dibuja un modelo glTF parseado con su matriz raíz (posición +
+    // yaw + tilt + jerarquía). Devuelve false si no hay modelo o
+    // cargador: el llamador usa entonces el procedural de antes.
+    // `flash` pinta todo de blanco, como el destello de daño
+    // procedural. Al salir restaura el programa principal y marca la
+    // caché de malla como inválida (los punteros ahora apuntan a los
+    // buffers del modelo).
+    drawModel(model, rootMatrix, opts) {
+      const options = opts || {};
+      if (!model || !this.loader || !this.modelProgram) return false;
+      const gpu = this._prepareModel(model);
+      if (!gpu) return false;
+      const gl = this.gl,
+        L = this.loader,
+        mats = L.nodeWorldMatrices(model, {
+          rotorAngle: options.rotorAngle || 0,
+          turretAngle: options.turretAngle || 0,
+        }),
+        v = this._view,
+        u = this.modelLoc;
+      gl.useProgram(this.modelProgram);
+      gl.uniform2f(u.camera, v.camera[0], v.camera[1]);
+      gl.uniform2f(u.viewport, v.viewport[0], v.viewport[1]);
+      gl.uniform1f(u.cameraYaw, v.cameraYaw);
+      gl.uniform1f(u.pitch, v.pitch);
+      gl.uniform1f(u.scale, v.scale);
+      gl.uniform1f(u.centerY, v.centerY);
+      gl.uniform3f(u.eyeDirection, v.eyeDirection[0], v.eyeDirection[1], v.eyeDirection[2]);
+      // Los 3 buffers del modelo se enlazan una sola vez mientras no
+      // cambien: ni por primitiva ni por instancia (9 tanques seguidos
+      // reutilizan los mismos punteros). part() invalida esta caché
+      // al enlazar sus propios buffers.
+      if (this._modelBound !== gpu) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, gpu.posBuf);
+        gl.enableVertexAttribArray(this.modelPosition);
+        gl.enableVertexAttribArray(this.modelNormal);
+        gl.vertexAttribPointer(this.modelPosition, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gpu.nrmBuf);
+        gl.vertexAttribPointer(this.modelNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gpu.idxBuf);
+        this._modelBound = gpu;
+      }
+      for (const prim of gpu.prims) {
+        const world = L.mat4Multiply(rootMatrix, mats[prim.nodeIndex]);
+        gl.uniformMatrix4fv(u.uModel, false, world);
+        const mat =
+          prim.materialIndex >= 0
+            ? model.materials[prim.materialIndex]
+            : model.defaultMaterial;
+        gl.uniform3fv(u.color, options.flash ? [1, 1, 1] : mat.color);
+        gl.uniform1f(u.gloss, 0.6);
+        gl.uniform1f(u.alpha, mat.alpha === undefined ? 1 : mat.alpha);
+        gl.drawElements(
+          gl.TRIANGLES,
+          prim.indexCount,
+          gpu.indexType,
+          prim.indexOffset * gpu.indexBytes,
+        );
+        this.drawCalls = (this.drawCalls || 0) + 1;
+      }
+      gl.useProgram(this.program);
+      this.boundMesh = null;
+      return true;
+    }
+    // Matriz raíz del helicóptero del jugador: traslación + tilt
+    // (rotación `pitch` alrededor del eje de `yaw`, con pivote en el
+    // centro, igual que el shader principal) + yaw del juego + π
+    // (el morro del modelo apunta a -Z, el procedural a +Z).
+    _heliRootMatrix(x, y, z, yaw, pitch) {
+      const L = this.loader,
+        tilt = L.mat4Multiply(
+          L.mat4RotationY(yaw),
+          L.mat4Multiply(L.mat4RotationX(pitch), L.mat4RotationY(-yaw)),
+        );
+      return L.mat4Multiply(
+        L.mat4Translation(x, y, z),
+        L.mat4Multiply(tilt, L.mat4RotationY(yaw + L.NOSE_YAW_OFFSET)),
+      );
+    }
+    tryDrawHeliModel(x, y, z, yaw, rot, pitch, flash) {
+      if (!this.loader || !this.modelHeli) return false;
+      return this.drawModel(
+        this.modelHeli,
+        this._heliRootMatrix(x, y, z, yaw, pitch || 0),
+        { rotorAngle: rot, flash: !!flash },
+      );
+    }
+    // Matriz raíz del tanque Tan: posición sobre el suelo, yaw del
+    // tanque + π (morro del modelo a -Z). La torreta gira 0 respecto
+    // al casco porque el `yaw` del tanque ya es la dirección de
+    // puntería (hacia el jugador); el mecanismo de giro existe igual
+    // (turretAngle) para probarlo y usarlo luego.
+    tryDrawTankModel(e, yaw) {
+      if (!this.loader || !this.modelTank) return false;
+      const ground = this.world ? this.world.height(e.x, e.z) : 0,
+        L = this.loader,
+        rootMat = L.mat4Multiply(
+          L.mat4Translation(e.x, ground, e.z),
+          L.mat4RotationY(yaw + L.NOSE_YAW_OFFSET),
+        );
+      return this.drawModel(this.modelTank, rootMat, {
+        turretAngle: 0,
+        flash: e.fl > 0,
+      });
     }
     setWorld(world, restoring = false) {
       this.world = world;
@@ -282,6 +578,8 @@ void main(){
         gl.vertexAttribPointer(this.position, 3, gl.FLOAT, false, 24, 0);
         gl.vertexAttribPointer(this.normal, 3, gl.FLOAT, false, 24, 12);
         this.boundMesh = kind;
+        // Los punteros ya no apuntan a los buffers del modelo.
+        this._modelBound = null;
       }
       gl.uniform3f(u.origin, x, y + (this.groundOffset || 0), z);
       gl.uniform3f(u.size, sx, sy, sz);
@@ -386,6 +684,15 @@ void main(){
       this.gl.uniform1f(this.loc.tiltYaw, yaw);
       this.gl.uniform1f(this.loc.tiltAngle, pitch);
       if (!tan) {
+        // Helicóptero del jugador: modelo de Blender (rev. 3) con el
+        // rotor girando (`rot`). Si no hay modelo (sin datos
+        // embebidos, parseo roto o sin red), el procedural de antes.
+        // El helicóptero enemigo Tan sigue procedural: no hay modelo
+        // Tan del helicóptero enemigo.
+        if (this.tryDrawHeliModel(x, y, z, yaw, rot, pitch, flash)) {
+          this.gl.uniform1f(this.loc.tiltAngle, 0);
+          return;
+        }
         for (const a of PlayerModel.parts(rot, flash))
           p(a.kind, a.x, a.y, a.z, a.sx, a.sy, a.sz, a.color, a.yaw);
         this.gl.uniform1f(this.loc.tiltAngle, 0);
@@ -576,6 +883,9 @@ void main(){
     }
     render(scene) {
       if (this.lost) return false;
+      // Si falta algún modelo, se intenta la descarga por red (una
+      // sola vez); sin ella, el juego sigue procedural.
+      this._fetchModels();
       const { W, H, F, HY, cam, PITCH, P, E, DC, BL, EB, MS, FX, SM = [], PK, rot } =
           scene,
         gl = this.gl,
@@ -608,6 +918,20 @@ void main(){
         Math.sin(PITCH),
         -Math.cos(cam.yaw) * Math.cos(PITCH),
       );
+      // La misma cámara para el programa de modelos (drawModel).
+      this._view = {
+        camera: [cam.x, cam.z],
+        viewport: [W, H],
+        cameraYaw: cam.yaw,
+        pitch: PITCH,
+        scale: F,
+        centerY: HY,
+        eyeDirection: [
+          -Math.sin(cam.yaw) * Math.cos(PITCH),
+          Math.sin(PITCH),
+          -Math.cos(cam.yaw) * Math.cos(PITCH),
+        ],
+      };
       const world = this.world;
       this.groundOffset = 0;
       // The lower viewing angle and off-center framing expose more distant ground.
@@ -1202,6 +1526,11 @@ void main(){
             // La base del tanque es su oruga oscura, no un charco amarillo.
             isTank ? dark : col,
           );
+        // Tanque Tan: modelo de Blender (rev. 3) en vez del procedural.
+        // La elipse oscura del suelo de arriba se conserva; si no hay
+        // modelo, cae al dibujado procedural de abajo. Los pecios de
+        // tanque destruido siguen siendo los de src/debris.js.
+        if (isTank && this.tryDrawTankModel(e, yaw)) continue;
         if (e.k === 'base') {
           this.part('rounded', e.x, 2.5, e.z, 5, 2.5, 4, col);
           if (!e.detached) this.part('box', e.x, 5.4, e.z, 5.5, 0.4, 4.5, col);
@@ -1769,5 +2098,9 @@ void main(){
     dark: TAN_TANK_DARK,
     stripe: TAN_TANK_STRIPE,
   });
+  // Los modelos de Blender llevan el morro a -Z (glTF) y el juego lo
+  // lleva a +Z: cada modelo se gira yaw + π (ver src/gltf-loader.js).
+  ToyRenderer.MODEL_NOSE_YAW_OFFSET = Math.PI;
+  ToyRenderer.GltfLoader = GltfLoader;
   return ToyRenderer;
 });

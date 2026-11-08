@@ -127,7 +127,7 @@ test('lost WebGL stops drawing and restoration rebuilds buffers/program', () => 
   assert.equal(prevented, true);
   f.listeners.webglcontextrestored();
   assert.equal(restored, 1);
-  assert.equal(f.counts.compile, 4);
+  assert.equal(f.counts.compile, 6);
   assert.equal(r.render(scene()), true);
 });
 test('unavailable WebGL and shader/link failures let the caller show the WebGL-required message', () => {
@@ -164,9 +164,11 @@ test('both shaders declare matching varying precision for WebGL 1', () => {
     require('node:path').join(__dirname, '../src/toy-renderer.js'),
     'utf8',
   );
+  // Tres declaraciones: los dos vertex shaders (procedural y modelo)
+  // y el fragment shader compartido.
   assert.equal(
     (source.match(/varying mediump vec3 surfaceNormal;/g) || []).length,
-    2,
+    3,
   );
 });
 test('legacy WebGL alias is attempted if the standard context is unavailable', () => {
