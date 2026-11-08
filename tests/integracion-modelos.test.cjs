@@ -299,8 +299,9 @@ test('con modelos, el jugador y los 9 tanques se dibujan con drawElements (tris 
   assert.equal(counts.indices, (3540 + 9 * 1680) * 3);
   // El helicóptero del jugador ya no dibuja piezas procedurales:
   // solo quedan drawArrays del terreno (1), la elipse oscura bajo
-  // cada tanque (9, se conserva) y la sombra del helicóptero (1).
-  assert.equal(counts.drawArrays, 11);
+  // cada tanque (9, se conserva), la sombra del helicóptero (1) y
+  // las 12 piezas de las nubes a la deriva (6 nubes × 2).
+  assert.equal(counts.drawArrays, 23);
   // El destello de daño pinta el modelo de blanco.
   colors.length = 0;
   const L = Loader;
@@ -379,7 +380,7 @@ test('scripts/embed-gltf.cjs regenera los datos embebidos iguales a los .gltf', 
 
 test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'auditoria-calidad-1');
+  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
   const order = bootstrap.scripts;
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('toy-renderer'));
   assert.ok(order.indexOf('modelo-helicoptero') < order.indexOf('toy-renderer'));

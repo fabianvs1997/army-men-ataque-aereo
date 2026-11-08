@@ -782,6 +782,18 @@
         cam.z = state.P.z;
         cam.yaw = state.P.yaw;
         setState('play');
+        // Resumen de la misión al arrancar: nombre y objetivo en
+        // pantalla unos segundos, como la pantalla de misión del
+        // original, sin abrir el panel.
+        ui.showToast(
+          'Misión ' +
+            state.mis +
+            '/3 · ' +
+            state.mission.config.name +
+            ' — ' +
+            state.mission.message,
+          5000,
+        );
       }
 
       function hurt() {
@@ -790,6 +802,9 @@
         state.P.inv = 0.3;
         state.shk = 0.3;
         sfx.hurt();
+        // Salud baja (3 o menos): aviso sonoro una sola vez por
+        // cruce, cuando la barra se pone en rojo (ver src/ui.js).
+        if (state.P.arm === 3) sfx.alarm();
         buzz(60);
         if (state.P.arm <= 0) {
           state.mission.reason = 'Helicóptero destruido';
@@ -1097,7 +1112,7 @@
           // batería (Misión 3) vale como un rescate.
           if (change.type === 'cargo-lifted') {
             state.P.sc += 50;
-            sfx.pick();
+            sfx.winch();
             buzz(20);
           }
           // Avisos en pantalla: en la grabación el pelotón llegaba
@@ -1123,7 +1138,7 @@
             );
           }
           if (change.type === 'cargo-delivered') {
-            sfx.pick();
+            sfx.portal();
             ui.showToast('¡Caja entregada por el portal!');
           }
           if (change.type === 'battery-dropped') {
@@ -1194,6 +1209,7 @@
           sfx.over();
         }
         if (event === 'complete') {
+          sfx.fanfare();
           progress.record(state.mis, state.mission);
           state.P.sc += 250;
           // Puntuación en línea si hay cuenta y conexión; como invitado

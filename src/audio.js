@@ -153,6 +153,43 @@
         tone(300, 900, 0.5, 'sawtooth', 0.1);
         tone(120, 45, 0.5, 'sine', 0.15);
       },
+      winch() {
+        // Cable del winch al levantar la carga (caja o batería):
+        // chirrido metálico que sube de tono + clic del gancho al
+        // enganchar. Distinto del `pick` de recoger un paquete.
+        tone(180, 520, 0.35, 'sawtooth', 0.12);
+        tone(1100, 900, 0.08, 'triangle', 0.12);
+        noise(0.05, 0.12, 3200);
+      },
+      portal() {
+        // Salida por el portal: barrido brillante ascendente +
+        // campana, como el brillo del halo al cruzar.
+        tone(300, 1200, 0.6, 'sine', 0.18);
+        tone(880, 880, 0.5, 'triangle', 0.15);
+        tone(1320, 1320, 0.35, 'sine', 0.08);
+      },
+      alarm() {
+        // Salud baja (3 o menos): dos pitidos graves de aviso, sin
+        // repetir el golpe de `hurt` que ya sonó al recibir el daño.
+        tone(220, 220, 0.12, 'square', 0.18);
+        env.host.setTimeout(
+          () => tone(220, 220, 0.12, 'square', 0.18),
+          180,
+        );
+      },
+      fanfare() {
+        // Misión cumplida: fanfarria original en re mayor (D–F#–A–D),
+        // cuatro notas de trompa escalonadas con un grave de apoyo
+        // en la última. Nada del tema del original, que es material
+        // con derechos: solo la misma tonalidad heroica.
+        const notes = [293.66, 369.99, 440.0, 587.33];
+        notes.forEach((f, i) =>
+          env.host.setTimeout(() => {
+            tone(f, f, 0.5, 'triangle', 0.2);
+            if (i === notes.length - 1) tone(146.83, 146.83, 0.7, 'sine', 0.15);
+          }, i * 160),
+        );
+      },
       over() {
         tone(400, 80, 0.9, 'sawtooth', 0.25);
       },

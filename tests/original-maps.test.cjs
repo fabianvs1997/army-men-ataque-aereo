@@ -206,5 +206,5 @@ test('no queda rastro del motor random: ni mapgen, ni Mapa nuevo, ni semillas de
   const bootstrap = require('../src/bootstrap.js');
   assert.ok(bootstrap.scripts.includes('original-maps'));
   assert.ok(!bootstrap.scripts.includes('mapgen'));
-  assert.equal(bootstrap.VERSION, 'auditoria-calidad-1');
+  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
 });

@@ -171,17 +171,33 @@
     // Aviso corto en pantalla (llegadas a C, caja, batería): en la
     // grabación el pelotón llegaba a C y el helicóptero volaba sobre
     // el portal sin que pasara nada visible. El aviso se esconde
-    // solo a los pocos segundos.
-    function showToast(text, ms = 3500) {
+    // solo a los pocos segundos. Los avisos van en cola: antes cada
+    // `showToast` pisaba al anterior y si dos eventos caían seguidos
+    // (herido en C + fase nueva) solo se leía el último; ahora se
+    // muestran uno tras otro en orden.
+    function showNextToast() {
+      const next = (env._toastQueue || []).shift();
+      if (!next) {
+        env._toastShowing = false;
+        const el = env.$('toast');
+        if (el) el.style.display = 'none';
+        return;
+      }
       const el = env.$('toast');
-      if (!el) return;
-      el.textContent = text;
+      if (!el) {
+        env._toastShowing = false;
+        return;
+      }
+      env._toastShowing = true;
+      el.textContent = next.text;
       el.style.display = 'block';
-      if (env._toastTimer) clearTimeout(env._toastTimer);
-      env._toastTimer = setTimeout(() => {
-        el.style.display = 'none';
-      }, ms);
       env.needsDraw = true;
+      env._toastTimer = setTimeout(showNextToast, next.ms);
+    }
+    function showToast(text, ms = 3500) {
+      env._toastQueue = env._toastQueue || [];
+      env._toastQueue.push({ text, ms });
+      if (!env._toastShowing) showNextToast();
     }
     function openMissionPanel() {
       if (!env.mission || !env.P || env.st !== 'play') return;
@@ -206,6 +222,16 @@
     }
     function updateHUD() {
       env.$('ai').style.width = env.P.arm * 10 + '%';
+      // Salud baja (3 o menos, como el aviso sonoro de `sfx.alarm`):
+      // la barra y su etiqueta SALUD se ponen en rojo y la barra
+      // palpita (clase `low` en styles.css); al recuperar salud
+      // vuelve al amarillo del original.
+      const lowHealth = env.P.arm <= 3;
+      env.$('armLabel').style.color = lowHealth ? '#ff6b5e' : '';
+      env.$('ai').style.background = lowHealth ? '#ff6b5e' : '';
+      const armEl = env.$('arm');
+      if (armEl.classList && armEl.classList.toggle)
+        armEl.classList.toggle('low', lowHealth);
       // Resumen de estado genérico: lo da la misión (hoy, heridos y
       // entregas del rescate A → B → C; las misiones con objetivos
       // nuevos lo redefinen con sus contadores). Sin él, el texto

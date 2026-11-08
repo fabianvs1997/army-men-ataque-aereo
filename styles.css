@@ -178,6 +178,25 @@ h1 {
   height: 12px;
 }
 
+/* Salud baja: la barra palpita en rojo hasta recuperar salud
+   (la clase `low` la pone src/ui.js cuando SALUD ≤ 3). */
+#arm.low {
+  border-color: #ff6b5e;
+  animation: armLow 0.8s ease-in-out infinite;
+}
+
+@keyframes armLow {
+  0%,
+  100% {
+    box-shadow: 0 2px 12px #0006;
+  }
+  50% {
+    box-shadow:
+      0 2px 12px #0006,
+      0 0 16px #ff6b5e;
+  }
+}
+
 /* Etiqueta visible de la barra de salud: en la grabación la barra
    naranja de arriba no tenía texto y no se sabía qué medía (además
    se rellenaba sola al recoger salud y parecía un fallo). En la
