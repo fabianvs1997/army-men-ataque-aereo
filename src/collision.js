@@ -148,6 +148,11 @@
         sphere(r.x + 2, h + 0.45, r.z + 1, 1.3, 0.6, 1);
       }
       for (const d of dc || []) {
+        // Decoración (flores, conos, señales): solo se dibuja, no
+        // bloquea el paso ni las balas. No lleva 's', así que si
+        // llegara a la rama de cajas crearía sólidos con NaN.
+        if (d.t === 'flower' || d.t === 'cone' || d.t === 'signal')
+          continue;
         if (world && !world.clearOfLandmarks(d.x, d.z, 3)) continue;
         if (
           mission?.allies.some(
@@ -179,7 +184,7 @@
           });
           sphere(d.x, h + 5, d.z, 2.7, 3.7, 2.7);
           sphere(d.x - 0.4, h + 7.5, d.z, 1.9, 2.8, 1.9);
-        } else
+        } else if (Number.isFinite(d.s))
           solids.push({
             kind: 'box',
             x: d.x,

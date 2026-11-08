@@ -313,23 +313,19 @@ test('el menú dice el objetivo de forma clara', () => {
   assert.ok(!el('tx').textContent.includes('despeja B'));
 });
 
-test('los avisos en pantalla anuncian llegadas y el portal sin caja', () => {
+test('los avisos en pantalla anuncian llegadas y el portal sin caja', async () => {
   const g = game();
   g.app.start(1, true);
   // Al arrancar se anuncia la misión; los avisos que llegan después
-  // esperan su turno en la cola de toasts en vez de pisar el anuncio.
+  // sustituyen al visible de inmediato (ver src/ui.js).
   assert.match(
     g.element('toast').textContent,
     /Misión 1\/3 · Pandemonio de Plástico/,
   );
-  const queued = () => (g.app.view._toastQueue || []).map((t) => t.text);
   // Llegada de un herido a C.
   g.state.mission.events.push({ type: 'delivered', id: 'a1' });
   g.app.upd(0.05);
-  assert.ok(
-    queued().some((t) => /Herido entregado en C/.test(t)),
-    queued().join(' | '),
-  );
+  assert.match(g.element('toast').textContent, /Herido entregado en C/);
   // Volar sobre el portal en la fase final sin la caja avisa.
   const m = g.state.mission;
   m.stage = 'CARGA_PORTAL';
@@ -337,10 +333,10 @@ test('los avisos en pantalla anuncian llegadas y el portal sin caja', () => {
   g.state.P.x = m.portal.x;
   g.state.P.z = m.portal.z;
   for (let i = 0; i < 120; i++) g.app.upd(0.05);
-  assert.ok(
-    queued().some((t) => /sin la caja/.test(t)),
-    queued().join(' | '),
-  );
+  // Los avisos se sustituyen de inmediato (ver src/ui.js): el aviso
+  // del portal aparece en cuanto se vuela sobre él, sin esperar a
+  // que se esconda el de la entrega.
+  assert.match(g.element('toast').textContent, /sin la caja/);
   clearTimeout(g.app.view._toastTimer);
 });
 

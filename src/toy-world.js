@@ -748,6 +748,12 @@
           continue;
         rocks.push({ x, z, s: 1.1 + (i % 4) * 0.4 });
       }
+    // Detalle propio de cada misión (flores, conos o señales): con
+    // mapa fijo viene ya generado; sin mapa, vacío. Solo decoración:
+    // no bloquea el paso ni las balas.
+    const details = map?.scenery?.details
+      ? map.scenery.details.map((d) => ({ ...d }))
+      : [];
     // Montañas del valle alpino (solo la Misión 1): rocas grandes
     // como borde del mapa; las dibuja el renderizador con cima nevada.
     const mountains = map?.scenery?.mountains
@@ -775,6 +781,7 @@
       roadHalfWidth: ROAD_HALF_WIDTH,
       rocks,
       mountains,
+      details,
       landmarks,
       yard,
       shrubs,

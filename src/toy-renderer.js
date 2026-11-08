@@ -1515,6 +1515,44 @@ void main(){
             1.9,
             [0.26, 0.49, 0.15],
           );
+        } else if (d.t === 'flower') {
+          // Flor alpina (Misión 1): tallo fino y cabezuela de color
+          // (blanco, amarillo o rosa, según d.c). Dos piezas por
+          // flor, diminutas: 48 flores cuestan menos que un pino.
+          const petal =
+            d.c === '#f5f0dc'
+              ? [0.96, 0.94, 0.86]
+              : d.c === '#e58bb1'
+                ? [0.9, 0.55, 0.7]
+                : [1, 0.85, 0.3];
+          this.part('box', d.x, 0.25, d.z, 0.08, 0.5, 0.08, [0.2, 0.45, 0.15], 0, 0);
+          this.part('sphere', d.x, 0.55, d.z, 0.28, 0.24, 0.28, petal, 0, 0);
+        } else if (d.t === 'cone') {
+          // Cono de obra (Misión 2): base y cuerpo naranja con banda
+          // blanca, junto al circuito. Tres piezas por cono.
+          this.part('box', d.x, 0.07, d.z, 0.9, 0.14, 0.9, [0.95, 0.45, 0.1], 0, 0);
+          this.part('box', d.x, 0.5, d.z, 0.55, 0.7, 0.55, [0.95, 0.45, 0.1], 0, 0);
+          this.part('box', d.x, 0.62, d.z, 0.62, 0.18, 0.62, [0.96, 0.96, 0.94], 0, 0);
+        } else if (d.t === 'signal') {
+          // Señal ferroviaria (Misión 3): poste oscuro con cabezal y
+          // luz roja o verde alterna, junto a la vía del tren.
+          const green =
+            Math.abs(Math.sin(d.x * 12.9898 + d.z * 78.233) * 43758.5453) % 1 >
+            0.5;
+          this.part('box', d.x, 1.75, d.z, 0.25, 3.5, 0.25, [0.2, 0.2, 0.22], 0, 0);
+          this.part('box', d.x, 3.7, d.z, 0.9, 1.1, 0.4, [0.15, 0.15, 0.18], 0, 0);
+          this.part(
+            'sphere',
+            d.x,
+            3.85,
+            d.z + 0.22,
+            0.28,
+            0.28,
+            0.12,
+            green ? [0.2, 0.85, 0.3] : [0.9, 0.2, 0.15],
+            0,
+            0,
+          );
         } else {
           const color =
             d.c === '#d9473f'

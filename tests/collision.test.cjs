@@ -214,3 +214,70 @@ test('all campaign rescue points and helipad remain reachable at flight height',
       );
   }
 });
+
+test('los detalles decorativos no crean sólidos con NaN y no bloquean el paso ni las balas', () => {
+  const f = fixture([]);
+  f.state.DC = [
+    { t: 'flower', x: 10, z: 10 },
+    { t: 'cone', x: -10, z: 10 },
+    { t: 'signal', x: 0, z: -10 },
+    { t: 'shrub', x: 10, z: -10, s: 2 },
+  ];
+  // Flores, conos y señales son solo decoración: ni un disparo que
+  // las atraviesa ni el helicóptero parado encima notan nada. Antes
+  // llegaban a la rama de cajas de rebuild() sin 's' y creaban
+  // sólidos con NaN (verificado en Node: segment devuelve NaN para
+  // esa caja y la bala no la ve).
+  for (const d of f.state.DC.slice(0, 3)) {
+    assert.equal(
+      f.cover.trace(
+        { x: d.x, y: 1, z: d.z - 10 },
+        { x: d.x, y: 1, z: d.z + 10 },
+        0,
+        0,
+      ),
+      null,
+      `detalle ${d.t} en ${d.x},${d.z}`,
+    );
+    assert.equal(
+      f.cover.overlaps({ x: d.x, y: 1, z: d.z }, 0.5, 0.5),
+      false,
+      `detalle ${d.t} en ${d.x},${d.z}`,
+    );
+  }
+  // El arbusto sí bloquea: su 's' finita crea esferas reales.
+  assert.notEqual(
+    f.cover.trace({ x: 10, y: 1, z: -20 }, { x: 10, y: 1, z: 0 }, 0, 0),
+    null,
+  );
+  assert.equal(f.cover.overlaps({ x: 10, y: 1, z: -10 }, 0.5, 0.5), true);
+});
+
+test('en las 3 misiones ningún impacto devuelto tiene NaN', () => {
+  const { game } = require('../support/fake-host.cjs');
+  for (let n = 1; n <= 3; n++) {
+    const { app } = game();
+    app.start(n, true);
+    const cover = app.view.cover;
+    for (let i = 0; i < 20; i++) {
+      const x = -400 + i * 40;
+      const hit = cover.trace(
+        { x, y: 8, z: -400 },
+        { x, y: 8, z: 400 },
+        0,
+        0,
+      );
+      if (hit) {
+        assert.ok(Number.isFinite(hit.t), `misión ${n} impacto no finito`);
+        // El terreno devuelve object null; los sólidos, un objeto
+        // con geometría finita.
+        if (hit.object)
+          for (const k of ['x', 'y', 'z', 'sx', 'sy', 'sz'])
+            assert.ok(
+              Number.isFinite(hit.object[k]),
+              `misión ${n} sólido con ${k} no finito`,
+            );
+      }
+    }
+  }
+});
