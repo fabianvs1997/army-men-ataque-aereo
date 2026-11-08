@@ -344,23 +344,66 @@ void main(){
     initModels() {
       this.modelHeli = null;
       this.modelTank = null;
+      // Estado de cada modelo para ?modelos=1 y para el Registro: qué se
+      // dibuja (Blender o procedural) y, si cae al respaldo, por qué.
+      // Sin datos embebidos el motivo es provisional: _fetchModels
+      // puede traerlos luego por la red y el estado se actualiza.
+      this.modelStatus = {
+        heli: { source: 'procedural', reason: 'sin datos embebidos' },
+        tank: { source: 'procedural', reason: 'sin datos embebidos' },
+      };
       if (!this.loader) return;
       try {
-        if (root.ToyModeloHelicoptero)
+        if (root.ToyModeloHelicoptero) {
           this.modelHeli = this.loader.parse(root.ToyModeloHelicoptero);
+          this.modelStatus.heli = { source: 'blender', reason: '' };
+        }
       } catch (e) {
-        this.modelHeli = null;
+        // console.error (no warn ni silencio): el Registro
+        // (src/logger.js) captura los console.error, así que el motivo
+        // del respaldo queda guardado en Menú → Registro y visible en
+        // la consola de Safari. Antes este catch era mudo y el fallo
+        // del cargador en el navegador pasaba desapercibido.
+        console.error(
+          '[modelos] helicóptero Blender no disponible, uso procedural: ' +
+            (e && e.message ? e.message : e),
+        );
+        this.modelStatus.heli = {
+          source: 'procedural',
+          reason: e && e.message ? e.message : String(e),
+        };
       }
       try {
-        if (root.ToyModeloTanque)
+        if (root.ToyModeloTanque) {
           this.modelTank = this.loader.parse(root.ToyModeloTanque);
+          this.modelStatus.tank = { source: 'blender', reason: '' };
+        }
       } catch (e) {
-        this.modelTank = null;
+        console.error(
+          '[modelos] tanque Blender no disponible, uso procedural: ' +
+            (e && e.message ? e.message : e),
+        );
+        this.modelStatus.tank = {
+          source: 'procedural',
+          reason: e && e.message ? e.message : String(e),
+        };
       }
     }
+    // Línea para ?modelos=1: qué se dibuja y por qué cayó al respaldo.
+    modelStatusText() {
+      const s = this.modelStatus || {};
+      const part = (label, st) =>
+        st && st.source === 'blender'
+          ? label + ': Blender'
+          : label +
+            ': procedural' +
+            (st && st.reason ? ' (' + st.reason + ')' : '');
+      return 'Modelos · ' + part('helicóptero', s.heli) + ' · ' + part('tanques', s.tank);
+    }
     // Respaldo por red (GitHub Pages): solo si falta algún modelo y
-    // hay fetch disponible; se intenta una sola vez por sesión y los
-    // fallos se tragan: el juego nunca se rompe por esto.
+    // hay fetch disponible; se intenta una sola vez por sesión. Los
+    // fallos no rompen el juego, pero sí quedan registrados (ver
+    // modelStatus) en vez de tragarse en silencio.
     _fetchModels() {
       if (this._fetchTried || (this.modelHeli && this.modelTank)) return;
       this._fetchTried = true;
@@ -368,10 +411,10 @@ void main(){
       if (!this.loader || typeof fetchFn !== 'function') return;
       const self = this;
       const jobs = [
-        ['assets/helicoptero.gltf', 'modelHeli'],
-        ['assets/tanque-tan.gltf', 'modelTank'],
+        ['assets/helicoptero.gltf', 'modelHeli', 'heli', 'helicóptero'],
+        ['assets/tanque-tan.gltf', 'modelTank', 'tank', 'tanque'],
       ];
-      for (const [url, key] of jobs) {
+      for (const [url, key, statusKey, label] of jobs) {
         if (self[key]) continue;
         fetchFn(url)
           .then((r) => {
@@ -381,11 +424,29 @@ void main(){
           .then((g) => {
             try {
               self[key] = self.loader.parse(g);
+              self.modelStatus[statusKey] = { source: 'blender', reason: '' };
             } catch (e) {
               self[key] = null;
+              self.modelStatus[statusKey] = {
+                source: 'procedural',
+                reason: e && e.message ? e.message : String(e),
+              };
+              console.error(
+                '[modelos] ' + label + ' Blender (por red) no disponible, uso procedural: ' +
+                  (e && e.message ? e.message : e),
+              );
             }
           })
-          .catch(() => {});
+          .catch((e) => {
+            self.modelStatus[statusKey] = {
+              source: 'procedural',
+              reason: 'fetch falló: ' + (e && e.message ? e.message : e),
+            };
+            console.error(
+              '[modelos] no se pudo descargar ' + url + ': ' +
+                (e && e.message ? e.message : e),
+            );
+          });
       }
     }
     // Fusiona todas las primitivas del modelo en UN solo buffer de
