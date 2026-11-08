@@ -52,9 +52,10 @@
   }
   // Clasificación visual de las balas enemigas por tipo de enemigo.
   // Las torretas ('tur') son cañones pesados fijos: se dibujan como
-  // tanque. Las bases ('base') no disparan.
+  // tanque. Las bases ('base') no disparan. El jeep/camión Tan
+  // ('jeep', Misión 1) dispara con el cañón del tanque.
   function bulletKindFor(enemyKind) {
-    return enemyKind === 'tank' || enemyKind === 'tur'
+    return enemyKind === 'tank' || enemyKind === 'tur' || enemyKind === 'jeep'
       ? 'tank'
       : enemyKind === 'heli'
         ? 'heli'

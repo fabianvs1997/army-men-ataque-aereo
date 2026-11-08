@@ -229,6 +229,10 @@
       const lowHealth = env.P.arm <= 3;
       env.$('armLabel').style.color = lowHealth ? '#ff6b5e' : '';
       env.$('ai').style.background = lowHealth ? '#ff6b5e' : '';
+      // Número de salud del original, junto a la barra (abajo a la
+      // derecha): en rojo con salud baja, como la barra.
+      setText('armNum', String(env.P.arm));
+      env.$('armNum').style.color = lowHealth ? '#ff6b5e' : '';
       const armEl = env.$('arm');
       if (armEl.classList && armEl.classList.toggle)
         armEl.classList.toggle('low', lowHealth);

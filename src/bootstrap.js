@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'pulido-creativo-1';
+  const VERSION = 'mision1-video-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -28,6 +28,8 @@
     'gltf-loader',
     'modelo-helicoptero',
     'modelo-tanque',
+    'modelo-jeep',
+    'modelo-caja',
     'toy-renderer',
     'projection',
     'draw3d',

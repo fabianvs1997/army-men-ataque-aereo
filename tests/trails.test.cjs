@@ -67,7 +67,9 @@ test('campaign enemies spawn on the valley floor across deterministic seeds', ()
       for (const e of state.E)
         assert.ok(state.world.canTravel(e.x, e.z), `${e.k} spawned on ridge`);
       assert.equal(state.E.length, state.mission.enemyPlan.length);
-      assert.equal(state.mission.guards.length, 4);
+      // Misión 1 del vídeo, sin escolta ni heridos: no hay guardias
+      // en A ni pelotón en B; las misiones 2 y 3 siguen con 4.
+      assert.equal(state.mission.guards.length, n === 1 ? 0 : 4);
     }
   }
 });

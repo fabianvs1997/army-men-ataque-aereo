@@ -137,7 +137,7 @@
     return route[route.length - 1];
   }
 
-  const hpFor = (k) => ({ inf: 3, tank: 8, tur: 6, heli: 6 })[k];
+  const hpFor = (k) => ({ inf: 3, tank: 8, tur: 6, heli: 6, jeep: 6 })[k];
   // Huellas de las defensas (Misión 1) como puntos con radio: cada
   // saco de una fila, cada poste de una valla, cada tienda, torre y
   // caja. Sirven para despejar la vegetación en `buildMap` y para
@@ -174,11 +174,16 @@
     return points;
   }
   // Enemigos de B con los desplazamientos clásicos respecto a B.
-  const bZone = (B) => [
+  // `air` es falso en la Misión 1: en el vídeo del original no hay
+  // helicóptero Tan («Plastic Pandemonium», catálogo fotograma a
+  // fotograma en departamento-videojuegos/catalogo-mision-video-m1.md).
+  const bZone = (B, air = true) => [
     { id: 'b-west', k: 'tank', x: B.x - 19, z: B.z, zone: 'B', hp: 16 },
     { id: 'b-north', k: 'tur', x: B.x + 3, z: B.z + 19, zone: 'B', hp: 16 },
     { id: 'b-east', k: 'inf', x: B.x + 18, z: B.z, zone: 'B', hp: 10 },
-    { id: 'b-air', k: 'heli', x: B.x - 14, z: B.z - 11, zone: 'B', hp: 8 },
+    ...(air
+      ? [{ id: 'b-air', k: 'heli', x: B.x - 14, z: B.z - 11, zone: 'B', hp: 8 }]
+      : []),
   ];
 
   // Los tres mapas fijos, escritos a mano. `seed` es el identificador
@@ -190,7 +195,37 @@
       name: 'Pandemonio de Plástico',
       scenario: 'Alpine',
       inspiration:
-        '«Plastic Pandemonium», primera misión del original: base secreta alpina del mundo de plástico, suministros de plástico y un portal. El mapa es una reconstrucción (no hay plano público del original): valle alpino con pinos, montañas y camino de tierra; sin props de jardín de casa.',
+        '«Plastic Pandemonium», primera misión del original: base secreta alpina del mundo de plástico, suministros de plástico y un portal. El mapa es una reconstrucción (no hay plano público del original): valle alpino con pinos, montañas y camino de tierra; sin props de jardín de casa. Enemigos y reglas según el vídeo de 125,5 s del original, catalogado fotograma a fotograma en departamento-videojuegos/catalogo-mision-video-m1.md: sin helicóptero Tan, 3 tanques guardando la caja, un jeep/camión Tan al norte del valle, infantería en grupos junto al camino y al puesto, y misión sin escolta ni heridos (salir de la base, destruir los tanques, recoger la caja con el winch y llevarla al portal).',
+      // Sin escolta ni heridos en la Misión 1 (vídeo del original):
+      // las reglas viven en src/escort-mission.js (`noEscort`).
+      noEscort: true,
+      // Sin helicóptero Tan en la Misión 1 (no se ve en el vídeo).
+      bAir: false,
+      // Tanques Tan guardando la caja (-170, 140): 3, a 20–25 u de
+      // ella, fuera de las defensas (≥6 u de cada saco/tienda) y en
+      // llano junto al puesto B. El oeste de la caja es ladera de
+      // montaña (altura 12–20, intransitable) y el norte lo cierra
+      // la línea de sacos (z=125), así que los dos guardias van al
+      // este, en llano.
+      crateGuards: [
+        [-150, 139],
+        [-146, 133],
+        [-150, 155],
+      ],
+      // Infantería Tan en grupos de 2–3, como en el vídeo: repartidos
+      // por el valle junto al camino (ruta AB y ruta B→C). Ningún
+      // grupo encima de la caja: con 2 soldados más, el puesto B
+      // era un muro de 10 enemigos a la vez para la primera misión
+      // y el piloto moría allí; los grupos se encuentran por el
+      // camino, no todos de golpe.
+      squads: [
+        { x: -80, z: 101, count: 3 },
+        { x: -110, z: 195, count: 2 },
+        { x: -65, z: 210, count: 2 },
+      ],
+      // Jeep/camión Tan amarillo, al norte del valle junto al camino
+      // B→C (el único vehículo Tan del vídeo además de los tanques).
+      jeep: { x: 60, z: 215 },
       A: { x: 0, z: 0 },
       B: { x: -150, z: 170 },
       C: { x: 180, z: 190 },
@@ -582,7 +617,53 @@
         zone: 'AB',
         hp: hpFor(spec.routeKinds.inf),
       },
-      ...bZone(B),
+      // En el vídeo, la infantería del puesto B son soldados
+      // normales (3 de vida, como toda la infantería): los 10 del
+      // `b-east` clásico eran un guardia del diseño de rescate.
+      // Solo en la Misión 1 (sin escolta); las misiones 2 y 3
+      // conservan sus 10.
+      ...bZone(B, spec.bAir !== false).map((e) =>
+        spec.noEscort && e.id === 'b-east' ? { ...e, hp: 3 } : e,
+      ),
+      // Tanques Tan guardando la caja (solo la Misión 1, del vídeo):
+      // 3 tanques amarillos alrededor de la caja de suministros. Con
+      // 6 de vida (no 8 como los demás tanques): son la puerta de la
+      // primera misión, no un muro — el piloto automático moría en
+      // el puesto B con los 6 tanques a 8 y los 3 de la caja eran
+      // los que alargaban el tiroteo bajo el fuego de la infantería.
+      ...(spec.crateGuards || []).map(([x, z], i) => ({
+        id: 'crate-tank-' + i,
+        k: 'tank',
+        x,
+        z,
+        zone: 'B',
+        hp: 6,
+      })),
+      // Infantería Tan en grupos (solo la Misión 1, del vídeo): cada
+      // grupo es un puñado de soldados sueltos alrededor de su centro.
+      ...(spec.squads || []).flatMap((s, gi) =>
+        Array.from({ length: s.count }, (_, i) => ({
+          id: 'squad-' + gi + '-' + i,
+          k: 'inf',
+          x: s.x + (i - (s.count - 1) / 2) * 3,
+          z: s.z + ((i % 2) - 0.5) * 4,
+          zone: 'AB',
+          hp: hpFor('inf'),
+        })),
+      ),
+      // Jeep/camión Tan amarillo (solo la Misión 1, del vídeo).
+      ...(spec.jeep
+        ? [
+            {
+              id: 'jeep-norte',
+              k: 'jeep',
+              x: spec.jeep.x,
+              z: spec.jeep.z,
+              zone: 'BC',
+              hp: hpFor('jeep'),
+            },
+          ]
+        : []),
       {
         id: 'escort-turret',
         k: spec.bcKinds.turret,
@@ -749,6 +830,9 @@
     }));
     const rules = {
       ...defaults,
+      // Misión 1 del vídeo: sin escolta ni heridos (ver
+      // src/escort-mission.js); las misiones 2 y 3 no lo traen.
+      ...(spec.noEscort ? { noEscort: true } : {}),
       A: { ...A },
       B: { ...B },
       C: { ...C },

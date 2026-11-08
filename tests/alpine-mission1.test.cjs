@@ -64,11 +64,13 @@ test('la Misión 1 conserva su trazado y su dificultad: A, B, C, rutas y enemigo
     ],
   ]);
   const enemies = m1.rules.enemies;
+  // 147 HP: 3 tanques guardando la caja con 6 HP (no 8) y el
+  // infante de B con 3 HP (no 10, que era del rescate clásico).
   assert.equal(
     enemies.reduce((sum, e) => sum + e.hp, 0),
-    117,
+    147,
   );
-  assert.equal(enemies.filter((e) => e.k === 'tank').length, 3);
+  assert.equal(enemies.filter((e) => e.k === 'tank').length, 6);
   assert.equal(enemies.filter((e) => e.k === 'tur').length, 4);
   assert.equal(m1.rules.extraAir.length, 0);
   assert.deepEqual(Maps.validate(m1), []);
@@ -165,7 +167,7 @@ test('pulido: valle con laderas suaves y bordes altos, portal brillante y torres
   // la segunda caja pequeña junto al puesto.
   assert.deepEqual(world.cargoCrate, { x: -170, z: 140 });
   assert.ok(
-    yard.some((p) => p.sx === 3.5 && color([0.11, 0.36, 0.12])(p)),
+    yard.some((p) => p.sx === 3.5 && color([0.08, 0.68, 0.12])(p)),
     'sin segunda caja de suministros',
   );
   // Las 4 torres llevan bandera verde y están a ~50 u de A, sin

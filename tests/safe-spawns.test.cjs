@@ -25,7 +25,9 @@ test('all three missions and retries keep every enemy outside the departure buff
             // Los garajes Tan de la Misión 2 son enemigos-edificio:
             // van en el plan pero no son tanque, torreta, infantería
             // ni helicóptero.
-            (config.garages || 0),
+            (config.garages || 0) +
+            // El jeep/camión Tan de la Misión 1, igual que los garajes.
+            (config.jeeps || 0),
         );
         for (const e of state.E) {
           assert.ok(distance(e) - e.r >= layout.minEnemyDistance - 1e-9, e.k);

@@ -46,8 +46,10 @@ test('five resets recreate exact forces, reset events and retain saved campaign 
   }
 });
 test('enemy projectiles hit healthy soldiers while wounded remain protected during B clearance', () => {
+  // La mecánica es de la escolta: desde la Misión 1 del vídeo (sin
+  // pelotón ni heridos) se juega en la Misión 2, que la conserva.
   const { app, state: s } = game();
-  app.start(1, true);
+  app.start(2, true);
   s.E = [];
   s.BL = [];
   const healthy = s.mission.allies[0],
@@ -87,8 +89,9 @@ test('helicopter destruction marks mission failed and initial HUD names B', () =
   assert.match(g.element('tx').textContent, /Helicóptero destruido/);
 });
 test('guard and squad autonomous fire damages enemies without player firing', () => {
+  // La escolta vive en la Misión 2 desde la Misión 1 del vídeo.
   const g = game();
-  g.app.start(1, true);
+  g.app.start(2, true);
   const s = g.state;
   const before = s.E.filter((e) => e.zone === 'B').reduce(
     (n, e) => n + e.hp,
@@ -104,6 +107,8 @@ test('guard and squad autonomous fire damages enemies without player firing', ()
   );
 });
 test('squad navigates the actual plastic wreckage left by combat across visual seeds', () => {
+  // La escolta vive en la Misión 2 desde la Misión 1 del vídeo (sin
+  // pelotón ni heridos): el pelotón marcha a C y se entrega allí.
   const { fakeHost, seeded } = require('../support/fake-host.cjs'),
     Game = require('../src/game.js');
   for (const seed of [1, 123, 999]) {
@@ -113,7 +118,7 @@ test('squad navigates the actual plastic wreckage left by combat across visual s
         random: seeded(1),
         visualRandom: seeded(seed),
       });
-    app.start(1, true);
+    app.start(2, true);
     const s = app.state,
       m = s.mission;
     for (const e of s.E) app.combat.kill(e);

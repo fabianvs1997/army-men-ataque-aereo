@@ -385,11 +385,13 @@ test('el HUD nuevo existe: brújula y contador de munición en HTML, CSS y boots
   assert.ok(css.includes('#ammo'));
   assert.ok(!css.includes('#cmp {'), 'sin CSS de la flecha vieja');
   assert.ok(bootstrap.scripts.includes('compass'), 'bootstrap carga compass');
-  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
+  assert.equal(bootstrap.VERSION, 'mision1-video-1');
 });
 
-// La escolta sigue llegando a C en las 3 misiones (reglas sin tocar).
-test('la escolta llega a C en las 3 misiones con el HUD nuevo', () => {
+// La escolta sigue llegando a C en las misiones 2 y 3 (reglas sin
+// tocar); la Misión 1 del vídeo no tiene escolta: se completa con
+// la caja y el portal.
+test('la escolta llega a C en las misiones 2 y 3, y la Misión 1 cierra con la caja y el portal', () => {
   const g = game();
   g.element('go').onclick();
   for (let n = 1; n <= 3; n++) {
@@ -398,6 +400,29 @@ test('la escolta llega a C en las 3 misiones con el HUD nuevo', () => {
     for (const e of s.E) app.combat.kill(e);
     s.E = [];
     s.EB = [];
+    // Misión 1 del vídeo: sin heridos ni pelotón; a B y, sin
+    // amenazas, directo a la caja y el portal.
+    if (n === 1) {
+      assert.equal(s.mission.allies.length, 0);
+      s.P.x = s.mission.rules.B.x;
+      s.P.z = s.mission.rules.B.z;
+      for (let i = 0; i < 200 && s.mission.stage !== 'CARGA_PORTAL'; i++)
+        app.upd(0.05);
+      assert.equal(s.mission.stage, 'CARGA_PORTAL');
+      s.P.x = s.mission.cargo.x;
+      s.P.z = s.mission.cargo.z;
+      for (let i = 0; i < 200 && s.mission.cargo.state === 'waiting'; i++)
+        app.upd(0.05);
+      assert.equal(s.mission.cargo.state, 'carried');
+      s.P.x = s.mission.portal.x;
+      s.P.z = s.mission.portal.z;
+      for (let i = 0; i < 600 && s.st === 'play'; i++) app.upd(0.05);
+      assert.equal(s.st, 'win');
+      assert.equal(s.mission.delivered, 0);
+      g.app.upd(0.05);
+      g.element('go').onclick();
+      continue;
+    }
     for (const a of s.mission.allies.filter((a) => a.wounded)) {
       s.P.x = a.x;
       s.P.z = a.z;

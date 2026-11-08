@@ -146,8 +146,9 @@ test('bullets carry their shooter kind and turrets count as tank guns', () => {
 });
 
 test('player, allied and enemy bullets are tagged by shooter in a live mission', () => {
+  // La escolta (guardias) vive en la Misión 2 desde la Misión 1 del vídeo.
   const { app, state: s } = game();
-  app.start(1, true);
+  app.start(2, true);
   s.P.inv = 999;
   s.E = [];
   const px = s.P.x,

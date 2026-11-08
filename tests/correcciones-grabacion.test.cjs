@@ -240,7 +240,9 @@ test('Bajas cuenta enemigos de verdad y el resumen no se duplica', () => {
   assert.ok(summary.includes('Enemigos 2'), summary);
   assert.ok(!summary.includes('Bajas'), summary);
   assert.ok(!summary.includes('Misión 1/3'), 'sin "Misión 1/3" en el resumen');
-  assert.ok(summary.includes('Caídos 0'), summary);
+  // Misión 1 del vídeo, sin pelotón: el resumen cuenta tanques
+  // guardando la caja, no heridos ni caídos.
+  assert.ok(summary.includes('Tanques 1/6'), summary);
   assert.ok(summary.includes('Caja en B, por levantar'), summary);
 });
 

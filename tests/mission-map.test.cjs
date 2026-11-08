@@ -58,10 +58,16 @@ test('las rutas fijas están conectadas, los objetivos distantes y la escolta co
         }
       }
     }
-    assert.equal(m.enemyPlan.filter((e) => e.zone === 'AB').length, 8);
+    // Misión 1 del vídeo: 7 infantes en grupos junto al camino y al
+    // puesto, además de las patrullas (AB 15, BC 9 con el jeep); las
+    // misiones 2 y 3 siguen con 8 y 8.
+    assert.equal(
+      m.enemyPlan.filter((e) => e.zone === 'AB').length,
+      mission === 1 ? 15 : 8,
+    );
     assert.equal(
       m.enemyPlan.filter((e) => e.zone === 'BC' && e.k !== 'heli').length,
-      8,
+      mission === 1 ? 9 : 8,
     );
     assert.equal(
       new Set(m.enemyPlan.map((e) => e.id)).size,
@@ -129,6 +135,14 @@ test('las rutas fijas están conectadas, los objetivos distantes y la escolta co
       } else if (m.stage === 'PORTAL' && m.portal) {
         player.x = m.portal.x;
         player.z = m.portal.z;
+      } else if (
+        m.stage === 'COMBATE_RUTA_AB' ||
+        m.stage === 'DESPEJAR_B'
+      ) {
+        // Misión 1 sin escolta: no hay heridos que lleven al
+        // jugador hasta B; el piloto vuela hasta el puesto.
+        player.x = m.rules.B.x;
+        player.z = m.rules.B.z;
       }
       const before = m.allies.map((a) => ({ ...a }));
       m.update(0.05, player, env);
@@ -140,11 +154,21 @@ test('las rutas fijas están conectadas, los objetivos distantes y la escolta co
           );
       });
     }
-    assert.equal(
-      m.delivered,
-      7,
-      `m${mission}: ${m.allies.map((a) => a.cause || a.state)}`,
-    );
+    // Misión 1 sin escolta ni heridos: no hay 7 entregas que
+    // contar; lo que cierra la misión es la caja por el portal.
+    if (mission === 1) {
+      assert.equal(
+        m.cargo.state,
+        'delivered',
+        `m${mission}: caja no entregada`,
+      );
+    } else {
+      assert.equal(
+        m.delivered,
+        7,
+        `m${mission}: ${m.allies.map((a) => a.cause || a.state)}`,
+      );
+    }
     assert.equal(m.stage, 'COMPLETADA');
   }
 });

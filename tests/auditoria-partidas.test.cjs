@@ -233,12 +233,28 @@ function playMission(n) {
         }
       }
       let combatTarget = null;
-      if (!hover && tx !== null && frame >= escapeUntil) {
+      // Con salud baja (≤3) y un botiquín cerca, el botiquín manda
+      // sobre el combate: si no, el piloto se queda peleando junto a
+      // la caja con salud 1 mientras hay un botiquín a 25 u y muere
+      // por el último soldado (Misión 1 del vídeo).
+      const needPack = pk && pk.q.ty === 'a' && P.arm <= 3;
+      if (!hover && tx !== null && frame >= escapeUntil && !needPack) {
         combatTarget =
-          nearestEnemy(55, ['tank', 'tur', 'heli', 'garage', 'base']) ||
+          nearestEnemy(55, ['tank', 'tur', 'heli', 'garage', 'base', 'jeep']) ||
           nearestEnemy(45, ['inf']) ||
           nearestEnemy(40, ['car']);
-        if (combatTarget && dist(P.x, P.z, tx, tz) > 12) {
+        // En las fases de combate (despejar B y la caja) el piloto
+        // persigue al enemigo aunque ya esté a 12 u del objetivo:
+        // si no, se queda parado junto a la caja o a B mientras le
+        // disparan 5 enemigos a la vez sin rematarlos (Misión 1 del
+        // vídeo: 3 tanques guardando la caja + infantería alrededor).
+        // En embarque y entrega se mantiene el margen de 12 u para
+        // poder llegar al herido o al helipuerto.
+        if (
+          combatTarget &&
+          (dist(P.x, P.z, tx, tz) > 12 ||
+            ['DESPEJAR_B', 'CARGA_PORTAL'].includes(M.stage))
+        ) {
           tx = combatTarget.x;
           tz = combatTarget.z;
         }
@@ -272,17 +288,35 @@ function playMission(n) {
       if (hover) {
         // Quieto: embarque, winch y entrega exigen estabilidad.
       } else if (combatTarget) {
-        // Bombeo: encarar al enemigo y no quedarse parado (parado,
-        // las balas enemigas no fallan). Acercarse hasta 14 u y
-        // retroceder, siempre de cara y disparando.
+        // Bombeo a distancia: encarar al enemigo y no quedarse parado
+        // (parado, las balas enemigas no fallan). El cañón llega a
+        // 130 u con ayuda de puntería, así que no hace falta pegarse
+        // a 14 u: a esa distancia TODOS disparan a la vez (Misión 1
+        // del vídeo, sin aliados que repartan el fuego: 6 tanques +
+        // infantería alrededor de B). Se pelea fuera del alcance de
+        // la infantería (45 u) y del jeep (55 u): la distancia de
+        // bombeo es 48 u contra infantería, 58 u contra el jeep y
+        // 50 u contra el resto (tanques y torretas, 65-75 u, siguen
+        // disparando pero son menos bocas). Acercarse hasta esa
+        // distancia y retroceder, siempre de cara y disparando.
         const cd = dist(P.x, P.z, combatTarget.x, combatTarget.z);
+        const want =
+          combatTarget.k === 'inf'
+            ? 48
+            : combatTarget.k === 'jeep'
+              ? 58
+              : 50;
         const err = norm(
           Math.atan2(combatTarget.x - P.x, combatTarget.z - P.z) - P.yaw,
         );
         if (err > 0.12) setKey('a', true);
         else if (err < -0.12) setKey('d', true);
-        if (Math.abs(err) < 0.7) setKey(cd > 14 ? 'w' : 's', true);
-        if (Math.abs(err) < 0.25) app.view.fire = true;
+        if (Math.abs(err) < 0.7) setKey(cd > want ? 'w' : 's', true);
+        // Disparar con el cañón con ayuda de puntería (cono de 60°):
+        // a 0,45 rad el tiro sigue yendo al objetivo, y el piloto no
+        // se pasa los frames girando sin disparar mientras 5
+        // soldados le disparan a la vez (Misión 1 del vídeo).
+        if (Math.abs(err) < 0.45) app.view.fire = true;
         if (
           ['tank', 'tur', 'heli', 'garage'].includes(combatTarget.k) &&
           P.mi > 0 &&
@@ -396,15 +430,16 @@ for (const n of [1, 2, 3]) {
     );
     if (n === 1) {
       assert.equal(M.cargo.state, 'delivered', 'caja por el portal');
+      // Misión 1 del vídeo: sin escolta ni heridos, directo de
+      // despejar B a la caja y el portal.
       assert.deepEqual(r.timeline, [
         'INICIO_A',
         'COMBATE_RUTA_AB',
         'DESPEJAR_B',
-        'EMBARCAR_HERIDOS',
-        'ESCOLTAR_BC',
-        'ENTREGA_C',
         'CARGA_PORTAL',
       ]);
+      assert.equal(M.allies.length, 0, 'sin pelotón en M1');
+      assert.equal(M.stars, 3, 'sin pelotón que perder: 3 estrellas');
     }
     if (n === 2) {
       assert.ok(

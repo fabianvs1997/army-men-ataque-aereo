@@ -56,8 +56,9 @@ test('world solids still block shots; fallen-ally markers never do', () => {
 });
 
 test('damageSoldier ignores soldiers that are not part of the mission', () => {
+  // La escolta vive en la Misión 2 desde la Misión 1 del vídeo.
   const { app, state } = game();
-  app.start(1, true);
+  app.start(2, true);
   assert.equal(
     state.mission.damageSoldier({ state: 'MARCHANDO_A_C', hp: 5 }, 100),
     false,

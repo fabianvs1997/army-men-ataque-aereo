@@ -4,23 +4,40 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Geometry uses the same world-space half extents and yaw as the renderers.
+  // Camino caliente sin allocations: segment() se llama ~230 veces por
+  // frame en la Misión 1 (30 enemigos × move + trazadoras) y la versión
+  // anterior creaba 4 arrays por llamada (local ×2, u, v) más 3 reduce;
+  // eso son ~1.000 objetos efímeros por frame solo aquí y las pausas
+  // de GC que se ven en el bench (frames de 45-65 ms cada ~100-150
+  // frames). La matemática es la misma, con escalares en vez de
+  // arrays; los tests de colisión y los benches de congelamiento la
+  // cubren.
   function segment(a, b, o, r = 0, halfY = r) {
     const c = Math.cos(o.yaw || 0),
       s = Math.sin(o.yaw || 0);
-    const local = (p) => [
-      (p.x - o.x) * c - (p.z - o.z) * s,
-      p.y - o.y,
-      (p.x - o.x) * s + (p.z - o.z) * c,
-    ];
-    const p = local(a),
-      q = local(b),
-      ext = [o.sx + r, o.sy + halfY, o.sz + r];
+    const ax = a.x - o.x,
+      az = a.z - o.z,
+      bx = b.x - o.x,
+      bz = b.z - o.z;
+    const px = ax * c - az * s,
+      py = a.y - o.y,
+      pz = ax * s + az * c;
+    const qx = bx * c - bz * s,
+      qy = b.y - o.y,
+      qz = bx * s + bz * c;
+    const ex = o.sx + r,
+      ey = o.sy + halfY,
+      ez = o.sz + r;
     if (o.kind === 'sphere') {
-      const u = p.map((v, i) => v / ext[i]),
-        v = q.map((n, i) => (n - p[i]) / ext[i]);
-      const A = v.reduce((t, n) => t + n * n, 0),
-        B = 2 * u.reduce((t, n, i) => t + n * v[i], 0),
-        C = u.reduce((t, n) => t + n * n, 0) - 1;
+      const ux = px / ex,
+        uy = py / ey,
+        uz = pz / ez,
+        vx = (qx - px) / ex,
+        vy = (qy - py) / ey,
+        vz = (qz - pz) / ez;
+      const A = vx * vx + vy * vy + vz * vz,
+        B = 2 * (ux * vx + uy * vy + uz * vz),
+        C = ux * ux + uy * uy + uz * uz - 1;
       if (C <= 0) return 0;
       if (A < 1e-12) return null;
       const d = B * B - 4 * A * C;
@@ -30,17 +47,50 @@
     }
     let lo = 0,
       hi = 1;
-    for (let i = 0; i < 3; i++) {
-      const d = q[i] - p[i];
-      if (Math.abs(d) < 1e-10) {
-        if (Math.abs(p[i]) > ext[i]) return null;
-        continue;
+    // Test de losas (slab) por eje, desenrollado para no crear arrays.
+    let d = qx - px;
+    if (Math.abs(d) < 1e-10) {
+      if (Math.abs(px) > ex) return null;
+    } else {
+      let t1 = (-ex - px) / d,
+        t2 = (ex - px) / d;
+      if (t1 > t2) {
+        const tmp = t1;
+        t1 = t2;
+        t2 = tmp;
       }
-      let t1 = (-ext[i] - p[i]) / d,
-        t2 = (ext[i] - p[i]) / d;
-      if (t1 > t2) [t1, t2] = [t2, t1];
-      lo = Math.max(lo, t1);
-      hi = Math.min(hi, t2);
+      if (t1 > lo) lo = t1;
+      if (t2 < hi) hi = t2;
+      if (lo > hi) return null;
+    }
+    d = qy - py;
+    if (Math.abs(d) < 1e-10) {
+      if (Math.abs(py) > ey) return null;
+    } else {
+      let t1 = (-ey - py) / d,
+        t2 = (ey - py) / d;
+      if (t1 > t2) {
+        const tmp = t1;
+        t1 = t2;
+        t2 = tmp;
+      }
+      if (t1 > lo) lo = t1;
+      if (t2 < hi) hi = t2;
+      if (lo > hi) return null;
+    }
+    d = qz - pz;
+    if (Math.abs(d) < 1e-10) {
+      if (Math.abs(pz) > ez) return null;
+    } else {
+      let t1 = (-ez - pz) / d,
+        t2 = (ez - pz) / d;
+      if (t1 > t2) {
+        const tmp = t1;
+        t1 = t2;
+        t2 = tmp;
+      }
+      if (t1 > lo) lo = t1;
+      if (t2 < hi) hi = t2;
       if (lo > hi) return null;
     }
     return lo;
@@ -143,9 +193,17 @@
       grid = new Map();
       for (const o of solids) indexInto(grid, o);
     }
+    // Conjunto reutilizado por candidates(): antes se creaba un Set
+    // nuevo en cada llamada (~72 llamadas por frame en la Misión 1)
+    // y cada uno era basura para el GC. Se vacía al empezar cada
+    // llamada y nadie lo guarda: trace/move lo recorren en el acto
+    // y segment/height/canTravel nunca vuelven a llamar a candidates,
+    // así que no hay reentrancia.
+    const scratchFound = new Set();
     function candidates(a, b, r) {
       rebuild();
-      const found = new Set();
+      const found = scratchFound;
+      found.clear();
       for (
         let x = Math.floor((Math.min(a.x, b.x) - r) / CELL);
         x <= Math.floor((Math.max(a.x, b.x) + r) / CELL);
@@ -186,22 +244,37 @@
       }
       return result;
     }
+    // Puntos reutilizados por move(): antes se copiaba el punto con
+    // spread 3 veces por llamada (30 llamadas por frame en M1).
+    // segment/candidates solo leen estos puntos y move nunca se
+    // llama a sí mismo, así que reutilizarlos es seguro.
+    const tmpP = { x: 0, y: 0, z: 0 },
+      tmpQ = { x: 0, y: 0, z: 0 };
     function move(a, b, r = 1.8, halfY = 1.3) {
-      let p = { ...a };
+      let px = a.x,
+        pz = a.z;
+      const py = a.y;
       // Sweep each axis and slide along a contacted face instead of teleporting through it.
-      for (const axis of ['x', 'z']) {
-        const q = { ...p, [axis]: b[axis] };
+      for (let axis = 0; axis < 2; axis++) {
+        const target = axis === 0 ? b.x : b.z,
+          from = axis === 0 ? px : pz;
+        tmpP.x = px;
+        tmpP.y = py;
+        tmpP.z = pz;
+        tmpQ.x = axis === 0 ? target : px;
+        tmpQ.y = py;
+        tmpQ.z = axis === 0 ? pz : target;
         let t = 1;
-        for (const o of candidates(p, q, r)) {
-          const f = segment(p, q, o, r, halfY);
+        for (const o of candidates(tmpP, tmpQ, r)) {
+          const f = segment(tmpP, tmpQ, o, r, halfY);
           if (f === 0) {
             // Spawn overlap may escape outward; never move farther into the obstacle.
             const c = Math.cos(o.yaw || 0),
               s = Math.sin(o.yaw || 0);
-            const x = (p.x - o.x) * c - (p.z - o.z) * s,
-              z = (p.x - o.x) * s + (p.z - o.z) * c;
-            const dx = (q.x - p.x) * c - (q.z - p.z) * s,
-              dz = (q.x - p.x) * s + (q.z - p.z) * c;
+            const x = (tmpP.x - o.x) * c - (tmpP.z - o.z) * s,
+              z = (tmpP.x - o.x) * s + (tmpP.z - o.z) * c;
+            const dx = (tmpQ.x - tmpP.x) * c - (tmpQ.z - tmpP.z) * s,
+              dz = (tmpQ.x - tmpP.x) * s + (tmpQ.z - tmpP.z) * c;
             const outward =
               (x * dx) / (o.sx + r) ** 2 + (z * dz) / (o.sz + r) ** 2;
             if (outward > 0 || Math.abs(x) + Math.abs(z) < 1e-9) continue;
@@ -209,21 +282,22 @@
           if (f !== null) t = Math.min(t, Math.max(0, f - 0.001));
         }
         if (world && world.canTravel) {
-          const count = Math.max(1, Math.ceil(Math.abs(q[axis] - p[axis]) * 2));
+          const count = Math.max(1, Math.ceil(Math.abs(target - from) * 2));
           for (let i = 1; i <= count; i++) {
             const f = i / count;
             if (f > t) break;
-            const x = p.x + (q.x - p.x) * f,
-              z = p.z + (q.z - p.z) * f;
+            const x = axis === 0 ? from + (target - from) * f : px,
+              z = axis === 0 ? pz : from + (target - from) * f;
             if (!world.canTravel(x, z, r)) {
               t = Math.min(t, (i - 1) / count);
               break;
             }
           }
         }
-        p[axis] += (q[axis] - p[axis]) * t;
+        if (axis === 0) px += (target - px) * t;
+        else pz += (target - pz) * t;
       }
-      return p;
+      return { x: px, y: py, z: pz };
     }
     return {
       trace,

@@ -380,7 +380,7 @@ test('scripts/embed-gltf.cjs regenera los datos embebidos iguales a los .gltf', 
 
 test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
+  assert.equal(bootstrap.VERSION, 'mision1-video-1');
   const order = bootstrap.scripts;
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('toy-renderer'));
   assert.ok(order.indexOf('modelo-helicoptero') < order.indexOf('toy-renderer'));
@@ -388,7 +388,7 @@ test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('modelo-helicoptero'));
 });
 
-test('el CSS separa el botón Misión de la etiqueta SALUD y la barra', () => {
+test('el CSS pone la salud abajo a la derecha con número y la brújula abajo en el centro, sin taparse', () => {
   const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
   // Primera aparición de cada regla = la regla principal (las del
   // @media (max-height: 500px) van después y son para paisaje).
@@ -397,19 +397,31 @@ test('el CSS separa el botón Misión de la etiqueta SALUD y la barra', () => {
     assert.ok(m, selector + ' sin regla');
     return m[1];
   };
-  const top = (text) => {
-    const m = text.match(/top:\s*(\d+)px/);
-    assert.ok(m, 'sin top en ' + text.slice(0, 40));
+  const bottom = (text) => {
+    const m = text.match(/bottom:\s*(\d+)px/);
+    assert.ok(m, 'sin bottom en ' + text.slice(0, 40));
     return Number(m[1]);
   };
-  const mission = rule('#missionBtn');
-  assert.match(mission, /left:\s*50%/);
-  assert.match(mission, /translateX\(-50%\)/);
-  const missionBottom = top(mission) + Number(mission.match(/min-height:\s*(\d+)px/)[1]);
-  // La salud empieza por debajo de donde termina el botón Misión.
-  assert.ok(top(rule('#arm')) >= missionBottom, '#arm invade #missionBtn');
-  assert.ok(top(rule('#armLabel')) >= missionBottom, '#armLabel invade #missionBtn');
-  // La salud sigue a la derecha y el aviso ya no tapa su fila.
-  assert.match(rule('#arm'), /right:\s*12px/);
-  assert.ok(top(rule('#toast')) >= top(rule('#arm')) + 12, '#toast tapa la salud');
+  // Salud del original: abajo a la derecha, con número.
+  const arm = rule('#arm');
+  assert.match(arm, /right:\s*12px/);
+  assert.ok(!/top:\s*\d+px/.test(arm), 'la salud ya no va arriba');
+  assert.equal(bottom(arm), 132);
+  assert.equal(bottom(rule('#armLabel')), 133);
+  assert.equal(bottom(rule('#armNum')), 129);
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(html.includes('id="armNum"'), 'número de salud en el HUD');
+  // Brújula del original: abajo en el centro, por encima de la
+  // barra de salud para no taparla (brújula a 168, salud a 132 + 12).
+  const compass = rule('#compass');
+  assert.match(compass, /left:\s*50%/);
+  assert.match(compass, /translateX\(-50%\)/);
+  assert.ok(
+    bottom(compass) >= bottom(arm) + 12 + 12,
+    'la brújula tapa la salud',
+  );
+  assert.ok(
+    bottom(rule('#compassLegend')) >= bottom(arm) + 12,
+    'la leyenda tapa la salud',
+  );
 });

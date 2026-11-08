@@ -14,7 +14,11 @@
   const transitions = {
     INICIO_A: ['COMBATE_RUTA_AB'],
     COMBATE_RUTA_AB: ['DESPEJAR_B'],
-    DESPEJAR_B: ['EMBARCAR_HERIDOS'],
+    // Misión 1 del vídeo («Plastic Pandemonium», sin escolta): al
+    // despejar B se va directo a la caja y el portal, sin embarcar
+    // heridos ni escoltar a nadie. Las demás misiones siguen por
+    // EMBARCAR_HERIDOS.
+    DESPEJAR_B: ['EMBARCAR_HERIDOS', 'CARGA_PORTAL'],
     EMBARCAR_HERIDOS: ['ESCOLTAR_BC'],
     ESCOLTAR_BC: ['ENTREGA_C'],
     // Misiones con carga (Misión 1): la entrega en C no cierra la
@@ -48,6 +52,12 @@
     constructor(number = 1, config = Config) {
       this.number = number;
       this.rules = config;
+      // Misión 1 del vídeo («Plastic Pandemonium»): sin escolta de
+      // pelotón ni heridos que recoger —solo salir de la base,
+      // destruir los tanques que guardan la caja, recogerla con el
+      // winch y llevarla al portal—. Las misiones 2 y 3 no traen
+      // `noEscort` y juegan el rescate clásico.
+      this.noEscort = !!config.noEscort;
       this.start = config.A;
       this.finish = config.C;
       this.stage = 'INICIO_A';
@@ -69,6 +79,10 @@
         tanks: this.enemyPlan.filter((e) => e.k === 'tank').length,
         turrets: this.enemyPlan.filter((e) => e.k === 'tur').length,
         infantry: this.enemyPlan.filter((e) => e.k === 'inf').length,
+        // Jeep/camión Tan (Misión 1, del vídeo): como los garajes,
+        // va en el plan pero no es tanque, torreta, infantería ni
+        // helicóptero; el conteo lo usa `tests/safe-spawns.test.cjs`.
+        jeeps: this.enemyPlan.filter((e) => e.k === 'jeep').length,
         // Garajes: los edificios Tan de la Misión 2.
         garages: this.enemyPlan.filter((e) => e.k === 'garage').length,
       };
@@ -127,6 +141,9 @@
       // HUD contaba solo aliados caídos y en la grabación decía 0
       // con 490 puntos y varios tanques destruidos.
       this.kills = 0;
+      // Tanques destruidos (Misión 1, sin escolta): el HUD cuenta
+      // los tanques guardando la caja por separado.
+      this.tankKills = 0;
       this.carsLimit = config.carsLimit || 15;
       this.carSpawnInterval = config.carSpawnInterval || 20;
       // Tren y batería (Misión 3): el tren Prego espera en su base
@@ -179,29 +196,38 @@
         hold: 0,
         yaw: 0,
       });
-      this.guards = Array.from({ length: config.guards }, (_, i) =>
-        soldier(
-          'guard-' + i,
-          config.A.x + (i % 2 ? 9 : -9),
-          config.A.z + (i < 2 ? 8 : -8),
-          'A',
-        ),
-      );
-      this.allies = Array.from({ length: config.healthy }, (_, i) =>
-        soldier('squad-' + i, config.B.x + (i - 1.5) * 3, config.B.z + 3, 'B'),
-      ).concat(
-        Array.from(
-          { length: Math.min(config.capacity, config.wounded) },
-          (_, i) =>
+      this.guards = this.noEscort
+        ? []
+        : Array.from({ length: config.guards }, (_, i) =>
             soldier(
-              'wounded-' + i,
-              config.B.x + (i - 1) * 3,
-              config.B.z + 9,
-              'B',
-              true,
+              'guard-' + i,
+              config.A.x + (i % 2 ? 9 : -9),
+              config.A.z + (i < 2 ? 8 : -8),
+              'A',
             ),
-        ),
-      );
+          );
+      this.allies = this.noEscort
+        ? []
+        : Array.from({ length: config.healthy }, (_, i) =>
+            soldier(
+              'squad-' + i,
+              config.B.x + (i - 1.5) * 3,
+              config.B.z + 3,
+              'B',
+            ),
+          ).concat(
+            Array.from(
+              { length: Math.min(config.capacity, config.wounded) },
+              (_, i) =>
+                soldier(
+                  'wounded-' + i,
+                  config.B.x + (i - 1) * 3,
+                  config.B.z + 9,
+                  'B',
+                  true,
+                ),
+            ),
+          );
       this.rescued = 0;
       this.delivered = 0;
       this.stars = 0;
@@ -244,14 +270,29 @@
       // vehículos de suministros sin armas que pasan por el circuito
       // hacia el portal; si bloquearan el embarque, el jugador
       // tendría que cazar cada coche que pasa para poder embarcar.
-      return enemies.filter(
-        (e) =>
-          !e.dead &&
-          e.hp > 0 &&
-          e.k !== 'car' &&
+      // Misión 1 del vídeo: los tanques que guardan la caja solo
+      // son amenaza en CARGA_PORTAL, no en DESPEJAR_B. Si no, el
+      // jugador tiene que matar a los 3 de la caja + el puesto B
+      // a la vez (7 bocas de fuego) y la primera misión se vuelve
+      // imposible sin aliados que repartan el fuego: el piloto
+      // automático moría en el puesto B con salud 1. El orden es
+      // el mismo —despejar el puesto B, luego los guardias de la
+      // caja— y el winch sigue bloqueado hasta CARGA_PORTAL, así
+      // que la caja no se puede levantar antes de despejar B.
+      return enemies.filter((e) => {
+        if (e.dead || e.hp <= 0 || e.k === 'car') return false;
+        if (
           Math.hypot(e.x - this.rules.B.x, e.z - this.rules.B.z) <=
-            this.rules.perimeter,
-      );
+          this.rules.perimeter
+        )
+          return true;
+        return (
+          this.noEscort &&
+          this.cargo &&
+          this.stage === 'CARGA_PORTAL' &&
+          Math.hypot(e.x - this.cargo.x, e.z - this.cargo.z) <= 40
+        );
+      });
     }
     defend(a, dt, env) {
       a.cooldown = Math.max(0, a.cooldown - dt);
@@ -442,7 +483,7 @@
       dt = Math.max(0, Math.min(dt, 0.1));
       env.groundAt = env.groundAt || (() => 0);
       this.stepSoldiers(dt, env);
-      if (this.allies.every((a) => a.state === 'CAIDO')) {
+      if (this.allies.length && this.allies.every((a) => a.state === 'CAIDO')) {
         this.reason = 'Todo el pelotón ha caído';
         this.transition('FRACASADA');
         return 'failed';
@@ -506,9 +547,17 @@
           this.rules.arrivalB
       )
         this.transition('DESPEJAR_B');
-      const threats = this.threats(env.enemies);
-      if (this.stage === 'DESPEJAR_B' && !threats.length)
-        this.transition('EMBARCAR_HERIDOS');
+      let threats = this.threats(env.enemies);
+      if (this.stage === 'DESPEJAR_B' && !threats.length) {
+        this.transition(
+          this.noEscort ? 'CARGA_PORTAL' : 'EMBARCAR_HERIDOS',
+        );
+        // Al entrar en CARGA_PORTAL los guardias de la caja se
+        // vuelven amenaza: recalcular, si no el winch usa la lista
+        // vieja (vacía) y ofrece levantar la caja con los tanques
+        // aún vivos.
+        threats = this.threats(env.enemies);
+      }
       this.message = objectives[this.stage];
       if (this.stage === 'EMBARCAR_HERIDOS') {
         const stable = !env.moving && !env.firing && !env.damaged;
@@ -631,7 +680,10 @@
         (this.cargo.winchFrom === 'any' ||
           ['ESCOLTAR_BC', 'ENTREGA_C', 'CARGA_PORTAL'].includes(
             this.stage,
-          ))
+          ) ||
+          // Misión 1 sin escolta: el aviso del winch bloqueado
+          // también sale en DESPEJAR_B, sobre la caja.
+          (this.noEscort && this.stage === 'DESPEJAR_B'))
       ) {
         const c = this.cargo;
         const label =
@@ -645,7 +697,23 @@
             showWinch =
               this.stage === 'CARGA_PORTAL' ||
               distance <= this.winchRadius;
-          if (distance <= this.winchRadius && stable) {
+          // Misión 1 del vídeo: con los guardias de la caja vivos,
+          // el winch no engancha — hay que destruirlos primero. Si
+          // no, el jugador se queda 1,5 s quieto sobre la caja
+          // mientras le disparan y la primera misión se vuelve
+          // imposible con salud 1. En DESPEJAR_B el aviso solo sale
+          // sobre la caja: lejos de ella el objetivo sigue siendo
+          // despejar el puesto B.
+          if (
+            this.noEscort &&
+            threats.length &&
+            (this.stage === 'CARGA_PORTAL' ||
+              (this.stage === 'DESPEJAR_B' &&
+                distance <= this.winchRadius))
+          ) {
+            c.hold = 0;
+            this.message = 'Destruye los tanques Tan que guardan la caja';
+          } else if (distance <= this.winchRadius && stable) {
             c.hold += dt;
             if (showWinch)
               this.message =
@@ -819,8 +887,10 @@
       return null;
     }
     // Estrellas por supervivientes del pelotón (3 si sobrevive al
-    // menos el 85 %, 2 si al menos la mitad, 1 en otro caso).
+    // menos el 85 %, 2 si al menos la mitad, 1 en otro caso). Sin
+    // pelotón (Misión 1 del vídeo) no hay a quién perder: 3.
     computeStars() {
+      if (!this.allies.length) return 3;
       const survivors = this.allies.filter((a) => a.state !== 'CAIDO');
       const ratio = survivors.length / this.allies.length;
       return ratio >= 0.85 ? 3 : ratio >= 0.5 ? 2 : 1;
@@ -843,6 +913,7 @@
     enemyEliminated(enemy) {
       this.events.push({ type: 'enemy-eliminated', id: enemy.id });
       this.kills++;
+      if (enemy.k === 'tank') this.tankKills++;
       // Garaje Tan (Misión 2): deja de soltar coches.
       const garage = this.garages.find((g) => g.id === enemy.id);
       if (garage && !garage.destroyed) {
@@ -887,6 +958,11 @@
       // Fase de la carga: la brújula apunta a la caja y luego al
       // portal. Antes, la escolta manda: el objetivo sigue siendo C
       // (la caja se menciona en el mensaje, sin desviar la brújula).
+      // Misión 1 sin escolta: en DESPEJAR_B la brújula ya apunta a
+      // la caja (el puesto B y sus tanques están junto a ella).
+      if (this.noEscort && this.stage === 'DESPEJAR_B' && this.cargo) {
+        return { x: this.cargo.x, z: this.cargo.z };
+      }
       if (this.stage === 'CARGA_PORTAL' && this.cargo) {
         return this.cargo.state === 'carried'
           ? this.portal
@@ -950,6 +1026,29 @@
     // grabación decía 0 con varios tanques destruidos), así que se
     // llama "Caídos" y se añade el contador real de enemigos.
     hudSummary() {
+      // Misión 1 del vídeo: sin heridos ni pelotón que contar; el
+      // resumen es tanques guardando la caja, enemigos y caja.
+      if (this.noEscort) {
+        const cargoLabel =
+          !this.cargo
+            ? ''
+            : this.cargo.state === 'carried'
+              ? 'colgando'
+              : this.cargo.state === 'delivered'
+                ? 'entregada'
+                : 'en B, por levantar';
+        return (
+          'Tanques ' +
+          this.tankKills +
+          '/' +
+          this.config.tanks +
+          ' · Enemigos ' +
+          this.kills +
+          ' · Caja ' +
+          cargoLabel +
+          ' · Portal'
+        );
+      }
       const base =
         'Heridos ' +
         this.rescued +

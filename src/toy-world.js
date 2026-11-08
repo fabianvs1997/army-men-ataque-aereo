@@ -454,13 +454,15 @@
       if (map?.cargo) {
         cargoCrate = { x: landmarks[0].x, z: landmarks[0].z };
       } else {
-        part('box', 34, h + 1.8, 26, 6, 3.6, 6, [0.13, 0.42, 0.14]);
-        part('box', 34, h + 3.9, 26, 6.5, 0.7, 6.5, [0.18, 0.52, 0.18]);
-        part('box', 34, h + 4.3, 26, 0.7, 0.3, 6.5, [0.1, 0.1, 0.1]);
-        part('box', 34, h + 4.3, 26, 6.5, 0.3, 0.7, [0.1, 0.1, 0.1]);
+        // Caja verde BRILLANTE con flecha blanca, como en el vídeo
+        // del original (no el verde oscuro de antes).
+        part('box', 34, h + 1.8, 26, 6, 3.6, 6, [0.08, 0.68, 0.12]);
+        part('box', 34, h + 3.9, 26, 6.5, 0.7, 6.5, [0.12, 0.82, 0.16]);
+        part('box', 34, h + 4.32, 25.3, 0.8, 0.15, 2.6, [0.95, 0.95, 0.9]);
+        part('box', 34, h + 4.32, 27.1, 2, 0.15, 1.4, [0.95, 0.95, 0.9]);
       }
-      part('box', 41, h + 1.2, 31, 3.5, 2.4, 3.5, [0.11, 0.36, 0.12]);
-      part('box', 41, h + 2.6, 31, 3.8, 0.5, 3.8, [0.16, 0.48, 0.16]);
+      part('box', 41, h + 1.2, 31, 3.5, 2.4, 3.5, [0.08, 0.68, 0.12]);
+      part('box', 41, h + 2.6, 31, 3.8, 0.5, 3.8, [0.12, 0.82, 0.16]);
     } else if (landmarks[0].kind === 'tower') {
       towerAt(part, 34, 26);
     } else {
@@ -638,9 +640,9 @@
         } else if (d.kind === 'tower') {
           towerAt(fixedPart, d.x, d.z);
         } else if (d.kind === 'crate') {
-          fixedPart('box', d.x, gy + 1.5, d.z, 2, 1.5, 2, [0.13, 0.42, 0.14], d.yaw || 0);
-          fixedPart('box', d.x, gy + 3.1, d.z, 2.2, 0.3, 2.2, [0.18, 0.52, 0.18], d.yaw || 0);
-          fixedPart('box', d.x, gy + 3.3, d.z, 0.25, 0.25, 2.2, [0.1, 0.1, 0.1], d.yaw || 0);
+          fixedPart('box', d.x, gy + 1.5, d.z, 2, 1.5, 2, [0.08, 0.68, 0.12], d.yaw || 0);
+          fixedPart('box', d.x, gy + 3.1, d.z, 2.2, 0.3, 2.2, [0.12, 0.82, 0.16], d.yaw || 0);
+          fixedPart('box', d.x, gy + 3.3, d.z, 0.25, 0.25, 2.2, [0.95, 0.95, 0.9], d.yaw || 0);
         }
       }
     }
