@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'tanque-blender-3';
+  const VERSION = 'integrar-modelos-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -23,6 +23,11 @@
     'escort-progress',
     'toy-world',
     'toy-helicopter',
+    // Cargador glTF y modelos embebidos: ANTES del renderer, que los
+    // usa. Sin ellos el juego sigue procedural (ver docs/MODELOS-INTEGRADOS.md).
+    'gltf-loader',
+    'modelo-helicoptero',
+    'modelo-tanque',
     'toy-renderer',
     'projection',
     'draw3d',
