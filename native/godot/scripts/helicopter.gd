@@ -51,6 +51,10 @@ func _update_movement(delta: float) -> void:
 	# Con la cámara fija, eso es directamente mundo: W -> -Z, D -> +X.
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var move_dir: Vector3 = Vector3(input.x, 0.0, input.y)
+	if input == Vector2.ZERO and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		var offset := aim_point - global_position
+		offset.y = 0.0
+		move_dir = offset.limit_length(1.0) if offset.length() > 0.8 else Vector3.ZERO
 	var target_velocity: Vector3 = move_dir * move_speed
 	velocity.x = move_toward(velocity.x, target_velocity.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, target_velocity.z, acceleration * delta)
@@ -114,6 +118,9 @@ func _update_firing(delta: float) -> void:
 
 func _shoot() -> void:
 	if bullet_scene == null:
+		return
+	var muzzle_ray := PhysicsRayQueryParameters3D.create(global_position, _muzzle.global_position, 2)
+	if not get_world_3d().direct_space_state.intersect_ray(muzzle_ray).is_empty():
 		return
 	var bullet: Node3D = bullet_scene.instantiate()
 	# La bala vive en la arena (mismo espacio que blancos y obstáculos).

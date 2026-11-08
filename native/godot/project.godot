@@ -11,8 +11,8 @@ config_version=5
 [application]
 
 config/name="Army Men: Ataque Aéreo — Godot"
-config/description="Versión nativa en Godot 4 del revival de Army Men: Air Attack. Fase 1: vuelo, puntería y cobertura."
-run/main_scene="res://scenes/main.tscn"
+config/description="Versión nativa en Godot 4 del revival de Army Men: Air Attack. Rescate A–B–C y entrenamiento."
+run/main_scene="res://scenes/suministros.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
