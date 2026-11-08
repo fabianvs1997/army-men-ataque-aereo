@@ -275,7 +275,7 @@ test('sin modelos embebidos el jeep y la caja siguen procedurales (respaldo visi
 
 test('bootstrap carga los dos modelos nuevos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'mejoras-creativas-1');
+  assert.equal(bootstrap.VERSION, 'mapa-m1-video-1');
   assert.ok(bootstrap.scripts.includes('modelo-jeep'));
   assert.ok(bootstrap.scripts.includes('modelo-caja'));
   assert.ok(bootstrap.scripts.indexOf('modelo-jeep') < bootstrap.scripts.indexOf('toy-renderer'));

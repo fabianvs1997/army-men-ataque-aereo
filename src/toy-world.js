@@ -155,9 +155,12 @@
         // suave de `t`—, así el camino, los helipuertos y las
         // patrullas (±19 u) siguen en llano y la escolta no se
         // atasca; las colinas quedan verdes porque `amp` es 16.
+        // Amplitud ±7 u (antes ±5): en el vídeo las lomas ondulan
+        // por todo el valle y cerca del camino el valle se veía
+        // plano; fuera del corredor llano la ondulación es mayor.
         const roll =
-          3 * Math.sin(x / 53 + 1.7) * Math.cos(z / 47 + 0.6) +
-          2 * Math.sin(x / 23 + 4.1) * Math.cos(z / 29 + 2.3);
+          4.2 * Math.sin(x / 53 + 1.7) * Math.cos(z / 47 + 0.6) +
+          2.8 * Math.sin(x / 23 + 4.1) * Math.cos(z / 29 + 2.3);
         h += t * t * (3 - 2 * t) * roll;
         // Crestas rocosas del video: lomos de roca gris que cruzan
         // el valle (norte, este junto al portal y oeste), definidos
@@ -213,6 +216,28 @@
       // vértice (~1,8 millones de push en un mapa de 640 u), que era la
       // mitad del coste de entrar en una misión. El contenido es el
       // mismo: mismos triángulos, mismas normales.
+      // Normales SUAVIZADAS (antes, por cara): el césped se veía con
+      // un damero de rombos porque cada triángulo se marcaba con su
+      // propia normal. Ahora cada vértice lleva la normal del
+      // gradiente del heightfield (diferencias finitas sobre la
+      // rejilla `heights`); los dos triángulos de una celda comparten
+      // la normal de cada esquina y la luz ya no marca los triángulos.
+      // Mismo layout (pos+normal por vértice, sin indexar) y la malla
+      // se construye una sola vez por misión.
+      const normalAt = (ix, iz) => {
+        const ixL = Math.max(0, ix - 1),
+          ixR = Math.min(COUNT - 1, ix + 1),
+          izT = Math.max(0, iz - 1),
+          izB = Math.min(COUNT - 1, iz + 1),
+          gx =
+            (heights[iz * COUNT + ixR] - heights[iz * COUNT + ixL]) /
+            ((ixR - ixL) * STEP),
+          gz =
+            (heights[izB * COUNT + ix] - heights[izT * COUNT + ix]) /
+            ((izB - izT) * STEP),
+          l = Math.hypot(gx, 1, gz);
+        return [-gx / l, 1 / l, -gz / l];
+      };
       const cells = (LIMIT * 2) / STEP,
         data = new Float32Array(cells * cells * 36);
       let at = 0;
@@ -221,26 +246,32 @@
           const a = [x, height(x, z), z],
             b = [x + STEP, height(x + STEP, z), z],
             c = [x + STEP, height(x + STEP, z + STEP), z + STEP],
-            d = [x, height(x, z + STEP), z + STEP];
+            d = [x, height(x, z + STEP), z + STEP],
+            ix = (x + LIMIT) / STEP,
+            iz = (z + LIMIT) / STEP,
+            na = normalAt(ix, iz),
+            nb = normalAt(ix + 1, iz),
+            nc = normalAt(ix + 1, iz + 1),
+            nd = normalAt(ix, iz + 1);
           for (const tri of [
-            [a, c, b],
-            [a, d, c],
+            [
+              [a, na],
+              [c, nc],
+              [b, nb],
+            ],
+            [
+              [a, na],
+              [d, nd],
+              [c, nc],
+            ],
           ]) {
-            const u = tri[1].map((v, i) => v - tri[0][i]),
-              v = tri[2].map((v, i) => v - tri[0][i]);
-            const n = [
-                u[1] * v[2] - u[2] * v[1],
-                u[2] * v[0] - u[0] * v[2],
-                u[0] * v[1] - u[1] * v[0],
-              ],
-              length = Math.hypot(...n);
-            for (const p of tri) {
+            for (const [p, n] of tri) {
               data[at++] = p[0];
               data[at++] = p[1];
               data[at++] = p[2];
-              data[at++] = n[0] / length;
-              data[at++] = n[1] / length;
-              data[at++] = n[2] / length;
+              data[at++] = n[0];
+              data[at++] = n[1];
+              data[at++] = n[2];
             }
           }
         }

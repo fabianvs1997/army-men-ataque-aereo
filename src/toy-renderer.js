@@ -57,7 +57,7 @@ void main(){
  float shine=(pow(highlight,56.0)*0.75+pow(highlight,14.0)*0.12)*max(gloss,0.0);
  float rim=pow(1.0-max(dot(n,eyeDirection),0.0),3.0)*0.045*gloss;
  vec3 base=color;
- if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*0.5),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -2.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.30,.60,.16),vec3(.16,.38,.12),hill);float dirt=smoothstep(.55,.85,sin(worldPosition.x*.055+sin(worldPosition.z*.035))*cos(worldPosition.z*.045+worldPosition.x*.025));base=mix(base,vec3(.50,.38,.21),dirt*.6);float mottle=smoothstep(.25,.75,sin(worldPosition.x*.021+2.0)*cos(worldPosition.z*.017+1.0));base=mix(base,vec3(.36,.62,.19),mottle*.28);float rock2=smoothstep(12.0,22.0,worldPosition.y);base=mix(base,vec3(.48,.45,.38),rock2*.6);float snow=smoothstep(20.0,30.0,worldPosition.y);base=mix(base,vec3(.93,.94,.96),snow*.8);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.45,.42,.36),cliff*.4);}else if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.95+grain*.05+patch*.16;}
+ if(gloss<0.0){float grain=fract(sin(dot(floor(worldPosition.xz*0.5),vec2(12.9,7.7)))*97.1);float patch=sin(worldPosition.x*.047+sin(worldPosition.z*.031))*cos(worldPosition.z*.061);if(gloss < -2.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.30,.60,.16),vec3(.16,.38,.12),hill);float dirt=smoothstep(.20,.60,sin(worldPosition.x*.011+1.3)*cos(worldPosition.z*.013+.7)+.5*sin(worldPosition.x*.023+4.0)*cos(worldPosition.z*.019+2.0));base=mix(base,vec3(.52,.40,.22),dirt*.8);float baseDirt=smoothstep(70.0,25.0,distance(worldPosition.xz,vec2(0.0,0.0)));base=mix(base,vec3(.52,.40,.22),baseDirt*.55);float mottle=smoothstep(.25,.75,sin(worldPosition.x*.021+2.0)*cos(worldPosition.z*.017+1.0));base=mix(base,vec3(.36,.62,.19),mottle*.28);float rock2=smoothstep(12.0,22.0,worldPosition.y);base=mix(base,vec3(.48,.45,.38),rock2*.6);float snow=smoothstep(20.0,30.0,worldPosition.y);base=mix(base,vec3(.93,.94,.96),snow*.8);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.45,.42,.36),cliff*.4);}else if(gloss < -1.5){float hill=smoothstep(1.0,18.0,worldPosition.y);base=mix(vec3(.39,.49,.24),vec3(.15,.23,.12),hill);float cliff=1.0-smoothstep(.55,.92,n.y);base=mix(base,vec3(.34,.32,.24),cliff*.65);}base*=.95+grain*.05+patch*.16;}
  float amb=gloss < -2.5 ? 0.68 : 0.48;
  gl_FragColor=vec4(base*(amb+(1.0-amb)*diffuse)+vec3(shine+rim),alpha);
 }`;
@@ -1127,20 +1127,32 @@ void main(){
       // desgaste del paso. Antes el tono alternaba cada dos tramos
       // y la franja invertía el contraste, y en la grabación se
       // veía un damero marrón.
+      // El camino del vídeo (f006) es una pista de tierra MARRÓN
+      // OSCURO, estrecha y de un solo tono, no una banda canela
+      // clara de 30 u. El ancho jugable no cambia: el mundo sigue
+      // con medio ancho 15 (arcén llano, patrullas, `surfaceTop`
+      // para la sombra); solo se dibuja más estrecho y oscuro en el
+      // valle alpino (medio ancho visual 8, 16 u en total). En M2/M3
+      // el camino conserva su aspecto.
       if (world)
         for (let ri = 0; ri < world.roads.length; ri++) {
           const r = world.roads[ri];
           if (Math.hypot(r.x - cam.x, r.z - cam.z) >= radius + r.length)
             continue;
+          const visualHalf = world.alpine ? 8 : r.halfWidth || 5,
+            roadColor = world.alpine ? [0.25, 0.2, 0.12] : [0.6, 0.48, 0.3],
+            stripeColor = world.alpine
+              ? [0.22, 0.17, 0.1]
+              : [0.57, 0.45, 0.28];
           this.part(
             'box',
             r.x,
             r.y,
             r.z,
-            r.halfWidth || 5,
+            visualHalf,
             0.04,
             r.length,
-            [0.6, 0.48, 0.3],
+            roadColor,
             r.yaw,
             -1,
           );
@@ -1149,10 +1161,10 @@ void main(){
             r.x,
             r.y + 0.01,
             r.z,
-            (r.halfWidth || 5) * 0.55,
+            visualHalf * 0.55,
             0.04,
             r.length,
-            [0.57, 0.45, 0.28],
+            stripeColor,
             r.yaw,
             -1,
           );
@@ -1218,7 +1230,11 @@ void main(){
                 Math.abs(
                   Math.sin(m.x * 12.9898 + m.z * 78.233) * 43758.5453,
                 ) % 1,
-              hFac = 0.5 + hv * 0.25,
+              // En el valle alpino las montañas son un 35 % más
+              // altas: la cámara mira 40° hacia abajo y las cimas
+              // quedaban fuera de encuadre por arriba, así que solo
+              // se veían como bultos bajos en el borde.
+              hFac = (0.5 + hv * 0.25) * (world.alpine ? 1.35 : 1),
               rock = [0.5 + hv * 0.08, 0.47 + hv * 0.07, 0.4 + hv * 0.06];
             this.part(
               'sphere',
@@ -1268,22 +1284,26 @@ void main(){
               r.s,
               r.s * 0.65,
               r.s * 0.85,
-              [0.38, 0.4, 0.32],
+              // Rocas del vídeo (f060, f074): pedruscos grises
+              // claros, sin matojo verde encima. En el valle alpino
+              // son gris claro; en M2/M3 conservan su gris oscuro.
+              world.alpine ? [0.62, 0.62, 0.6] : [0.38, 0.4, 0.32],
               r.x,
               0,
             );
-            this.part(
-              'sphere',
-              r.x + 2,
-              y + 0.45,
-              r.z + 1,
-              1.3,
-              0.6,
-              1,
-              [0.28, 0.42, 0.17],
-              0,
-              0,
-            );
+            if (!world.alpine)
+              this.part(
+                'sphere',
+                r.x + 2,
+                y + 0.45,
+                r.z + 1,
+                1.3,
+                0.6,
+                1,
+                [0.28, 0.42, 0.17],
+                0,
+                0,
+              );
           }
         for (const p of world.yard || [])
           if (

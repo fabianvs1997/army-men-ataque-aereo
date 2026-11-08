@@ -22,7 +22,10 @@ test('la Misión 1 define las crestas rocosas del video: norte, este junto al po
   const ridges = m1.terrain.ridges;
   assert.equal(ridges.length, 3);
   for (const ridge of ridges) {
-    assert.ok(ridge.h >= 12 && ridge.h <= 14, 'cresta demasiado alta o baja');
+    // Alturas 18/16/16 desde el mapa de la Misión 1 según el vídeo
+    // (antes 14/12/12): la cámara mira 40° hacia abajo y las crestas
+    // tienen que subir para leerse con roca y nieve desde la ruta.
+    assert.ok(ridge.h >= 12 && ridge.h <= 18, 'cresta demasiado alta o baja');
     assert.ok(ridge.points.length >= 3, 'cresta sin forma');
   }
   // Norte (z ~300), este a la derecha del camino cerca del portal

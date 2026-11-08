@@ -380,7 +380,7 @@ test('scripts/embed-gltf.cjs regenera los datos embebidos iguales a los .gltf', 
 
 test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'mejoras-creativas-1');
+  assert.equal(bootstrap.VERSION, 'mapa-m1-video-1');
   const order = bootstrap.scripts;
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('toy-renderer'));
   assert.ok(order.indexOf('modelo-helicoptero') < order.indexOf('toy-renderer'));

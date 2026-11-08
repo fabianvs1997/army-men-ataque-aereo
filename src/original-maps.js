@@ -267,7 +267,12 @@
               [140, 310],
               [260, 280],
             ],
-            h: 14,
+            // Cresta norte más alta (14→18): desde la cámara, que
+            // mira 40° hacia abajo, las montañas esféricas quedan
+            // fuera de encuadre por arriba; lo que se lee en pantalla
+            // es el relieve del borde, así que la cresta tiene que
+            // subir para asomar con roca y nieve.
+            h: 18,
           },
           {
             points: [
@@ -275,7 +280,7 @@
               [330, 160],
               [310, 260],
             ],
-            h: 12,
+            h: 16,
           },
           {
             points: [
@@ -283,7 +288,7 @@
               [-380, 60],
               [-350, 200],
             ],
-            h: 12,
+            h: 16,
           },
         ],
       },
@@ -836,10 +841,15 @@
       // 4 copas del renderizador), varias veces el helicóptero.
       s: spec.pineShrubs ? 2.6 + (i % 5) * 0.9 : 2 + (i % 4) * 0.6,
     }));
+    // Rocas del valle (f060, f074): pedruscos grises claros
+    // redondeados, bien visibles en llano. En la Misión 1 son
+    // mayores (1,5–3,0 u en vez de 1,1–2,3) y el renderizador las
+    // pinta gris claro; en M2/M3 no cambian. Siguen a ≥28 u de las
+    // rutas, así que su colisión no toca el camino.
     const rocks = scatter(spec.rocks, ROUTE_CLEARANCE, 5, LIMIT - 19).map((p, i) => ({
       x: p.x,
       z: p.z,
-      s: 1.1 + (i % 4) * 0.4,
+      s: spec.pineShrubs ? 1.5 + (i % 4) * 0.5 : 1.1 + (i % 4) * 0.4,
     }));
     // Detalle propio de cada misión (flores alpinas, conos del
     // circuito o señales de la vía): el mismo reparto con semilla y
