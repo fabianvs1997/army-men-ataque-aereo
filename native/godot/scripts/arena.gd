@@ -39,6 +39,10 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
+		var training := scene_file_path.ends_with("main.tscn")
+		get_tree().change_scene_to_file("res://scenes/rescate.tscn" if training else "res://scenes/main.tscn")
+		return
 	if event.is_action_pressed("restart"):
 		get_tree().reload_current_scene()
 
