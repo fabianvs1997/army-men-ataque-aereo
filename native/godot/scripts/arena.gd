@@ -40,8 +40,8 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
-		var training := scene_file_path.ends_with("main.tscn")
-		get_tree().change_scene_to_file("res://scenes/rescate.tscn" if training else "res://scenes/main.tscn")
+		var modes := ["res://scenes/suministros.tscn", "res://scenes/rescate.tscn", "res://scenes/main.tscn"]
+		get_tree().change_scene_to_file(modes[(modes.find(scene_file_path) + 1) % modes.size()])
 		return
 	if event.is_action_pressed("restart"):
 		get_tree().reload_current_scene()
@@ -58,3 +58,20 @@ func _on_target_destroyed(_target: StaticBody3D) -> void:
 
 func _update_hud() -> void:
 	_targets_label.text = "Blancos: %d / %d" % [targets_total - targets_remaining, targets_total]
+
+func box(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var visual := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mesh.material = mat
+	visual.mesh = mesh
+	parent.add_child(visual)
+	visual.position = pos
+	return visual
+
+func trail(start: Vector3, end: Vector3) -> void:
+	var strip := box(self, (start+end)/2, Vector3(7, 0.08, start.distance_to(end)), Color("#a78b57"))
+	strip.look_at(end, Vector3.UP)
+

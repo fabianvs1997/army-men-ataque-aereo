@@ -44,22 +44,6 @@ func _ready() -> void:
 		unit.destroyed.connect(enemy_down)
 	update_orders()
 
-func box(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
-	var visual := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mesh.material = mat
-	visual.mesh = mesh
-	parent.add_child(visual)
-	visual.position = pos
-	return visual
-
-func trail(start: Vector3, end: Vector3) -> void:
-	var strip := box(self, (start+end)/2, Vector3(7, 0.08, start.distance_to(end)), Color("#a78b57"))
-	strip.look_at(end, Vector3.UP)
-
 func soldier(pos: Vector3, hurt: bool) -> Node3D:
 	var toy := Node3D.new()
 	add_child(toy)
