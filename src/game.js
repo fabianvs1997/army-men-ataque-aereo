@@ -352,6 +352,7 @@
         'perfLevel',
         'perfVisible',
         'logsVisible',
+        'modelosVisible',
       ])
         Object.defineProperty(env, key, {
           enumerable: true,
@@ -376,6 +377,12 @@
         logsVisible:
           typeof host.location === 'object' &&
           /[?&]logs=1/.test(host.location.search || ''),
+        // Lectura de modelos opcional (?modelos=1): muestra en pantalla
+        // qué se dibuja (Blender o procedural) y por qué cayó al
+        // respaldo, para comprobarlo en el iPhone sin adivinar.
+        modelosVisible:
+          typeof host.location === 'object' &&
+          /[?&]modelos=1/.test(host.location.search || ''),
       });
       // Registro de errores (ver src/logger.js): captura errores de
       // consola, rechazos y frames de más de 500 ms, con el contexto de

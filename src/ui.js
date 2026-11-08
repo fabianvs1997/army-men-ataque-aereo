@@ -278,7 +278,17 @@
         env.logsVisible && env.logger
           ? ' · registro ' + env.logger.count
           : '';
-      if (env.logsVisible && !env.perfVisible && env.logger) {
+      // Lectura de modelos opcional (?modelos=1): qué se dibuja
+      // (Blender o procedural) y por qué cayó al respaldo, para
+      // comprobarlo en el iPhone sin adivinar. Con ?perf=1 va pegada a
+      // la línea de rendimiento; sola, usa esa misma línea.
+      const modelNote =
+        env.modelosVisible &&
+        env.renderer3d &&
+        typeof env.renderer3d.modelStatusText === 'function'
+          ? env.renderer3d.modelStatusText()
+          : '';
+      if (env.logsVisible && !env.perfVisible && !env.modelosVisible && env.logger) {
         env.$('perf').style.display = 'block';
         setText('perf', 'Registro: ' + env.logger.count + ' entradas');
       }
@@ -305,7 +315,20 @@
               (env.state?.mapSeed !== undefined
                 ? ' · semilla ' + env.state.mapSeed
                 : '') +
-              logNote,
+              logNote +
+              (modelNote ? ' · ' + modelNote : ''),
+          );
+        }
+      }
+      if (env.modelosVisible && !env.perfVisible && modelNote) {
+        if (env.t - (env._modelosAt || 0) >= 0.5) {
+          env._modelosAt = env.t;
+          env.$('perf').style.display = 'block';
+          setText(
+            'perf',
+            (env.logsVisible && env.logger
+              ? 'Registro: ' + env.logger.count + ' entradas · '
+              : '') + modelNote,
           );
         }
       }

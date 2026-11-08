@@ -8,10 +8,16 @@
    Funciona en Node (require) y en el navegador (globalThis), como los
    demás módulos clásicos del juego. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.ToyGltfLoader = factory();
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  if (typeof module === 'object' && module.exports) module.exports = factory(root);
+  else root.ToyGltfLoader = factory(root);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';
+  // El factory RECIBE root como parámetro: decodeBase64 usa root.atob
+  // en el navegador (donde no existe Buffer). Antes el factory no
+  // recibía root y parse() rompía en Safari con «root is not defined»:
+  // en Node no se notaba porque existe Buffer y la rama de atob nunca
+  // se ejecutaba, así que todos los tests pasaban y el juego en el
+  // iPhone caía en silencio al respaldo procedural.
 
   // El morro de AMBOS modelos apunta a -Z en espacio glTF (cabina
   // delantera del helicóptero en z=-2,8; placa frontal y cañón del
