@@ -91,6 +91,8 @@
           env.mission.delivered +
           '/' +
           env.mission.allies.length +
+          ' · Enemigos: ' +
+          (env.mission.kills || 0) +
           '. Puntos: ' +
           env.P.sc +
           '.',
@@ -166,38 +168,39 @@
       env.$('missionObjective').textContent = 'Objetivo: ' + m.message;
       env.$('missionSummary').textContent =
         'Progreso: ' + (m.hudSummary ? m.hudSummary() : '');
+      // Consejo propio de la misión (del mapa fijo, no hardcodeado
+      // aquí): qué hacer a continuación sin abrir el menú de ayuda.
+      env.$('missionTip').textContent = m.config.tip
+        ? 'Consejo: ' + m.config.tip
+        : '';
       env.$('missionPoints').textContent = 'Puntos: ' + env.P.sc;
     }
     // Aviso corto en pantalla (llegadas a C, caja, batería): en la
     // grabación el pelotón llegaba a C y el helicóptero volaba sobre
     // el portal sin que pasara nada visible. El aviso se esconde
-    // solo a los pocos segundos. Los avisos van en cola: antes cada
-    // `showToast` pisaba al anterior y si dos eventos caían seguidos
-    // (herido en C + fase nueva) solo se leía el último; ahora se
-    // muestran uno tras otro en orden.
-    function showNextToast() {
-      const next = (env._toastQueue || []).shift();
-      if (!next) {
-        env._toastShowing = false;
-        const el = env.$('toast');
-        if (el) el.style.display = 'none';
-        return;
-      }
-      const el = env.$('toast');
-      if (!el) {
-        env._toastShowing = false;
-        return;
-      }
-      env._toastShowing = true;
-      el.textContent = next.text;
-      el.style.display = 'block';
-      env.needsDraw = true;
-      env._toastTimer = setTimeout(showNextToast, next.ms);
-    }
+    // solo a los pocos segundos. Un aviso nuevo sustituye al visible
+    // de inmediato — un aviso urgente (p. ej. volar sobre el portal
+    // sin la caja) no puede quedar escondido detrás de otro —; y el
+    // mismo texto repetido en menos de 2 s se ignora, para que un
+    // evento que se dispara varias veces no parpadee.
     function showToast(text, ms = 3500) {
-      env._toastQueue = env._toastQueue || [];
-      env._toastQueue.push({ text, ms });
-      if (!env._toastShowing) showNextToast();
+      const el = env.$('toast');
+      if (!el) return;
+      const lastAt = env._toastAt === undefined ? -10 : env._toastAt;
+      if (env._toastText === text && (env.t || 0) - lastAt < 2) return;
+      showToastNow(text, ms);
+    }
+    function showToastNow(text, ms) {
+      const el = env.$('toast');
+      env._toastText = text;
+      env._toastAt = env.t || 0;
+      el.textContent = text;
+      el.style.display = 'block';
+      if (env._toastTimer) clearTimeout(env._toastTimer);
+      env._toastTimer = setTimeout(() => {
+        el.style.display = 'none';
+      }, ms);
+      env.needsDraw = true;
     }
     function openMissionPanel() {
       if (!env.mission || !env.P || env.st !== 'play') return;

@@ -125,14 +125,14 @@ test('al arrancar se anuncia la misión con su nombre y objetivo', () => {
   clearTimeout(g.app.view._toastTimer);
 });
 
-// Presentación: los avisos van en cola y se leen en orden, sin pisarse.
-test('los toasts se muestran en cola, en orden, y luego se esconden', async () => {
+// Presentación: un aviso nuevo sustituye al visible de inmediato.
+test('los toasts sustituyen al visible de inmediato y luego se esconden', async () => {
   const g = game();
   g.app.ui.showToast('uno', 15);
-  g.app.ui.showToast('dos', 15);
   assert.equal(g.element('toast').textContent, 'uno');
   assert.equal(g.element('toast').style.display, 'block');
-  await new Promise((r) => setTimeout(r, 40));
+  // Un segundo aviso distinto sustituye al primero sin esperar.
+  g.app.ui.showToast('dos', 15);
   assert.equal(g.element('toast').textContent, 'dos');
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(g.element('toast').style.display, 'none');

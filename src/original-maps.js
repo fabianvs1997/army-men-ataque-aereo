@@ -367,6 +367,11 @@
       pineShrubs: true,
       shrubs: 428,
       rocks: 293,
+      // Consejo del panel de Misión y detalle propio del mapa: en
+      // el valle alpino del original hay prados de flores junto al
+      // camino; 48 flores en grupos, fuera de rutas y helipuertos.
+      tip: 'Limpia B antes de recoger: los heridos no suben con enemigos cerca. La caja se levanta con el cable y se lleva por el portal.',
+      detail: { type: 'flower', count: 48 },
       // Casi toda infantería: el valle alpino es la primera toma de contacto.
       routeKinds: { inf: 'inf', tank: 'tank' },
       patrolKinds: {
@@ -443,6 +448,10 @@
       scenerySeed: 202,
       shrubs: 338,
       rocks: 203,
+      // Conos de obra naranjas junto al circuito, como en el
+      // circuito de carretera del original; 36, fuera del camino.
+      tip: 'Destruye los garajes cuanto antes: cada 20 s sueltan un coche, y con 15 por el portal se pierde la misión.',
+      detail: { type: 'cone', count: 36 },
       routeKinds: { inf: 'inf', tank: 'tank' },
       patrolKinds: {
         AB: ['inf', 'tank', 'inf', 'tur', 'inf', 'tank'],
@@ -535,6 +544,10 @@
       // castillos de arena) y vegetación moderada.
       shrubs: 220,
       rocks: 180,
+      // Señales ferroviarias junto a la vía del tren, como en el
+      // patio de vías del original; 12, fuera de la vía y del camino.
+      tip: 'Tumba al helicóptero Tan, recoge la batería caída con el cable y déjala en la plataforma detrás del tren.',
+      detail: { type: 'signal', count: 12 },
       routeKinds: { inf: 'tur', tank: 'tank' },
       patrolKinds: {
         AB: ['tank', 'tur', 'tank', 'inf', 'tur', 'tank'],
@@ -828,6 +841,24 @@
       z: p.z,
       s: 1.1 + (i % 4) * 0.4,
     }));
+    // Detalle propio de cada misión (flores alpinas, conos del
+    // circuito o señales de la vía): el mismo reparto con semilla y
+    // los mismos despejes que arbustos y rocas, así que nunca nacen
+    // sobre rutas ni helipuertos. Las flores llevan color propio
+    // (blanco, amarillo o rosa); conos y señales usan su color fijo
+    // en el renderizador.
+    const details = spec.detail
+      ? scatter(spec.detail.count, ROUTE_CLEARANCE, 5, LIMIT - 19).map(
+          (p, i) => ({
+            t: spec.detail.type,
+            x: p.x,
+            z: p.z,
+            ...(spec.detail.type === 'flower'
+              ? { c: ['#f5f0dc', '#ffd94d', '#e58bb1'][i % 3] }
+              : {}),
+          }),
+        )
+      : [];
     const rules = {
       ...defaults,
       // Misión 1 del vídeo: sin escolta ni heridos (ver
@@ -840,6 +871,7 @@
       enemies,
       extraAir: spec.extraAir.map((e) => ({ ...e })),
       missionName: spec.name,
+      tip: spec.tip,
       // Carga y portal: la Misión 1 trae la caja de plástico y el
       // portal por el que se vuela (`cargo` + `portal`); la Misión
       // 3 trae la batería robada (`cargo`, escondida en el
@@ -907,6 +939,7 @@
       scenery: {
         shrubs,
         rocks,
+        details,
         mountains: (spec.mountains || []).map((m) => ({ ...m })),
       },
       landmarks: spec.landmarks.map((p) => ({ ...p })),
@@ -1108,6 +1141,9 @@
     for (const s of map.scenery?.rocks || [])
       if (routeDistance(s.x, s.z, map.routes || []) < ROUTE_CLEARANCE)
         errors.push('roca sobre la ruta');
+    for (const s of map.scenery?.details || [])
+      if (routeDistance(s.x, s.z, map.routes || []) < ROUTE_CLEARANCE)
+        errors.push('detalle sobre la ruta');
     // Las montañas son el borde del valle: fuera de las rutas y del
     // patio, nunca un bloqueo. Solo la Misión 1 las tiene.
     for (const m of map.scenery?.mountains || []) {

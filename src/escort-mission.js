@@ -72,6 +72,9 @@
         // El nombre del mapa fijo (Misión 1: «Pandemonio de
         // Plástico»); sin él, el nombre clásico del rescate.
         name: config.missionName || 'Rescate A → B → C',
+        // Consejo del panel de Misión: viene del mapa fijo, no
+        // hardcodeado aquí; sin mapa, vacío.
+        tip: config.tip || '',
         bases: [],
         // Aire: los helicópteros del plan (el de B, los de escolta y,
         // en la Misión 3, el Tan que robó la batería).

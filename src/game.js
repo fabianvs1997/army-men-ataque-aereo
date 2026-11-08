@@ -616,7 +616,10 @@
 
       const groundAt = (x, z) =>
         typeof ToyWorld === 'undefined' ? 0 : ToyWorld.height(x, z);
-      state.DC = typeof ToyWorld === 'undefined' ? [] : ToyWorld.shrubs;
+      state.DC =
+        typeof ToyWorld === 'undefined'
+          ? []
+          : ToyWorld.shrubs.concat(ToyWorld.details || []);
 
       function spawnE(k, x, z) {
         // Garaje Tan (Misión 2): edificio de 10 HP, como una base;
@@ -740,7 +743,7 @@
         state.world = ToyWorld;
         state.mapSeed = currentMap.seed;
         state.mapName = currentMap.name;
-        state.DC = ToyWorld.shrubs;
+        state.DC = ToyWorld.shrubs.concat(ToyWorld.details || []);
         if (state.renderer3d?.setWorld) state.renderer3d.setWorld(ToyWorld);
         state.mission = new ToyEscort.Mission(n, currentMap.rules);
         state.E = [];
@@ -803,9 +806,19 @@
         state.P.inv = 0.3;
         state.shk = 0.3;
         sfx.hurt();
-        // Salud baja (3 o menos): aviso sonoro una sola vez por
-        // cruce, cuando la barra se pone en rojo (ver src/ui.js).
-        if (state.P.arm === 3) sfx.alarm();
+        // Salud baja (3 o menos): aviso sonoro al cruzar a 3 y como
+        // mucho uno cada 1,5 s mientras siga baja, para no machacar
+        // el rotor ni los disparos (ver src/ui.js: la barra se pone
+        // en rojo a 3 o menos).
+        if (state.P.arm > 0 && state.P.arm <= 3) {
+          const lastAlarm =
+            state._alarmAt === undefined ? -10 : state._alarmAt;
+          const due = state.t - lastAlarm >= 1.5;
+          if (state.P.arm === 3 || due) {
+            state._alarmAt = state.t;
+            sfx.alarm();
+          }
+        }
         buzz(60);
         if (state.P.arm <= 0) {
           state.mission.reason = 'Helicóptero destruido';
@@ -1121,7 +1134,7 @@
             buzz(20);
           }
           // Winch de la carga: levantar la caja (Misión 1) o la
-          // batería (Misión 3) vale como un rescate.
+          // batería (Misión 3) vale como un rescate, y suena el cable.
           if (change.type === 'cargo-lifted') {
             state.P.sc += 50;
             sfx.winch();

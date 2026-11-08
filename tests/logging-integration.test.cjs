@@ -52,5 +52,5 @@ test('bootstrap carga logger y Supabase antes del juego', () => {
   assert.ok(
     bootstrap.scripts.indexOf('supabase') < bootstrap.scripts.indexOf('game'),
   );
-  assert.equal(bootstrap.VERSION, 'mision1-video-1');
+  assert.equal(bootstrap.VERSION, 'mejoras-creativas-1');
 });
