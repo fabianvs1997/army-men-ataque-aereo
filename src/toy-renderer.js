@@ -1018,6 +1018,39 @@ void main(){
           world.alpine ? -3 : -2,
         );
       else this.part('box', 0, -1, 0, 200, 1, 200, [0.39, 0.49, 0.25], 0, 0.02);
+      // Nubes a la deriva (ver cloudPositions): blancas, altas y sin
+      // colisión. Solo con detalle completo (nivel < 2): en ahorro
+      // automático se omiten para no gastar dibujos en el iPhone.
+      if ((scene.perfLevel || 0) < 2)
+        for (const c of cloudPositions(scene.t || 0, cam.x, cam.z, cam.yaw)) {
+          if (!visible(c)) continue;
+          this.part(
+            'sphere',
+            c.x,
+            c.y,
+            c.z,
+            c.sx,
+            c.sy,
+            c.sz,
+            [0.96, 0.97, 0.98],
+            0,
+            0,
+            0.85,
+          );
+          this.part(
+            'sphere',
+            c.x + c.sx * 0.45,
+            c.y + 1.5,
+            c.z,
+            c.sx * 0.55,
+            c.sy * 0.8,
+            c.sz * 0.6,
+            [0.98, 0.98, 1],
+            0,
+            0,
+            0.85,
+          );
+        }
       // A compact practice clearing, roads and helipad on a cleared central area.
       // Las carreteras cubren todo el mapa: solo se dibujan las cercanas.
       // El camino de tierra se lee como tierra pisada, no como una
@@ -2145,6 +2178,39 @@ void main(){
   }
   ToyRenderer.geometry = geometry;
   ToyRenderer.padLetterRuns = padLetterRuns;
+  // Nubes a la deriva sobre el valle: 6 nubes de juguete (esferas
+  // blancas aplastadas, 2 piezas por nube), altas (y 55-71, por
+  // encima del helicóptero y de las colinas) y sin colisión ni
+  // sombra. Siguen a la cámara como el cielo —la cámara mira el
+  // suelo en picado, así que una nube fija en el mundo casi nunca
+  // caería en pantalla— y derivan despacio con el tiempo de la
+  // partida: cada nube va de 30 a 100 u por delante de la cámara y
+  // envuelve ese tramo al salir. La posición es determinista para
+  // cada instante, así que no hay azar por frame ni por nube.
+  function cloudPositions(t, camX = 0, camZ = 0, camYaw = 0) {
+    const clouds = [],
+      fx = Math.sin(camYaw),
+      fz = Math.cos(camYaw),
+      rx = -Math.cos(camYaw),
+      rz = Math.sin(camYaw);
+    for (let i = 0; i < 6; i++) {
+      const a = (i * 0.6180339887) % 1,
+        b = (i * 0.7548776662) % 1,
+        speed = 0.8 + a * 0.5,
+        forward = 30 + ((b * 70 + (t || 0) * speed) % 70),
+        lateral = (a * 2 - 1) * 45;
+      clouds.push({
+        x: (camX || 0) + fx * forward + rx * lateral,
+        y: 55 + (i % 3) * 8,
+        z: (camZ || 0) + fz * forward + rz * lateral,
+        sx: 26 + a * 16,
+        sy: 5 + b * 2,
+        sz: 14 + b * 8,
+      });
+    }
+    return clouds;
+  }
+  ToyRenderer.cloudPositions = cloudPositions;
   // Paleta de las explosiones (ver el bucle FX en render): naranja,
   // rosa y morado del original, núcleo amarillo y humo gris final.
   ToyRenderer.EXPLOSION_COLORS = Object.freeze({

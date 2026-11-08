@@ -211,7 +211,8 @@ test('con datos embebidos el estado es Blender y los modelos se dibujan', () => 
   // 60 primitivas del helicóptero + 9 × 49 del tanque.
   assert.equal(counts.drawElements, 60 + 9 * 49);
   assert.equal(counts.indices, (3540 + 9 * 1680) * 3);
-  assert.equal(counts.drawArrays, 11);
+  // 11 de antes (terreno, elipses, sombra) + 12 piezas de las nubes.
+  assert.equal(counts.drawArrays, 23);
   clearEmbedded();
 });
 
@@ -380,7 +381,7 @@ test('?perf=1&modelos=1 muestra FPS y modelos en la misma línea', () => {
 
 test('bootstrap carga el cargador y los modelos antes del renderer', () => {
   const bootstrap = require('../src/bootstrap.js');
-  assert.equal(bootstrap.VERSION, 'auditoria-calidad-1');
+  assert.equal(bootstrap.VERSION, 'pulido-creativo-1');
   const order = bootstrap.scripts;
   assert.ok(order.indexOf('gltf-loader') < order.indexOf('toy-renderer'));
   assert.ok(order.indexOf('modelo-helicoptero') < order.indexOf('toy-renderer'));

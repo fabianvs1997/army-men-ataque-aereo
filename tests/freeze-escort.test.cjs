@@ -335,11 +335,12 @@ test('en nivel 2 de rendimiento se dibuja la mitad del humo', () => {
   counts.draw = 0;
   assert.equal(r.render(scene), true);
   // Solo el humo usa stride en nivel 2: de 160 bocanadas se dibujan
-  // 80, así que el nivel 2 dibuja exactamente 80 menos que el nivel 0
+  // 80, y las nubes (12 piezas) solo se dibujan con detalle completo,
+  // así que el nivel 2 dibuja exactamente 92 menos que el nivel 0
   // (las marcas de aliado caído se dibujan todas siempre).
   assert.equal(
     full - counts.draw,
-    80,
+    92,
     `level 2 draws ${counts.draw} vs level 0 ${full}`,
   );
 });
