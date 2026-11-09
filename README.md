@@ -27,3 +27,7 @@ El cargador aplica esa versión a CSS y a todos los módulos, respetando su orde
 - [Plan y evidencias del refactor](docs/REFACTOR.md)
 - [Cambios](CHANGELOG.md)
 - [Historial anterior](docs/HISTORY.md)
+
+## Vuelo sobre datos del disco de PC
+
+Desde el menú, abre **Volar en el mapa original (PAK)** y selecciona `Pak/ALPINE1.PAK` de tu instalación de Windows. La lectura y el renderizado WebGL ocurren en el navegador. WASD y Q/E controlan el helicóptero; también puedes mantener el clic derecho para seguir el cursor. Esta vista migra la inspección del relieve y el fuselaje, con el radar como color provisional. La campaña web se inicia por separado.
