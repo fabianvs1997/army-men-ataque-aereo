@@ -82,5 +82,22 @@
     ground.texture=paletteImage(r,2*r.getUint16(p+8,true),r.getUint16(p+10,true),p+12,20);
     return {ground,ship:fuselage(files.get('SHARED.MBL'))};
   }
-  return {decode};
+  function unpackScene(scene) {
+    const bytes = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+    function unpackTexture(t) {
+      const rgb = bytes(t.palette), pixels = bytes(t.pixels);
+      const rgba = new Uint8Array(t.w * t.h * 4);
+      for (let i=0;i<pixels.length;i++) {
+        const j=3*pixels[i];
+        rgba.set([rgb[j],rgb[j+1],rgb[j+2],255],4*i);
+      }
+      return {w:t.w,h:t.h,rgba};
+    }
+    const ground = terrain(new DataView(bytes(scene.heights).buffer));
+    ground.texture = unpackTexture(scene.terrain);
+    const ship = {vertices:new Float32Array(bytes(scene.vertices).buffer),
+      faces:scene.faces,texture:unpackTexture(scene.hull)};
+    return {ground,ship};
+  }
+  return {decode,unpackScene};
 });

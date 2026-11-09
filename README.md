@@ -30,4 +30,6 @@ El cargador aplica esa versión a CSS y a todos los módulos, respetando su orde
 
 ## Vuelo sobre datos del disco de PC
 
-Desde el menú, abre **Volar en el mapa original (PAK)** y selecciona `Pak/ALPINE1.PAK` de tu instalación de Windows. La lectura y el renderizado WebGL ocurren en el navegador. WASD y Q/E controlan el helicóptero; también puedes mantener el clic derecho para seguir el cursor. Esta vista migra la inspección del relieve y el fuselaje, con el radar como color provisional. La campaña web se inicia por separado.
+Desde el menú, abre **Volar en Alpina 1**. La escena viene incluida y arranca automáticamente en el navegador. En móvil, mantén un dedo sobre el mapa para dirigir el vuelo. En PC usa WASD y Q/E o mantén el clic derecho. El modo de inspección muestra el terreno y el fuselaje; el botón Iniciar campaña abre las misiones del juego web.
+
+Para regenerar los datos de vuelo, desde la raíz ejecuta `node scripts/package-alpine-flight.cjs RUTA/ALPINE1.PAK`. Solo se empaquetan el relieve, la geometría del fuselaje y sus dos imágenes de renderizado.
