@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'mapa-m1-video-1';
+  const VERSION = 'menu-hd-animado-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',

@@ -1,5 +1,15 @@
 # Changelog
 
+## Sin publicar — Menú principal HD con fondo 3D en vivo
+
+- **Fondo del menú principal visible** (`styles.css`, `index.html`, `src/ui.js`): el overlay del menú principal (`#ov.menu-main`) pasa de verde oscuro opaco con desenfoque a una viñeta translúcida, así se ve el lienzo WebGL 3D en vivo detrás del panel (el bucle ya orbita la cámara despacio en estado de menú). Sin assets binarios nuevos, sin el MP4 de la animación de referencia y sin datos del juego original de 3DO en el repo: solo CSS nativo, para mantener fluido el iPhone. Las pantallas de pausa/resultado conservan el fondo oscuro anterior (`#ov:not(.menu-main)`).
+- **Placa metálica** (`.menu-card`): borde verde brillante, degradado verde oscuro, sombra interior y cuatro tornillos de esquina dibujados con `::before` y degradados radiales (solo CSS). Título en amarillo mayúsculas estilo stencil (Impact/Arial Black), botones secundarios en mayúsculas con hover/active visibles.
+- **Botón principal animado** (`#go::after`): recuadro verde con brillo pulsante (`menuGoPulse`, 2,2 s) parecido al resaltado de JUGAR de la animación de referencia, sin copiar sus defectos (no se distorsiona ningún texto ni se apagan las demás opciones). Entrada del panel con `menuCardIn`. Todo se desactiva con `prefers-reduced-motion: reduce`.
+- **Móvil y accesibilidad**: panel `width: min(100%, 480px)` con ajustes a 420 px de ancho y en paisaje bajo; se conservan ids, textos en español, `aria-labelledby`, `focus-visible` y todos los paneles (ayuda, ajustes, cuenta, registro, créditos, confirmar, Volver). `src/ui.js` marca `menu-main` solo en la página `main` (protegido para el host de pruebas sin `classList`).
+- **Pruebas**: nueva `tests/menu-hd.test.cjs` (4): ids/textos/enlace del menú conservados, overlay translúcido sin `backdrop-filter: blur(8px)`, tornillos/animaciones de la placa y del botón, respeto a movimiento reducido, toggle protegido en `ui.js` y ausencia de assets binarios del menú. `VERSION` pasa a `menu-hd-animado-1` (actualizados los 6 tests que fijaban la versión anterior).
+- Sin verificar en este entorno (sin navegador real ni iPhone): cómo se ve el fondo 3D en vivo detrás de la placa en Safari/iPhone, legibilidad del texto sobre el mundo en movimiento, FPS en el menú y sensación táctil. Lo confirma Fabian en su iPhone.
+
+
 ## Sin publicar — Mapa de la Misión 1 según el vídeo del original
 
 - Solo el mapa de la Misión 1 «Plastic Pandemonium», ajustado al vídeo de 125,5 s del Army Men: Air Attack original (1999), catalogado fotograma a fotograma en `departamento-videojuegos/catalogo-mision-video-m1.md`. Sin tocar reglas, enemigos, HUD ni sonido; M2/M3 intactas. Valores medidos antes/después con la lógica del propio juego (rejilla de 4 u sobre el valle, `world.height()` + color del shader alpino): mapa cenital generado con `scripts/mapa-m1-video-medicion.cjs` (no se incluye el PNG en el PR; la evidencia son los valores de abajo).
