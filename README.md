@@ -16,6 +16,9 @@ El patio mide 960 × 960 unidades. Cada misión tiene su mapa fijo, recreado de 
 
 ## Desarrollar
 
+El [encargo de portada para Muse](MUSE.md) reúne la dirección visual, las
+referencias del original y los criterios de entrega de la próxima mejora del menú.
+
 Ejecuta `node --test` (CI usa Node 22). Los scripts son clásicos con exportación UMD/CommonJS;
 no convertirlos a módulos ES sin resolver primero la compatibilidad con `file://`.
 Para publicar cambios de recursos, actualiza **VERSION en `src/bootstrap.js`** una sola vez.
