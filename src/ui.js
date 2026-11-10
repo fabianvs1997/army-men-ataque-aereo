@@ -39,6 +39,9 @@
       env.$('menuNav').style.display = main ? 'grid' : 'none';
       env.$('back').style.display = main ? 'none' : 'block';
       env.$('menuExit').style.display = page === 'result' ? 'block' : 'none';
+      const ovEl = env.$('ov');
+      if (ovEl.classList && ovEl.classList.toggle)
+        ovEl.classList.toggle('menu-main', page === 'main');
       env.$('ov').style.display = 'flex';
       env.$('hud').style.display = 'none';
       env.cv.tabIndex = -1;
