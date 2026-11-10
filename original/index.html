@@ -1,8 +1,9 @@
-<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Alpina 1 · Vuelo de inspección</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#17221c;color:#f4f3de;font:16px system-ui}header{padding:.8rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}h1{font-size:1.15rem;margin:0}a{color:#d2ed9f}main{max-width:1100px;margin:auto;padding:0 1rem}canvas{width:100%;aspect-ratio:4/3;display:block;background:#26382b}label{display:inline-flex;gap:.5rem;align-items:center;flex-wrap:wrap}p{line-height:1.4}input{max-width:100%}</style>
-<header><a href="../">← Menú</a><h1>Alpina 1 · Vuelo de inspección</h1></header><main>
-<p id="status" role="status">Iniciando vuelo…</p>
-<canvas id="flight" tabindex="0" aria-label="Vuelo de inspección de la misión alpina"></canvas>
-<p>Mantén el dedo sobre el mapa para volar. En PC: W/S avanzar y retroceder · A/D girar · Q/E mover de lado · Mantén clic derecho para volar hacia el cursor.</p></main>
-<script src="alpine-scene.js"></script><script src="pak.js?v=2"></script><script src="flight.js?v=2"></script></html>
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Alpina 1 · Vuelo libre</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#19241d;color:#fff;font:16px system-ui}main{position:relative;height:100vh;height:100dvh;overflow:hidden}#flight{width:100%;height:100%;display:block;touch-action:none;outline:none}
+header,footer,#status{position:absolute;z-index:1}header{top:max(.8rem,env(safe-area-inset-top));left:max(.8rem,env(safe-area-inset-left));right:max(.8rem,env(safe-area-inset-right));display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}header a,footer,#status{background:#13251fe8;color:#fff;border-radius:.5rem}a{pointer-events:auto;text-decoration:none;padding:.7rem .9rem}a:focus-visible{outline:3px solid #ffd364}h1{font-size:1rem;margin:.8rem;text-shadow:0 1px 4px #000}header div{display:flex;align-items:center}#radar{width:clamp(68px,17vw,100px);height:auto;border:2px solid #e5e8cb;border-radius:5px;box-shadow:0 2px 7px #0006}footer{bottom:max(.75rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:.45rem .85rem;font-size:.85rem;text-align:center;width:max-content;max-width:92vw;pointer-events:none}#status{left:50%;top:45%;transform:translate(-50%,-50%);padding:1rem;width:max-content;max-width:88vw}#status:empty{display:none}.touch{display:none}@media(pointer:coarse){.desktop{display:none}.touch{display:inline}}
+</style><main><header><div><a href="../">← Menú</a><h1>Alpina 1</h1></div><canvas id="radar" width="144" height="144" aria-label="Radar de la posición del helicóptero"></canvas></header>
+<canvas id="flight" tabindex="0" aria-label="Vuelo libre sobre Alpina 1"></canvas><p id="status" role="status">Iniciando vuelo…</p>
+<footer><span class="touch">Mantén y desliza para pilotar</span><span class="desktop">W/S avanzar · A/D girar · Q/E lateral · Clic derecho para pilotar</span></footer></main>
+<script src="alpine-scene.js"></script><script src="pak.js?v=2"></script><script src="materials.js"></script><script src="flight.js?v=3"></script></html>
