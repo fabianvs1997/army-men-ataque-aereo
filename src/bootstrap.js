@@ -12,7 +12,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Update only here when publishing changed assets.
-  const VERSION = 'menu-hd-animado-1';
+  const VERSION = 'portada-diorama-1';
   const scripts = Object.freeze([
     'escort-config',
     'toy-missions',
@@ -22,6 +22,7 @@
     'escort-mission',
     'escort-progress',
     'toy-world',
+    'menu-diorama',
     'toy-helicopter',
     // Cargador glTF y modelos embebidos: ANTES del renderer, que los
     // usa. Sin ellos el juego sigue procedural (ver docs/MODELOS-INTEGRADOS.md).

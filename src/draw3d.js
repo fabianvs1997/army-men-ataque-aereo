@@ -18,9 +18,35 @@ que el juego necesita WebGL 3D. */
           scene.H * 0.64 + 8 * Math.cos(scene.PITCH) * scene.F) +
         (scene.shk > 0 && typeof scene.R === 'function' ? scene.R(-2, 2) : 0);
       const message = scene.$ ? scene.$('webglRequired') : null;
+      // En el menú principal se dibuja el diorama de portada por
+      // separado (sin mundo de campaña detrás); en cualquier otro
+      // estado sigue el render de campaña de siempre.
+      let reducedMotion = false;
+      try {
+        reducedMotion = !!scene.host?.matchMedia?.(
+          '(prefers-reduced-motion: reduce)',
+        ).matches;
+      } catch (_) {}
+      const useDiorama =
+        scene.st === 'menu' &&
+        scene.diorama &&
+        scene.renderer3d &&
+        typeof scene.renderer3d.renderDiorama === 'function';
       if (
         scene.renderer3d &&
-        scene.renderer3d.render({
+        (useDiorama
+          ? scene.renderer3d.renderDiorama({
+              pixelRatio: scene.lowQuality ? 1 : scene.pixelRatioCap || 1.75,
+              perfLevel: scene.perfLevel || 0,
+              W: scene.W,
+              H: scene.H,
+              t: scene.t,
+              diorama: scene.diorama,
+              dioramaCam: scene.dioramaCam,
+              swayYaw: scene.swayYaw,
+              reducedMotion,
+            })
+          : scene.renderer3d.render({
           pixelRatio: scene.lowQuality ? 1 : scene.pixelRatioCap || 1.75,
           perfLevel: scene.perfLevel || 0,
           W: scene.W,
@@ -57,7 +83,7 @@ que el juego necesita WebGL 3D. */
             scene.mission && typeof scene.mission.trainView === 'function'
               ? scene.mission.trainView()
               : null,
-        })
+        }))
       ) {
         scene.$('world3d').style.display = 'block';
         if (message) message.style.display = 'none';

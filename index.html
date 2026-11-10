@@ -15,11 +15,16 @@
 <div class="menu-kicker">Operación patio trasero</div>
 <h1 id="ti" tabindex="-1">ARMY MEN<span>Ataque aéreo</span></h1>
 <p id="tx">Un pequeño helicóptero. Un gran rescate. Libera a tu escuadrón en una campaña de tres misiones.</p>
-<button id="go">Iniciar campaña →</button>
-<nav id="menuNav" class="menu-nav" aria-label="Menú del juego">
+<nav id="menuNav" class="menu-nav menu-primary-nav" aria-label="Menú principal">
+<button id="go" class="menu-primary">JUGAR</button>
+<button id="menuLoad" class="secondary" disabled aria-disabled="true" title="No hay partida guardada que cargar: el progreso de campaña se pierde al recargar la página.">Cargar partida</button>
+<button id="menuSettings" class="secondary">Opciones</button>
+<button id="menuQuit" class="secondary">Salir</button>
+</nav>
+<p id="menuLoadNote" class="menu-note">Cargar partida no está disponible: no hay guardado de campaña en esta versión.</p>
+<nav id="menuNavSecondary" class="menu-nav menu-secondary-nav" aria-label="Más opciones">
 <a class="secondary" href="original/index.html">Volar en Alpina 1</a>
 <button id="menuHelp" class="secondary">Cómo jugar</button>
-<button id="menuSettings" class="secondary">Ajustes</button>
 <button id="menuAccount" class="secondary">Cuenta</button>
 <button id="menuLogs" class="secondary">Registro</button>
 <button id="menuCredits" class="secondary">Acerca del juego</button>

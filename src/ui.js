@@ -37,6 +37,11 @@
         env.$(id).style.display = page === name ? 'block' : 'none';
       env.$('go').style.display = main ? 'block' : 'none';
       env.$('menuNav').style.display = main ? 'grid' : 'none';
+      // Nav secundaria y nota de Cargar partida: solo en la portada.
+      if (env.$('menuNavSecondary'))
+        env.$('menuNavSecondary').style.display = main ? 'grid' : 'none';
+      if (env.$('menuLoadNote'))
+        env.$('menuLoadNote').style.display = main ? 'block' : 'none';
       env.$('back').style.display = main ? 'none' : 'block';
       env.$('menuExit').style.display = page === 'result' ? 'block' : 'none';
       const ovEl = env.$('ov');
@@ -109,7 +114,7 @@
         Object.entries(env.savedProgress?.missions || {})
           .map(([n, r]) => 'Misión ' + n + ': ' + '★'.repeat(r.stars))
           .join(' · ');
-      env.$('go').textContent = 'Iniciar campaña →';
+      env.$('go').textContent = 'JUGAR';
       menuLayout('main');
       env.$('go').focus?.();
     }
@@ -136,6 +141,19 @@
       if (page === 'account') refreshAccount();
       if (page === 'logs') refreshLogs();
       env.$(page === 'settings' ? 'menuSound' : 'ti').focus?.();
+    }
+    // SALIR en navegador: un script no puede cerrar la pestaña de
+    // otra persona, así que la portada lo explica con claridad y el
+    // botón Volver (o Esc) regresa al menú principal. En una futura
+    // versión nativa Salir sí cerrará el juego.
+    function menuQuit() {
+      env.$('ti').textContent = '¿Salir de la portada?';
+      env.$('tx').textContent =
+        'En el navegador no se puede cerrar tu pestaña desde aquí. ' +
+        'Pulsa «Volver» para regresar a la portada, o cierra la ' +
+        'pestaña tú mismo.';
+      menuLayout('quit');
+      env.$('ti').focus?.();
     }
     function menuBack() {
       presentState(env.st);
@@ -504,6 +522,7 @@
       };
       env.$('menuHelp').onclick = () => menuPage('help');
       env.$('menuSettings').onclick = () => menuPage('settings');
+      if (env.$('menuQuit')) env.$('menuQuit').onclick = menuQuit;
       env.$('menuAccount').onclick = () => menuPage('account');
       env.$('menuLogs').onclick = () => menuPage('logs');
       env.$('menuCredits').onclick = () => menuPage('credits');
@@ -597,6 +616,7 @@
       showMain,
       presentState,
       menuPage,
+      menuQuit,
       menuBack,
       soundLabel,
       qualityLabel,

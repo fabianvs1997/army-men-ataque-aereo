@@ -12,6 +12,7 @@
       require('./toy-world.js'),
       require('./toy-missions.js'),
       require('./toy-renderer.js'),
+      require('./menu-diorama.js'),
       require('./escort-mission.js'),
       require('./escort-progress.js'),
       require('./mission-map.js'),
@@ -33,6 +34,7 @@
       root.ToyWorld,
       root.ToyMissions,
       root.ToyRenderer,
+      root.ToyMenuDiorama,
       root.ToyEscort,
       root.ToyEscortProgress,
       root.ToyMissionMap,
@@ -55,6 +57,7 @@
     DefaultWorld,
     ToyMissions,
     ToyRenderer,
+    ToyMenuDiorama,
     ToyEscort,
     ToyEscortProgress,
     ToyMissionMap,
@@ -558,6 +561,10 @@
         const framing = cameraFraming(state.W, state.H);
         state.F = framing.scale;
         state.cameraCenterY = framing.centerY;
+        // Cámara del diorama de portada (solo menú): se recalcula con
+        // el tamaño para que 4:3 y 16:9 encuadren igual sin estirar.
+        if (ToyMenuDiorama)
+          state.dioramaCam = ToyMenuDiorama.cameraFor(state.W, state.H);
         state.needsDraw = true;
       }
       host.addEventListener('resize', rs);
@@ -595,6 +602,10 @@
       });
       Object.assign(state, {
         st: 'menu',
+        // Diorama de portada: piezas fijas del menú (ver
+        // src/menu-diorama.js), independientes del mundo de campaña.
+        diorama: ToyMenuDiorama ? ToyMenuDiorama.build() : null,
+        swayYaw: ToyMenuDiorama ? ToyMenuDiorama.swayYaw : null,
         missionPanelOpen: false,
         P: undefined,
         E: [],

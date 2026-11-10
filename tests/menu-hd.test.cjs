@@ -28,11 +28,15 @@ test('menú principal conserva ids, textos y enlaces del menú actual', () => {
     'confirmPane',
     'back',
     'menuExit',
+    'menuLoad',
+    'menuLoadNote',
+    'menuQuit',
+    'menuNavSecondary',
   ])
     assert.ok(html.includes('id="' + id + '"'), id);
   assert.ok(html.includes('href="original/index.html"'), 'enlace Volar en Alpina 1');
   assert.ok(html.includes('Volar en Alpina 1'));
-  assert.ok(html.includes('Iniciar campaña'), 'botón principal en español');
+  assert.ok(html.includes('>JUGAR<'), 'botón principal en español');
   assert.ok(html.includes('OPERACIÓN PATIO TRASERO') || html.includes('Operación patio trasero'));
 });
 
