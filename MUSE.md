@@ -1,6 +1,8 @@
 # Encargo para Muse: portada 3D fiel al original
 
-Estado: preparado para que Muse lo tome; todavía no hay confirmación de inicio.
+Estado: Muse confirmó y entregó el PR #71, ya incorporado en Master. La revisión
+de Codex confirmó tres fallos que deben corregirse antes de aprobar la entrega.
+Ver [revisión y capturas reales](docs/revisiones/PORTADA-PR71.md).
 Dirección y revisión: Codex. Implementación pesada: Muse.
 
 ## Pedido de Fabián
