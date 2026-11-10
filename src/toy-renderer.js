@@ -168,6 +168,35 @@ void main(){
         ],
       ])
         for (const p of [a, b, c, a, c, d]) vertex(p, n);
+    } else if (kind === 'cylinder' || kind === 'cone') {
+      // Cilindro y cono unitarios (radio 0,5, altura 1, centrados en el
+      // origen) para el diorama de portada: troncos, hierba-lanza,
+      // techos y tallos. Sin culling de caras, solo importan las
+      // normales para la luz.
+      const SEG = 14;
+      const ring = (t, y) => {
+        const a = (t / SEG) * Math.PI * 2;
+        return [0.5 * Math.cos(a), y, 0.5 * Math.sin(a)];
+      };
+      const sideN = (t) => {
+        const a = (t / SEG) * Math.PI * 2,
+          ny = kind === 'cone' ? 0.5 : 0,
+          len = Math.hypot(1, ny);
+        return [Math.cos(a) / len, ny / len, Math.sin(a) / len];
+      };
+      for (let t = 0; t < SEG; t++) {
+        const top = kind === 'cone' ? [0, 0.5, 0] : ring(t, 0.5),
+          top2 = kind === 'cone' ? [0, 0.5, 0] : ring(t + 1, 0.5),
+          bot = ring(t, -0.5),
+          bot2 = ring(t + 1, -0.5);
+        for (const p of [top, bot, bot2, top, bot2, top2]) vertex(p, sideN(t));
+        vertex([0, 0.5, 0], [0, 1, 0]);
+        vertex(ring(t, 0.5), [0, 1, 0]);
+        vertex(ring(t + 1, 0.5), [0, 1, 0]);
+        vertex([0, -0.5, 0], [0, -1, 0]);
+        vertex(ring(t + 1, -0.5), [0, -1, 0]);
+        vertex(ring(t, -0.5), [0, -1, 0]);
+      }
     } else {
       const point = (i, j) => {
         const a = (i * Math.PI) / 10,
@@ -301,7 +330,7 @@ void main(){
       this.position = gl.getAttribLocation(program, 'position');
       this.normal = gl.getAttribLocation(program, 'normal');
       this.meshes = {};
-      for (const kind of ['box', 'sphere', 'rounded']) {
+      for (const kind of ['box', 'sphere', 'rounded', 'cylinder', 'cone']) {
         const data = geometry(kind),
           buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -2317,6 +2346,109 @@ void main(){
           }
         }
       }
+      return true;
+    }
+    // Diorama de portada (src/menu-diorama.js): escena separada del
+    // mundo de campaña. Reutiliza el mismo programa, la misma luz y
+    // part(); solo cambian la cámara (a ras de suelo), el color de
+    // fondo y que groundOffset vuelve a 0 al terminar para no afectar
+    // a la campaña. scene.diorama = piezas, scene.dioramaCam =
+    // cámara de ToyMenuDiorama.cameraFor(W, H). Con movimiento
+    // reducido o nivel de degradado 2 se congela el vaivén y se
+    // omiten las nubes.
+    renderDiorama(scene) {
+      if (this.lost) return false;
+      const parts = scene.diorama || [],
+        camInfo = scene.dioramaCam || {
+          cam: { x: 0, z: 58, yaw: 0 },
+          pitch: 0.2,
+          scale: 20,
+          centerY: scene.H / 2,
+        },
+        gl = this.gl,
+        u = this.loc,
+        cam = camInfo.cam,
+        pitch = camInfo.pitch,
+        perfLevel = scene.perfLevel || 0,
+        reduced = !!scene.reducedMotion,
+        t = reduced ? 0 : scene.t || 0,
+        d = Math.min(root.devicePixelRatio || 1, scene.pixelRatio || 1.75),
+        width = Math.round(scene.W * d),
+        height = Math.round(scene.H * d);
+      if (this.canvas.width !== width || this.canvas.height !== height) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+      }
+      gl.viewport(0, 0, width, height);
+      // Cielo cálido de diorama; se restaura el color de campaña al
+      // salir para que el siguiente frame de juego no lo herede.
+      gl.clearColor(0.45, 0.62, 0.78, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(this.program);
+      this.drawCalls = 0;
+      gl.uniform2f(u.camera, cam.x, cam.z);
+      gl.uniform2f(u.viewport, scene.W, scene.H);
+      gl.uniform1f(u.cameraYaw, cam.yaw);
+      gl.uniform1f(u.pitch, pitch);
+      gl.uniform1f(u.scale, camInfo.scale);
+      gl.uniform1f(u.centerY, camInfo.centerY);
+      gl.uniform3f(
+        u.eyeDirection,
+        -Math.sin(cam.yaw) * Math.cos(pitch),
+        Math.sin(pitch),
+        -Math.cos(cam.yaw) * Math.cos(pitch),
+      );
+      this._view = {
+        camera: [cam.x, cam.z],
+        viewport: [scene.W, scene.H],
+        cameraYaw: cam.yaw,
+        pitch,
+        scale: camInfo.scale,
+        centerY: camInfo.centerY,
+        eyeDirection: [
+          -Math.sin(cam.yaw) * Math.cos(pitch),
+          Math.sin(pitch),
+          -Math.cos(cam.yaw) * Math.cos(pitch),
+        ],
+      };
+      const prevOffset = this.groundOffset || 0;
+      this.groundOffset = 0;
+      const sway =
+        typeof scene.swayYaw === 'function' ? scene.swayYaw : null;
+      for (const p of parts) {
+        this.part(
+          p.kind,
+          p.x,
+          p.y,
+          p.z,
+          p.sx,
+          p.sy,
+          p.sz,
+          p.color,
+          sway ? sway(p, t) : p.yaw || 0,
+          p.gloss === undefined ? 0.8 : p.gloss,
+          p.alpha === undefined ? 1 : p.alpha,
+        );
+      }
+      if (perfLevel < 2 && !reduced)
+        for (let i = 0; i < 3; i++) {
+          const drift = ((t * 1.5 + i * 47) % 150) - 75;
+          this.part(
+            'sphere',
+            drift,
+            54 + i * 5,
+            -55 - i * 12,
+            26 + i * 4,
+            5,
+            14 + i * 3,
+            [0.95, 0.96, 0.97],
+            0,
+            0.15,
+            0.85,
+          );
+        }
+      this.groundOffset = prevOffset;
+      gl.clearColor(0.27, 0.36, 0.23, 1);
       return true;
     }
   }

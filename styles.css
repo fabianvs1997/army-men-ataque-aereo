@@ -586,10 +586,10 @@ h1 {
   }
 }
 
-/* Menú principal HD: placa metálica sobre el lienzo 3D en vivo.
-   El lienzo ya orbita despacio en estado de menú (src/game.js), así
-   que el fondo es 3D real sin assets binarios ni vídeo: fluido en
-   el iPhone y sin datos de terceros en el repo. */
+/* Menú principal: placa metálica sobre el diorama 3D de portada
+   (src/menu-diorama.js + ToyRenderer.renderDiorama), una escena
+   separada del mundo de campaña. Fondo 3D real sin assets binarios
+   ni vídeo: fluido en el iPhone y sin datos de terceros en el repo. */
 
 #ov.menu-main {
   background:
@@ -752,6 +752,46 @@ h1 {
 
 #go:hover {
   filter: brightness(1.07);
+}
+
+/* Portada: cuatro opciones principales (JUGAR / Cargar partida /
+   Opciones / Salir) y, debajo, la navegación secundaria conservada. */
+.menu-primary-nav {
+  margin-bottom: 10px;
+}
+
+.menu-primary-nav #go {
+  margin: 0;
+}
+
+.menu-primary-nav button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: saturate(0.6);
+}
+
+.menu-primary-nav button:disabled:hover {
+  background: rgba(8, 30, 18, 0.88);
+  filter: saturate(0.6);
+}
+
+.menu-note {
+  font-size: 11px;
+  color: #b9cda0;
+  line-height: 1.5;
+  margin: 0 0 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.menu-secondary-nav {
+  margin-top: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.menu-secondary-nav .secondary {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 8px 12px;
 }
 
 .menu-nav {
